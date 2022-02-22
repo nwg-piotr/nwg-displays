@@ -1,0 +1,6 @@
+/.idea
+/venv
+/nwg_displays.egg-info/
+/build/
+/dist/
+/nwg_displays/glade/#main.glade#
