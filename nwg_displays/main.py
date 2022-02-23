@@ -104,8 +104,8 @@ def main():
     outputs = list_outputs()
     for key in outputs:
         item = outputs[key]
-        b = DisplayButton(key, item["description"], int(item["width"] / 10), int(item["height"] / 10), item["transform"], item["scale"],
-                          item["refresh"], item["modes"], item["active"])
+        b = DisplayButton(key, item["description"], int(item["width"] / 10), int(item["height"] / 10),
+                          item["transform"], item["scale"], item["refresh"], item["modes"], item["active"])
 
         fixed.put(b, int(item["x"] / 10), int(item["y"] / 10))
 
