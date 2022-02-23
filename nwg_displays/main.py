@@ -29,29 +29,7 @@ max_x = 0
 max_y = 0
 
 
-def min_val(a, b):
-    if b < a:
-        return b
-    return a
-
-
-def max_val(a, b):
-    if b > a:
-        return b
-    return a
-
-
-def round_down_to_multiple(i, m):
-    return i / m * m
-
-
-def round_to_nearest_multiple(i, m):
-    if i % m > m / 2:
-        return (i / m + 1) * m
-    return i / m * m
-
-
-def button_press_event(w, event):
+def on_button_press_event(w, event):
     if event.button == 1:
         p = w.get_parent()
         # offset == distance of parent widget from edge of screen ...
@@ -68,7 +46,7 @@ def button_press_event(w, event):
         max_y = round_down_to_multiple(p.get_allocation().height - w.get_allocation().height, SENSITIVITY)
 
 
-def motion_notify_event(widget, event):
+def on_motion_notify_event(widget, event):
     # x_root,x_root relative to screen
     # x,y relative to parent (fixed widget)
     # px,py stores previous values of x,y
@@ -90,14 +68,26 @@ def motion_notify_event(widget, event):
         fixed.move(widget, x, y)
 
 
-def make_button(text, width, height):
-    b = Gtk.Button.new_with_label(text)
-    b.set_events(EvMask)
-    b.connect("button_press_event", button_press_event)
-    b.connect("motion_notify_event", motion_notify_event)
-    b.set_size_request(width, height)
-    b.show()
-    return b
+class DisplayButton(Gtk.Button):
+    def __init__(self, name, description, width, height, transform, scale, refresh, modes, active):
+        super().__init__()
+        self.name = name
+        self.description = description
+        self.width = width
+        self.height = height
+        self.transform = transform
+        self.scale = scale
+        self.refresh = refresh
+        self.modes = modes
+        self.active = active
+
+        self.set_events(EvMask)
+        self.connect("button_press_event", on_button_press_event)
+        self.connect("motion_notify_event", on_motion_notify_event)
+        self.set_always_show_image(True)
+        self.set_label(self.name)
+        self.set_size_request(self.width, self.height)
+        self.show()
 
 
 def main():
@@ -113,11 +103,13 @@ def main():
     global outputs
     outputs = list_outputs()
     for key in outputs:
-        fixed.put(make_button(key, int(outputs[key]["width"] / 10), int(outputs[key]["height"] / 10)),
-                  int(outputs[key]["x"] / 10), int(outputs[key]["y"] / 10))
+        item = outputs[key]
+        b = DisplayButton(key, item["description"], int(item["width"] / 10), int(item["height"] / 10), item["transform"], item["scale"],
+                          item["refresh"], item["modes"], item["active"])
+
+        fixed.put(b, int(item["x"] / 10), int(item["y"] / 10))
 
     window.show_all()
-
     Gtk.main()
 
 
