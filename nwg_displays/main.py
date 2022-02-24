@@ -28,10 +28,22 @@ py = 0
 max_x = 0
 max_y = 0
 
+# Glade form fields
+form_description = None
+form_active = None
+form_x = None
+form_y = None
+form_width = None
+form_height = None
+form_scale = None
+form_refresh = None
 
-def on_button_press_event(w, event):
+display_buttons = []
+
+
+def on_button_press_event(widget, event):
     if event.button == 1:
-        p = w.get_parent()
+        p = widget.get_parent()
         # offset == distance of parent widget from edge of screen ...
         global offset_x, offset_y
         offset_x, offset_y = p.get_window().get_position()
@@ -42,8 +54,8 @@ def on_button_press_event(w, event):
         # note that we're rounding down now so that these max values don't get
         # rounded upward later and push the widget off the edge of its parent.
         global max_x, max_y
-        max_x = round_down_to_multiple(p.get_allocation().width - w.get_allocation().width, SENSITIVITY)
-        max_y = round_down_to_multiple(p.get_allocation().height - w.get_allocation().height, SENSITIVITY)
+        max_x = round_down_to_multiple(p.get_allocation().width - widget.get_allocation().width, SENSITIVITY)
+        max_y = round_down_to_multiple(p.get_allocation().height - widget.get_allocation().height, SENSITIVITY)
 
 
 def on_motion_notify_event(widget, event):
@@ -69,10 +81,12 @@ def on_motion_notify_event(widget, event):
 
 
 class DisplayButton(Gtk.Button):
-    def __init__(self, name, description, width, height, transform, scale, refresh, modes, active):
+    def __init__(self, name, description, x, y, width, height, transform, scale, refresh, modes, active):
         super().__init__()
         self.name = name
         self.description = description
+        self.x = x
+        self.y = y
         self.width = width
         self.height = height
         self.transform = transform
@@ -84,10 +98,23 @@ class DisplayButton(Gtk.Button):
         self.set_events(EvMask)
         self.connect("button_press_event", on_button_press_event)
         self.connect("motion_notify_event", on_motion_notify_event)
+        self.connect("button-press-event", self.update_form)
+        self.connect("button-release-event", self.update_form)
         self.set_always_show_image(True)
         self.set_label(self.name)
-        self.set_size_request(self.width, self.height)
+        self.set_size_request(int(self.width / 10), int(self.height / 10))
+
         self.show()
+
+    def update_form(self, w, e):
+        form_description.set_text("{} ({})".format(self.description, self.name))
+        form_active.set_active(self.active)
+        form_x.set_value(self.x)
+        form_y.set_value(self.y)
+        form_width.set_value(self.width)
+        form_height.set_value(self.height)
+        form_scale.set_value(self.scale)
+        form_refresh.set_value(self.refresh)
 
 
 def main():
@@ -97,17 +124,59 @@ def main():
     window = builder.get_object("window")
     window.connect('destroy', Gtk.main_quit)
 
+    global form_description
+    form_description = builder.get_object("description")
+
+    global form_active
+    form_active = builder.get_object("active")
+
+    global form_x
+    form_x = builder.get_object("x")
+    adj = Gtk.Adjustment(lower=0, upper=60000, step_increment=1, page_increment=10, page_size=1)
+    form_x.configure(adj, 1, 0)
+
+    global form_y
+    form_y = builder.get_object("y")
+    adj = Gtk.Adjustment(lower=0, upper=40000, step_increment=1, page_increment=10, page_size=1)
+    form_y.configure(adj, 1, 0)
+
+    global form_width
+    form_width = builder.get_object("width")
+    adj = Gtk.Adjustment(lower=0, upper=7680, step_increment=1, page_increment=10, page_size=1)
+    form_width.configure(adj, 1, 0)
+
+    global form_height
+    form_height = builder.get_object("height")
+    adj = Gtk.Adjustment(lower=0, upper=4320, step_increment=1, page_increment=10, page_size=1)
+    form_height.configure(adj, 1, 0)
+
+    global form_scale
+    form_scale = builder.get_object("scale")
+    adj = Gtk.Adjustment(lower=0.1, upper=1000, step_increment=0.1, page_increment=10, page_size=1)
+    form_scale.configure(adj, 0.1, 1)
+
+    global form_refresh
+    form_refresh = builder.get_object("refresh")
+    adj = Gtk.Adjustment(lower=1, upper=1200, step_increment=1, page_increment=10, page_size=1)
+    form_refresh.configure(adj, 1, 3)
+
     global fixed
     fixed = builder.get_object("fixed")
 
     global outputs
     outputs = list_outputs()
+    global display_buttons
     for key in outputs:
         item = outputs[key]
-        b = DisplayButton(key, item["description"], int(item["width"] / 10), int(item["height"] / 10),
-                          item["transform"], item["scale"], item["refresh"], item["modes"], item["active"])
+        b = DisplayButton(key, item["description"], item["x"], item["y"], int(item["width"]), int(item["height"]),
+                          item["transform"], item["scale"], item["refresh"], item["modes"],
+                          item["active"])
+        display_buttons.append(b)
 
         fixed.put(b, int(item["x"] / 10), int(item["y"] / 10))
+
+    if display_buttons:
+        display_buttons[0].update_form(None, None)
 
     window.show_all()
     Gtk.main()

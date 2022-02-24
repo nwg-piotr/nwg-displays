@@ -31,10 +31,9 @@ def list_outputs():
             outputs_dict[item.name]["active"] = item.ipc_data["active"]
             outputs_dict[item.name]["transform"] = item.ipc_data["transform"] if "transform" in item.ipc_data else None
             outputs_dict[item.name]["scale"] = float(item.ipc_data["scale"]) if "scale" in item.ipc_data else None
-            outputs_dict[item.name]["refresh"] = int(
-                round(item.ipc_data["current_mode"]["refresh"] / 1000, 0)) if "refresh" in item.ipc_data[
-                "current_mode"] else None
-            outputs_dict[item.name]["modes"] = item.ipc_data["modes"] if "mode" in item.ipc_data else []
+            outputs_dict[item.name]["refresh"] = \
+                item.ipc_data["current_mode"]["refresh"] / 1000 if "refresh" in item.ipc_data["current_mode"] else None
+            outputs_dict[item.name]["modes"] = item.ipc_data["modes"] if "modes" in item.ipc_data else []
             outputs_dict[item.name]["description"] = "{} {} {}".format(item.ipc_data["make"], item.ipc_data["model"],
                                                                        item.ipc_data["serial"])
 

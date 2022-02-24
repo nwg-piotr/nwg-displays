@@ -44,7 +44,7 @@
                     <property name="can-focus">False</property>
                     <property name="margin-top">6</property>
                     <property name="margin-bottom">6</property>
-                    <property name="label" translatable="yes">name</property>
+                    <property name="label" translatable="yes">description</property>
                     <attributes>
                       <attribute name="weight" value="bold"/>
                     </attributes>
@@ -69,7 +69,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkSpinButton">
+                  <object class="GtkSpinButton" id="x">
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                   </object>
@@ -79,7 +79,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkSpinButton">
+                  <object class="GtkSpinButton" id="y">
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                   </object>
@@ -130,7 +130,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkSpinButton">
+                  <object class="GtkSpinButton" id="width">
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                   </object>
@@ -140,7 +140,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkSpinButton">
+                  <object class="GtkSpinButton" id="height">
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                   </object>
@@ -180,7 +180,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkSpinButton">
+                  <object class="GtkSpinButton" id="scale">
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                   </object>
@@ -190,7 +190,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkSpinButton">
+                  <object class="GtkSpinButton" id="refresh">
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                   </object>
@@ -200,11 +200,12 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkCheckButton">
-                    <property name="label" translatable="yes">Enabled</property>
+                  <object class="GtkCheckButton" id="active">
+                    <property name="label" translatable="yes">Active</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                     <property name="receives-default">False</property>
+                    <property name="halign">start</property>
                     <property name="draw-indicator">True</property>
                   </object>
                   <packing>
