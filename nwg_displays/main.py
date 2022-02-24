@@ -15,6 +15,7 @@ from nwg_displays.tools import *
 # higher values make movement more performant
 # lower values make movement smoother
 SENSITIVITY = 1
+view_scale = 0.1
 
 EvMask = Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON1_MOTION_MASK
 
@@ -39,6 +40,8 @@ form_scale = None
 form_refresh = None
 
 display_buttons = []
+snap_x = []
+snap_y = []
 
 
 def on_button_press_event(widget, event):
@@ -77,7 +80,19 @@ def on_motion_notify_event(widget, event):
     if x != px or y != py:
         px = x
         py = y
-        fixed.move(widget, x, y)
+
+        for db in display_buttons:
+            if widget != db:
+                if abs(widget.x - db.x) < 100:
+                    fixed.move(widget, db.x * view_scale, y)
+                    widget.x = db.x / view_scale
+                    break
+                else:
+                    fixed.move(widget, x, y)
+
+        widget.x = int(x / view_scale)
+        widget.y = int(y / view_scale)
+        widget.update_form(None, None)
 
 
 class DisplayButton(Gtk.Button):
@@ -102,7 +117,7 @@ class DisplayButton(Gtk.Button):
         self.connect("button-release-event", self.update_form)
         self.set_always_show_image(True)
         self.set_label(self.name)
-        self.set_size_request(int(self.width / 10), int(self.height / 10))
+        self.set_size_request(int(self.width * view_scale), int(self.height * view_scale))
 
         self.show()
 
@@ -173,7 +188,7 @@ def main():
                           item["active"])
         display_buttons.append(b)
 
-        fixed.put(b, int(item["x"] / 10), int(item["y"] / 10))
+        fixed.put(b, int(item["x"] * view_scale), int(item["y"] * view_scale))
 
     if display_buttons:
         display_buttons[0].update_form(None, None)
