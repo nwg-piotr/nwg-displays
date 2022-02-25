@@ -82,17 +82,32 @@ def on_motion_notify_event(widget, event):
         py = y
 
         for db in display_buttons:
-            if widget != db:
-                if abs(widget.x - db.x) < 100:
-                    fixed.move(widget, db.x * view_scale, y)
-                    widget.x = db.x / view_scale
-                    break
-                else:
-                    fixed.move(widget, x, y)
+            if db == widget:
+                continue
+            if abs(widget.x - db.x) < 200:
+                print("snap")
+                fixed.move(widget, int(db.x * view_scale), y)
+                widget.x = int(db.x)
+                widget.y = int(db.y)
+                continue
+            else:
+                fixed.move(widget, x, y)
 
-        widget.x = int(x / view_scale)
-        widget.y = int(y / view_scale)
-        widget.update_form(None, None)
+                widget.x = int(x / view_scale)
+                widget.y = int(y / view_scale)
+
+        update_form_from_widget(widget)
+
+
+def update_form_from_widget(widget, *args):
+    form_description.set_text("{} ({})".format(widget.description, widget.name))
+    form_active.set_active(widget.active)
+    form_x.set_value(widget.x)
+    form_y.set_value(widget.y)
+    form_width.set_value(widget.width)
+    form_height.set_value(widget.height)
+    form_scale.set_value(widget.scale)
+    form_refresh.set_value(widget.refresh)
 
 
 class DisplayButton(Gtk.Button):
@@ -113,23 +128,13 @@ class DisplayButton(Gtk.Button):
         self.set_events(EvMask)
         self.connect("button_press_event", on_button_press_event)
         self.connect("motion_notify_event", on_motion_notify_event)
-        self.connect("button-press-event", self.update_form)
-        self.connect("button-release-event", self.update_form)
+        self.connect("button-press-event", update_form_from_widget)
+        self.connect("button-release-event", update_form_from_widget)
         self.set_always_show_image(True)
         self.set_label(self.name)
         self.set_size_request(int(self.width * view_scale), int(self.height * view_scale))
 
         self.show()
-
-    def update_form(self, w, e):
-        form_description.set_text("{} ({})".format(self.description, self.name))
-        form_active.set_active(self.active)
-        form_x.set_value(self.x)
-        form_y.set_value(self.y)
-        form_width.set_value(self.width)
-        form_height.set_value(self.height)
-        form_scale.set_value(self.scale)
-        form_refresh.set_value(self.refresh)
 
 
 def main():
@@ -191,7 +196,7 @@ def main():
         fixed.put(b, int(item["x"] * view_scale), int(item["y"] * view_scale))
 
     if display_buttons:
-        display_buttons[0].update_form(None, None)
+        update_form_from_widget(display_buttons[0])
 
     window.show_all()
     Gtk.main()
