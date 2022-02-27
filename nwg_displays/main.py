@@ -4,9 +4,12 @@
 https://gist.github.com/KurtJacobson/57679e5036dc78e6a7a3ba5e0155dad1
 """
 
+import os
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
+
+dir_name = os.path.dirname(__file__)
 
 from nwg_displays.tools import *
 
@@ -150,6 +153,17 @@ def main():
     builder.add_from_file("main.glade")
 
     window = builder.get_object("window")
+    screen = Gdk.Screen.get_default()
+    provider = Gtk.CssProvider()
+    style_context = Gtk.StyleContext()
+    style_context.add_provider_for_screen(screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+    try:
+        file = os.path.join(dir_name, "style.css")
+        provider.load_from_path(file)
+        print("Using style: {}".format(file))
+    except:
+        sys.stderr.write("ERROR: {} file not found, using GTK styling\n".format(os.path.join(dir_name, "style.css")))
+
     window.connect('destroy', Gtk.main_quit)
 
     global form_description
