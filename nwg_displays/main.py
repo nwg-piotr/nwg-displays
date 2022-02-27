@@ -84,24 +84,52 @@ def on_motion_notify_event(widget, event):
 
         global snap_x
         snap_x = []
+        global snap_y
+        snap_y = []
+
         for db in display_buttons:
             if db == widget:
                 continue
 
-            v = int(db.x * view_scale)
-            if v not in snap_x:
-                snap_x.append(v)
+            val = int(db.x * view_scale)
+            if val not in snap_x:
+                snap_x.append(val)
 
-            v = int((db.x + db.width) * view_scale)
-            if v not in snap_x:
-                snap_x.append(v)
+            val = int((db.x + db.width) * view_scale)
+            if val not in snap_x:
+                snap_x.append(val)
 
             for value in snap_x:
-                if 0 < abs(widget.x * view_scale - value) < 20:
+                if 0 < abs(widget.x * view_scale - value) < 10:
                     fixed.move(widget, value, y)
                     widget.x = value / view_scale
-                    #widget.y = int(db.y)
-                    break
+                    widget.y = int(db.y)
+                    return
+
+                else:
+                    fixed.move(widget, x, y)
+                    widget.x = int(x / view_scale)
+                    widget.y = int(y / view_scale)
+
+        for db in display_buttons:
+            if db == widget:
+                continue
+
+            val = int(db.y * view_scale)
+            if val not in snap_y:
+                snap_y.append(val)
+
+            val = int((db.y + db.height) * view_scale)
+            if val not in snap_y:
+                snap_y.append(val)
+
+            for value in snap_y:
+                if 0 < abs(widget.y * view_scale - value) < 10:
+                    fixed.move(widget, x, value)
+                    widget.y = value / view_scale
+                    widget.x = int(db.x)
+                    return
+
                 else:
                     fixed.move(widget, x, y)
                     widget.x = int(x / view_scale)
