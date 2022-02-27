@@ -5,10 +5,8 @@ https://gist.github.com/KurtJacobson/57679e5036dc78e6a7a3ba5e0155dad1
 """
 
 import gi
-
 gi.require_version('Gtk', '3.0')
-
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk
 
 from nwg_displays.tools import *
 
@@ -81,20 +79,30 @@ def on_motion_notify_event(widget, event):
         px = x
         py = y
 
+        global snap_x
+        snap_x = []
         for db in display_buttons:
             if db == widget:
                 continue
-            if abs(widget.x - db.x) < 200:
-                print("snap")
-                fixed.move(widget, int(db.x * view_scale), y)
-                widget.x = int(db.x)
-                widget.y = int(db.y)
-                continue
-            else:
-                fixed.move(widget, x, y)
 
-                widget.x = int(x / view_scale)
-                widget.y = int(y / view_scale)
+            v = int(db.x * view_scale)
+            if v not in snap_x:
+                snap_x.append(v)
+
+            v = int((db.x + db.width) * view_scale)
+            if v not in snap_x:
+                snap_x.append(v)
+
+            for value in snap_x:
+                if 0 < abs(widget.x * view_scale - value) < 20:
+                    fixed.move(widget, value, y)
+                    widget.x = value / view_scale
+                    #widget.y = int(db.y)
+                    break
+                else:
+                    fixed.move(widget, x, y)
+                    widget.x = int(x / view_scale)
+                    widget.y = int(y / view_scale)
 
         update_form_from_widget(widget)
 
