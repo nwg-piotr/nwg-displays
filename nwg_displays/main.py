@@ -17,6 +17,7 @@ from nwg_displays.tools import *
 # lower values make movement smoother
 SENSITIVITY = 1
 view_scale = 0.1
+snap_threshold = 10
 
 EvMask = Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON1_MOTION_MASK
 
@@ -103,24 +104,24 @@ def on_motion_notify_event(widget, event):
 
         snap_h, snap_v = None, None
         for value in snap_x:
-            if abs(x - value) < 20:
+            if abs(x - value) < snap_threshold:
                 snap_h = value
                 break
 
         for value in snap_x:
             w = int(widget.width * view_scale)
-            if abs(w + x - value) < 20:
+            if abs(w + x - value) < snap_threshold:
                 snap_h = value - w
                 break
 
         for value in snap_y:
-            if abs(y - value) < 20:
+            if abs(y - value) < snap_threshold:
                 snap_v = value
                 break
 
         for value in snap_y:
             h = int(widget.height * view_scale)
-            if abs(h + y - value) < 20:
+            if abs(h + y - value) < snap_threshold:
                 snap_v = value - h
                 break
 
@@ -173,6 +174,7 @@ class DisplayButton(Gtk.Button):
         self.refresh = refresh
         self.modes = modes
         self.active = active
+        self.set_can_focus(False)
 
         self.set_events(EvMask)
         self.connect("button_press_event", on_button_press_event)
