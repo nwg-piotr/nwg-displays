@@ -81,7 +81,7 @@ def on_motion_notify_event(widget, event):
     if x != px or y != py:
         px = x
         py = y
-        snap_x, snap_y = [], []
+        snap_x, snap_y = [0], [0]
         for db in display_buttons:
             if db.name == widget.name:
                 continue
