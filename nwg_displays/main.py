@@ -41,8 +41,6 @@ form_scale = None
 form_refresh = None
 
 display_buttons = []
-snap_x = []
-snap_y = []
 
 
 def on_button_press_event(widget, event):
@@ -78,64 +76,75 @@ def on_motion_notify_event(widget, event):
     #   2) is a multiple of SENSITIVITY
     x = round_to_nearest_multiple(max_val(min_val(x, max_x), 0), SENSITIVITY)
     y = round_to_nearest_multiple(max_val(min_val(y, max_y), 0), SENSITIVITY)
+
     if x != px or y != py:
         px = x
         py = y
-
-        global snap_x
-        snap_x = []
-        global snap_y
-        snap_y = []
-
+        snap_x, snap_y = [], []
         for db in display_buttons:
-            if db == widget:
+            if db.name == widget.name:
                 continue
 
             val = int(db.x * view_scale)
             if val not in snap_x:
                 snap_x.append(val)
+                print("x >>", db.name, val)
 
             val = int((db.x + db.width) * view_scale)
             if val not in snap_x:
                 snap_x.append(val)
-
-            for value in snap_x:
-                if 0 < abs(widget.x * view_scale - value) < 10:
-                    fixed.move(widget, value, y)
-                    widget.x = value / view_scale
-                    widget.y = int(db.y)
-                    return
-
-                else:
-                    fixed.move(widget, x, y)
-                    widget.x = int(x / view_scale)
-                    widget.y = int(y / view_scale)
-
-        for db in display_buttons:
-            if db == widget:
-                continue
+                print("x >>", db.name, val)
 
             val = int(db.y * view_scale)
             if val not in snap_y:
                 snap_y.append(val)
+                print("y >>", db.name, val)
 
             val = int((db.y + db.height) * view_scale)
             if val not in snap_y:
                 snap_y.append(val)
+                print("y >>", db.name, val)
 
-            for value in snap_y:
-                if 0 < abs(widget.y * view_scale - value) < 10:
-                    fixed.move(widget, x, value)
-                    widget.y = value / view_scale
-                    widget.x = int(db.x)
-                    return
+            snap_x.sort()
+            snap_y.sort()
+            print("snap_x", snap_x)
+            print("snap_y", snap_y)
 
-                else:
-                    fixed.move(widget, x, y)
-                    widget.x = int(x / view_scale)
-                    widget.y = int(y / view_scale)
+        snap_h, snap_v = None, None
+        for value in snap_x:
+            if abs(x - value) < 20:
+                snap_h = value
+                print("snap_h", snap_h)
+                #break
 
-        update_form_from_widget(widget)
+        for value in snap_y:
+            if abs(y - value) < 20:
+                snap_v = value
+                print("snap_v", snap_v)
+                #break
+
+        if snap_h is None and snap_v is None:
+            fixed.move(widget, x, y)
+            widget.x = int(x / view_scale)
+            widget.y = int(y / view_scale)
+        else:
+
+            if snap_h is not None and snap_v is not None:
+                fixed.move(widget, snap_h, snap_v)
+                widget.x = snap_h
+                widget.y = snap_v
+
+            elif snap_h is not None:
+                fixed.move(widget, snap_h, y)
+                widget.x = snap_h
+                widget.y = y
+
+            elif snap_v is not None:
+                fixed.move(widget, x, snap_v)
+                widget.x = x
+                widget.y = snap_v
+
+    update_form_from_widget(widget)
 
 
 def update_form_from_widget(widget, *args):
