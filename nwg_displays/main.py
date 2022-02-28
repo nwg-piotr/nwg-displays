@@ -88,39 +88,40 @@ def on_motion_notify_event(widget, event):
             val = int(db.x * view_scale)
             if val not in snap_x:
                 snap_x.append(val)
-                print("x >>", db.name, val)
 
             val = int((db.x + db.width) * view_scale)
             if val not in snap_x:
                 snap_x.append(val)
-                print("x >>", db.name, val)
 
             val = int(db.y * view_scale)
             if val not in snap_y:
                 snap_y.append(val)
-                print("y >>", db.name, val)
 
             val = int((db.y + db.height) * view_scale)
             if val not in snap_y:
                 snap_y.append(val)
-                print("y >>", db.name, val)
-
-            snap_x.sort()
-            snap_y.sort()
-            print("snap_x", snap_x)
-            print("snap_y", snap_y)
 
         snap_h, snap_v = None, None
         for value in snap_x:
             if abs(x - value) < 20:
                 snap_h = value
-                print("snap_h", snap_h)
+                break
+
+        for value in snap_x:
+            w = int(widget.width * view_scale)
+            if abs(w + x - value) < 20:
+                snap_h = value - w
                 break
 
         for value in snap_y:
             if abs(y - value) < 20:
                 snap_v = value
-                print("snap_v", snap_v)
+                break
+
+        for value in snap_y:
+            h = int(widget.height * view_scale)
+            if abs(h + y - value) < 20:
+                snap_v = value - h
                 break
 
         if snap_h is None and snap_v is None:
