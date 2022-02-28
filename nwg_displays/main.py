@@ -115,13 +115,13 @@ def on_motion_notify_event(widget, event):
             if abs(x - value) < 20:
                 snap_h = value
                 print("snap_h", snap_h)
-                #break
+                break
 
         for value in snap_y:
             if abs(y - value) < 20:
                 snap_v = value
                 print("snap_v", snap_v)
-                #break
+                break
 
         if snap_h is None and snap_v is None:
             fixed.move(widget, x, y)
