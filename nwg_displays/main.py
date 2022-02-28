@@ -131,18 +131,18 @@ def on_motion_notify_event(widget, event):
 
             if snap_h is not None and snap_v is not None:
                 fixed.move(widget, snap_h, snap_v)
-                widget.x = snap_h
-                widget.y = snap_v
+                widget.x = int(snap_h / view_scale)
+                widget.y = int(snap_v / view_scale)
 
             elif snap_h is not None:
                 fixed.move(widget, snap_h, y)
-                widget.x = snap_h
-                widget.y = y
+                widget.x = int(snap_h / view_scale)
+                widget.y = int(y / view_scale)
 
             elif snap_v is not None:
                 fixed.move(widget, x, snap_v)
-                widget.x = x
-                widget.y = snap_v
+                widget.x = int(x / view_scale)
+                widget.y = int(snap_v / view_scale)
 
     update_form_from_widget(widget)
 
