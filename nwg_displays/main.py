@@ -174,8 +174,8 @@ class DisplayButton(Gtk.Button):
         self.refresh = refresh
         self.modes = modes
         self.active = active
-        self.set_can_focus(False)
 
+        self.set_can_focus(False)
         self.set_events(EvMask)
         self.connect("button_press_event", on_button_press_event)
         self.connect("motion_notify_event", on_motion_notify_event)
