@@ -2,9 +2,16 @@ button {
 	background: rgba (0, 0, 0, 0.4);
 	border-radius: 0px;
 	border: 1px solid;
-	border-color: rgba (255, 255, 255, 0.3)
+	border-color: rgba (255, 255, 255, 0.4);
+	color: #eee;
+	text-shadow: none;
+	box-shadow: none
 }
 
 button:hover {
 	background: rgba (32, 32, 255, 0.2)
+}
+
+#wrapper {
+    background: rgba (0, 0, 0, 0.5)
 }

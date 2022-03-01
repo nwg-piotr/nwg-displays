@@ -242,6 +242,9 @@ def main():
     adj = Gtk.Adjustment(lower=1, upper=1200, step_increment=1, page_increment=10, page_size=1)
     form_refresh.configure(adj, 1, 3)
 
+    wrapper = builder.get_object("wrapper")
+    wrapper.set_property("name", "wrapper")
+
     global fixed
     fixed = builder.get_object("fixed")
 
