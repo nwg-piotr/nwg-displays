@@ -46,6 +46,12 @@ display_buttons = []
 
 def on_button_press_event(widget, event):
     if event.button == 1:
+        for db in display_buttons:
+            if db.name == widget.name:
+                db.select()
+            else:
+                db.unselect()
+
         p = widget.get_parent()
         # offset == distance of parent widget from edge of screen ...
         global offset_x, offset_y
@@ -163,6 +169,7 @@ def update_form_from_widget(widget, *args):
 class DisplayButton(Gtk.Button):
     def __init__(self, name, description, x, y, width, height, transform, scale, refresh, modes, active):
         super().__init__()
+        # Output properties
         self.name = name
         self.description = description
         self.x = x
@@ -175,6 +182,8 @@ class DisplayButton(Gtk.Button):
         self.modes = modes
         self.active = active
 
+        # Button properties
+        self.selected = False
         self.set_can_focus(False)
         self.set_events(EvMask)
         self.connect("button_press_event", on_button_press_event)
@@ -186,6 +195,13 @@ class DisplayButton(Gtk.Button):
         self.set_size_request(int(self.width * view_scale), int(self.height * view_scale))
 
         self.show()
+
+    def select(self):
+        self.selected = True
+        self.set_property("name", "selected-output")
+
+    def unselect(self):
+        self.set_property("name", "")
 
 
 def main():
