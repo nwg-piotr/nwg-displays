@@ -29,13 +29,17 @@ def list_outputs():
                                        "height": item.rect.height}
 
             outputs_dict[item.name]["active"] = item.ipc_data["active"]
+            outputs_dict[item.name]["dpms"] = item.ipc_data["dpms"]
             outputs_dict[item.name]["transform"] = item.ipc_data["transform"] if "transform" in item.ipc_data else None
             outputs_dict[item.name]["scale"] = float(item.ipc_data["scale"]) if "scale" in item.ipc_data else None
+            outputs_dict[item.name]["scale_filter"] = item.ipc_data["scale_filter"]
+            outputs_dict[item.name]["adaptive_sync_status"] = item.ipc_data["adaptive_sync_status"]
             outputs_dict[item.name]["refresh"] = \
                 item.ipc_data["current_mode"]["refresh"] / 1000 if "refresh" in item.ipc_data["current_mode"] else None
             outputs_dict[item.name]["modes"] = item.ipc_data["modes"] if "modes" in item.ipc_data else []
             outputs_dict[item.name]["description"] = "{} {} {}".format(item.ipc_data["make"], item.ipc_data["model"],
                                                                        item.ipc_data["serial"])
+            outputs_dict[item.name]["focused"] = item.ipc_data["focused"]
 
     display = Gdk.Display.get_default()
     for i in range(display.get_n_monitors()):

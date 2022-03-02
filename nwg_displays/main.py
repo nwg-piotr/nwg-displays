@@ -6,6 +6,7 @@ https://gist.github.com/KurtJacobson/57679e5036dc78e6a7a3ba5e0155dad1
 
 import os
 import gi
+
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
@@ -34,12 +35,15 @@ max_y = 0
 # Glade form fields
 form_description = None
 form_active = None
+form_dpms = None
 form_x = None
 form_y = None
 form_width = None
 form_height = None
 form_scale = None
+form_scale_filter = None
 form_refresh = None
+form_adaptive_sync = None
 
 display_buttons = []
 
@@ -158,16 +162,20 @@ def on_motion_notify_event(widget, event):
 def update_form_from_widget(widget, *args):
     form_description.set_text("{} ({})".format(widget.description, widget.name))
     form_active.set_active(widget.active)
+    form_dpms.set_active(widget.dpms)
+    form_adaptive_sync.set_active(widget.adaptive_sync)
     form_x.set_value(widget.x)
     form_y.set_value(widget.y)
     form_width.set_value(widget.width)
     form_height.set_value(widget.height)
     form_scale.set_value(widget.scale)
+    form_scale_filter.set_active_id(widget.scale_filter)
     form_refresh.set_value(widget.refresh)
 
 
 class DisplayButton(Gtk.Button):
-    def __init__(self, name, description, x, y, width, height, transform, scale, refresh, modes, active):
+    def __init__(self, name, description, x, y, width, height, transform, scale, scale_filter, refresh, modes, active,
+                 dpms, adaptive_sync_status, focused):
         super().__init__()
         # Output properties
         self.name = name
@@ -178,9 +186,13 @@ class DisplayButton(Gtk.Button):
         self.height = height
         self.transform = transform
         self.scale = scale
+        self.scale_filter = scale_filter
         self.refresh = refresh
         self.modes = modes
         self.active = active
+        self.dpms = dpms
+        self.adaptive_sync = adaptive_sync_status == "enabled"  # converts "enabled | disabled" to bool
+        self.focused = focused
 
         # Button properties
         self.selected = False
@@ -228,6 +240,12 @@ def main():
     global form_active
     form_active = builder.get_object("active")
 
+    global form_dpms
+    form_dpms = builder.get_object("dpms")
+
+    global form_adaptive_sync
+    form_adaptive_sync = builder.get_object("adaptive-sync")
+
     global form_x
     form_x = builder.get_object("x")
     adj = Gtk.Adjustment(lower=0, upper=60000, step_increment=1, page_increment=10, page_size=1)
@@ -253,6 +271,9 @@ def main():
     adj = Gtk.Adjustment(lower=0.1, upper=1000, step_increment=0.1, page_increment=10, page_size=1)
     form_scale.configure(adj, 0.1, 1)
 
+    global form_scale_filter
+    form_scale_filter = builder.get_object("scale-filter")
+
     global form_refresh
     form_refresh = builder.get_object("refresh")
     adj = Gtk.Adjustment(lower=1, upper=1200, step_increment=1, page_increment=10, page_size=1)
@@ -270,8 +291,8 @@ def main():
     for key in outputs:
         item = outputs[key]
         b = DisplayButton(key, item["description"], item["x"], item["y"], int(item["width"]), int(item["height"]),
-                          item["transform"], item["scale"], item["refresh"], item["modes"],
-                          item["active"])
+                          item["transform"], item["scale"], item["scale_filter"], item["refresh"], item["modes"],
+                          item["active"], item["dpms"], item["adaptive_sync_status"], item["focused"])
         display_buttons.append(b)
 
         fixed.put(b, int(item["x"] * view_scale), int(item["y"] * view_scale))
