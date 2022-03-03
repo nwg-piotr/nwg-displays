@@ -33,9 +33,12 @@ max_x = 0
 max_y = 0
 
 # Glade form fields
+form_name = None
 form_description = None
 form_active = None
 form_dpms = None
+form_adaptive_sync = None
+form_view_scale = None
 form_x = None
 form_y = None
 form_width = None
@@ -43,9 +46,10 @@ form_height = None
 form_scale = None
 form_scale_filter = None
 form_refresh = None
-form_adaptive_sync = None
 form_modes = None
 form_transform = None
+form_close = None
+form_apply = None
 
 display_buttons = []
 
@@ -162,10 +166,12 @@ def on_motion_notify_event(widget, event):
 
 
 def update_form_from_widget(widget, *args):
-    form_description.set_text("{} ({})".format(widget.description, widget.name))
+    form_name.set_text(widget.name)
+    form_description.set_text(widget.description)
     form_active.set_active(widget.active)
     form_dpms.set_active(widget.dpms)
     form_adaptive_sync.set_active(widget.adaptive_sync)
+    form_view_scale.set_value(view_scale)  # not really from the widget, but from the global value
     form_x.set_value(widget.x)
     form_y.set_value(widget.y)
     form_width.set_value(widget.width)
@@ -234,6 +240,17 @@ class DisplayButton(Gtk.Button):
     def unselect(self):
         self.set_property("name", "output")
 
+    def rescale(self):
+        self.set_size_request(int(self.width * view_scale), int(self.height * view_scale))
+
+
+def update_widgets_from_form(*args):
+    global view_scale
+    view_scale = form_view_scale.get_value()
+    for b in display_buttons:
+        b.rescale()
+        fixed.move(b, b.x * view_scale, b.y * view_scale)
+
 
 def main():
     builder = Gtk.Builder()
@@ -253,6 +270,9 @@ def main():
 
     window.connect('destroy', Gtk.main_quit)
 
+    global form_name
+    form_name = builder.get_object("name")
+
     global form_description
     form_description = builder.get_object("description")
 
@@ -264,6 +284,12 @@ def main():
 
     global form_adaptive_sync
     form_adaptive_sync = builder.get_object("adaptive-sync")
+
+    global form_view_scale
+    form_view_scale = builder.get_object("view-scale")
+    adj = Gtk.Adjustment(lower=0.1, upper=0.6, step_increment=0.1, page_increment=0.1, page_size=0.1)
+    form_view_scale.configure(adj, 1, 2)
+    form_view_scale.connect("changed", update_widgets_from_form)
 
     global form_x
     form_x = builder.get_object("x")
@@ -303,6 +329,13 @@ def main():
 
     global form_transform
     form_transform = builder.get_object("transform")
+
+    global form_close
+    form_close = builder.get_object("close")
+    form_close.connect("clicked", Gtk.main_quit)
+
+    global form_apply
+    form_apply = builder.get_object("apply")
 
     wrapper = builder.get_object("wrapper")
     wrapper.set_property("name", "wrapper")
