@@ -1,4 +1,4 @@
-button {
+#output {
 	background: rgba (0, 0, 0, 0.4);
 	border-radius: 0px;
 	border: 1px solid;
@@ -8,16 +8,21 @@ button {
 	box-shadow: none
 }
 
-button:hover {
-	text-decoration: underline;
+#output:hover {
 	background: rgba (92, 92, 92, 0.1)
+}
+
+#selected-output {
+    background: rgba (0, 0, 0, 0.4);
+	border-radius: 0px;
+	border: 1px solid;
+	border-color: rgba (200, 200, 255, 0.6);
+	color: #eee;
+	text-shadow: none;
+	box-shadow: none;
+    font-weight: bold
 }
 
 #wrapper {
     background: rgba (0, 0, 0, 0.5)
-}
-
-#selected-output {
-    border-color: rgba (200, 200, 255, 0.6);
-    font-weight: bold
 }

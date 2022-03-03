@@ -106,8 +106,8 @@
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="halign">center</property>
-                    <property name="margin-start">6</property>
-                    <property name="margin-end">6</property>
+                    <property name="margin-start">3</property>
+                    <property name="margin-end">3</property>
                     <property name="label" translatable="yes">Y:</property>
                   </object>
                   <packing>
@@ -133,8 +133,8 @@
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="halign">center</property>
-                    <property name="margin-start">6</property>
-                    <property name="margin-end">6</property>
+                    <property name="margin-start">3</property>
+                    <property name="margin-end">3</property>
                     <property name="label" translatable="yes">x</property>
                   </object>
                   <packing>
@@ -313,7 +313,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkComboBoxText">
+                  <object class="GtkComboBoxText" id="modes">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                   </object>
@@ -328,7 +328,7 @@
                     <property name="can-focus">False</property>
                     <property name="halign">end</property>
                     <property name="margin-end">6</property>
-                    <property name="label" translatable="yes">Description:</property>
+                    <property name="label" translatable="yes">Display:</property>
                   </object>
                   <packing>
                     <property name="left-attach">0</property>
@@ -336,16 +336,74 @@
                   </packing>
                 </child>
                 <child>
-                  <placeholder/>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">Transform:</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">3</property>
+                  </packing>
                 </child>
                 <child>
-                  <placeholder/>
+                  <object class="GtkComboBoxText" id="transform">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <items>
+                      <item id="normal" translatable="yes">normal</item>
+                      <item id="90" translatable="yes">90°</item>
+                      <item id="180" translatable="yes">180°</item>
+                      <item id="270" translatable="yes">270°</item>
+                      <item id="flipped" translatable="yes">flipped</item>
+                      <item id="flipped-90" translatable="yes">flipped-90°</item>
+                      <item id="flipped-180" translatable="yes">flipped-180°</item>
+                      <item id="flipped-270" translatable="yes">flipped-270°</item>
+                    </items>
+                  </object>
+                  <packing>
+                    <property name="left-attach">1</property>
+                    <property name="top-attach">3</property>
+                  </packing>
                 </child>
                 <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
+                  <object class="GtkBox">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="homogeneous">True</property>
+                    <child>
+                      <object class="GtkButton" id="close">
+                        <property name="label" translatable="yes">Close</property>
+                        <property name="visible">True</property>
+                        <property name="can-focus">True</property>
+                        <property name="receives-default">True</property>
+                        <property name="margin-end">6</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="apply">
+                        <property name="label" translatable="yes">Apply</property>
+                        <property name="visible">True</property>
+                        <property name="can-focus">True</property>
+                        <property name="receives-default">True</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="left-attach">6</property>
+                    <property name="top-attach">3</property>
+                    <property name="width">2</property>
+                  </packing>
                 </child>
                 <child>
                   <placeholder/>

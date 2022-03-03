@@ -44,6 +44,8 @@ form_scale = None
 form_scale_filter = None
 form_refresh = None
 form_adaptive_sync = None
+form_modes = None
+form_transform = None
 
 display_buttons = []
 
@@ -171,6 +173,22 @@ def update_form_from_widget(widget, *args):
     form_scale.set_value(widget.scale)
     form_scale_filter.set_active_id(widget.scale_filter)
     form_refresh.set_value(widget.refresh)
+    form_modes.remove_all()
+    active = ""
+    for mode in widget.modes:
+        m = "{}x{}@{}Hz".format(mode["width"], mode["height"], mode["refresh"] / 1000)
+        if "90" in widget.transform or "270"  in widget.transform:
+            if mode["width"] == widget.height and mode["height"] == widget.width and mode[
+                    "refresh"] / 1000 == widget.refresh:
+                active = m
+        else:
+            if mode["width"] == widget.width and mode["height"] == widget.height and mode[
+                    "refresh"] / 1000 == widget.refresh:
+                active = m
+        form_modes.append(m, m)
+    if active:
+        form_modes.set_active_id(active)
+    form_transform.set_active_id(widget.transform)
 
 
 class DisplayButton(Gtk.Button):
@@ -205,6 +223,7 @@ class DisplayButton(Gtk.Button):
         self.set_always_show_image(True)
         self.set_label(self.name)
         self.set_size_request(int(self.width * view_scale), int(self.height * view_scale))
+        self.set_property("name", "output")
 
         self.show()
 
@@ -213,7 +232,7 @@ class DisplayButton(Gtk.Button):
         self.set_property("name", "selected-output")
 
     def unselect(self):
-        self.set_property("name", "")
+        self.set_property("name", "output")
 
 
 def main():
@@ -279,6 +298,12 @@ def main():
     adj = Gtk.Adjustment(lower=1, upper=1200, step_increment=1, page_increment=10, page_size=1)
     form_refresh.configure(adj, 1, 3)
 
+    global form_modes
+    form_modes = builder.get_object("modes")
+
+    global form_transform
+    form_transform = builder.get_object("transform")
+
     wrapper = builder.get_object("wrapper")
     wrapper.set_property("name", "wrapper")
 
@@ -299,6 +324,7 @@ def main():
 
     if display_buttons:
         update_form_from_widget(display_buttons[0])
+        display_buttons[0].select()
 
     window.show_all()
     Gtk.main()
