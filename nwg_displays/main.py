@@ -251,7 +251,6 @@ def update_widgets_from_form(*args):
 
     global snap_threshold, snap_threshold_scaled
     snap_threshold_scaled = round(snap_threshold * view_scale * 10)
-    print(view_scale, snap_threshold_scaled)
 
     for b in display_buttons:
         b.rescale()
@@ -296,7 +295,7 @@ def main():
 
     global form_view_scale
     form_view_scale = builder.get_object("view-scale")
-    adj = Gtk.Adjustment(lower=0.1, upper=0.6, step_increment=0.1, page_increment=0.1, page_size=0.1)
+    adj = Gtk.Adjustment(lower=0.1, upper=0.6, step_increment=0.05, page_increment=0.1, page_size=0.1)
     form_view_scale.configure(adj, 1, 2)
     form_view_scale.connect("changed", update_widgets_from_form)
 
