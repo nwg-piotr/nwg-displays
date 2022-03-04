@@ -19,6 +19,7 @@ from nwg_displays.tools import *
 SENSITIVITY = 1
 view_scale = 0.1
 snap_threshold = 10
+snap_threshold_scaled = None
 
 EvMask = Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON1_MOTION_MASK
 
@@ -102,65 +103,65 @@ def on_motion_notify_event(widget, event):
             if db.name == widget.name:
                 continue
 
-            val = int(db.x * view_scale)
+            val = round(db.x * view_scale)
             if val not in snap_x:
                 snap_x.append(val)
 
-            val = int((db.x + db.width) * view_scale)
+            val = round((db.x + db.width) * view_scale)
             if val not in snap_x:
                 snap_x.append(val)
 
-            val = int(db.y * view_scale)
+            val = round(db.y * view_scale)
             if val not in snap_y:
                 snap_y.append(val)
 
-            val = int((db.y + db.height) * view_scale)
+            val = round((db.y + db.height) * view_scale)
             if val not in snap_y:
                 snap_y.append(val)
 
         snap_h, snap_v = None, None
         for value in snap_x:
-            if abs(x - value) < snap_threshold:
+            if abs(x - value) < snap_threshold_scaled:
                 snap_h = value
                 break
 
         for value in snap_x:
-            w = int(widget.width * view_scale)
-            if abs(w + x - value) < snap_threshold:
+            w = round(widget.width * view_scale)
+            if abs(w + x - value) < snap_threshold_scaled:
                 snap_h = value - w
                 break
 
         for value in snap_y:
-            if abs(y - value) < snap_threshold:
+            if abs(y - value) < snap_threshold_scaled:
                 snap_v = value
                 break
 
         for value in snap_y:
-            h = int(widget.height * view_scale)
-            if abs(h + y - value) < snap_threshold:
+            h = round(widget.height * view_scale)
+            if abs(h + y - value) < snap_threshold_scaled:
                 snap_v = value - h
                 break
 
         if snap_h is None and snap_v is None:
             fixed.move(widget, x, y)
-            widget.x = int(x / view_scale)
-            widget.y = int(y / view_scale)
+            widget.x = round(x / view_scale)
+            widget.y = round(y / view_scale)
         else:
 
             if snap_h is not None and snap_v is not None:
                 fixed.move(widget, snap_h, snap_v)
-                widget.x = int(snap_h / view_scale)
-                widget.y = int(snap_v / view_scale)
+                widget.x = round(snap_h / view_scale)
+                widget.y = round(snap_v / view_scale)
 
             elif snap_h is not None:
                 fixed.move(widget, snap_h, y)
-                widget.x = int(snap_h / view_scale)
-                widget.y = int(y / view_scale)
+                widget.x = round(snap_h / view_scale)
+                widget.y = round(y / view_scale)
 
             elif snap_v is not None:
                 fixed.move(widget, x, snap_v)
-                widget.x = int(x / view_scale)
-                widget.y = int(snap_v / view_scale)
+                widget.x = round(x / view_scale)
+                widget.y = round(snap_v / view_scale)
 
     update_form_from_widget(widget)
 
@@ -228,7 +229,7 @@ class DisplayButton(Gtk.Button):
         self.connect("button-release-event", update_form_from_widget)
         self.set_always_show_image(True)
         self.set_label(self.name)
-        self.set_size_request(int(self.width * view_scale), int(self.height * view_scale))
+        self.set_size_request(round(self.width * view_scale), round(self.height * view_scale))
         self.set_property("name", "output")
 
         self.show()
@@ -241,18 +242,26 @@ class DisplayButton(Gtk.Button):
         self.set_property("name", "output")
 
     def rescale(self):
-        self.set_size_request(int(self.width * view_scale), int(self.height * view_scale))
+        self.set_size_request(round(self.width * view_scale), round(self.height * view_scale))
 
 
 def update_widgets_from_form(*args):
     global view_scale
     view_scale = form_view_scale.get_value()
+
+    global snap_threshold, snap_threshold_scaled
+    snap_threshold_scaled = round(snap_threshold * view_scale * 10)
+    print(view_scale, snap_threshold_scaled)
+
     for b in display_buttons:
         b.rescale()
         fixed.move(b, b.x * view_scale, b.y * view_scale)
 
 
 def main():
+    global snap_threshold, snap_threshold_scaled
+    snap_threshold_scaled = snap_threshold
+
     builder = Gtk.Builder()
     builder.add_from_file("main.glade")
 
@@ -348,12 +357,12 @@ def main():
     global display_buttons
     for key in outputs:
         item = outputs[key]
-        b = DisplayButton(key, item["description"], item["x"], item["y"], int(item["width"]), int(item["height"]),
+        b = DisplayButton(key, item["description"], item["x"], item["y"], round(item["width"]), round(item["height"]),
                           item["transform"], item["scale"], item["scale_filter"], item["refresh"], item["modes"],
                           item["active"], item["dpms"], item["adaptive_sync_status"], item["focused"])
         display_buttons.append(b)
 
-        fixed.put(b, int(item["x"] * view_scale), int(item["y"] * view_scale))
+        fixed.put(b, round(item["x"] * view_scale), round(item["y"] * view_scale))
 
     if display_buttons:
         update_form_from_widget(display_buttons[0])
