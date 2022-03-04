@@ -26,6 +26,8 @@ EvMask = Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON1_MOTION_MASK
 outputs = {}
 fixed = Gtk.Fixed()
 
+selected_output_button = None
+
 offset_x = 0
 offset_y = 0
 px = 0
@@ -180,11 +182,14 @@ def update_form_from_widget(widget, *args):
     form_scale.set_value(widget.scale)
     form_scale_filter.set_active_id(widget.scale_filter)
     form_refresh.set_value(widget.refresh)
+
     form_modes.remove_all()
     active = ""
     for mode in widget.modes:
         m = "{}x{}@{}Hz".format(mode["width"], mode["height"], mode["refresh"] / 1000)
-        if "90" in widget.transform or "270"  in widget.transform:
+        form_modes.append(m, m)
+        # This is just to set active_id
+        if "90" in widget.transform or "270" in widget.transform:
             if mode["width"] == widget.height and mode["height"] == widget.width and mode[
                     "refresh"] / 1000 == widget.refresh:
                 active = m
@@ -192,9 +197,9 @@ def update_form_from_widget(widget, *args):
             if mode["width"] == widget.width and mode["height"] == widget.height and mode[
                     "refresh"] / 1000 == widget.refresh:
                 active = m
-        form_modes.append(m, m)
     if active:
         form_modes.set_active_id(active)
+
     form_transform.set_active_id(widget.transform)
 
 
@@ -237,6 +242,8 @@ class DisplayButton(Gtk.Button):
     def select(self):
         self.selected = True
         self.set_property("name", "selected-output")
+        global selected_output_button
+        selected_output_button = self
 
     def unselect(self):
         self.set_property("name", "output")
@@ -246,15 +253,32 @@ class DisplayButton(Gtk.Button):
 
 
 def update_widgets_from_form(*args):
-    global view_scale
-    view_scale = form_view_scale.get_value()
+    print("update_widgets_from_form")
+    if selected_output_button:  # at first display_buttons are not yet instantiated
+        global view_scale
+        view_scale = form_view_scale.get_value()
 
-    global snap_threshold, snap_threshold_scaled
-    snap_threshold_scaled = round(snap_threshold * view_scale * 10)
+        global snap_threshold, snap_threshold_scaled
+        snap_threshold_scaled = round(snap_threshold * view_scale * 10)
 
-    for b in display_buttons:
-        b.rescale()
-        fixed.move(b, b.x * view_scale, b.y * view_scale)
+        transform = form_transform.get_active_id()
+        if orientation_changed(transform, selected_output_button.transform):
+            selected_output_button.width, selected_output_button.height = selected_output_button.height, selected_output_button.width
+            selected_output_button.transform = transform
+
+        # On scale changed
+        for b in display_buttons:
+            b.rescale()
+            fixed.move(b, b.x * view_scale, b.y * view_scale)
+
+
+def orientation_changed(transform, transform_old):
+    return (is_rotated(transform) and not is_rotated(transform_old)) or (
+            is_rotated(transform_old) and not is_rotated(transform))
+
+
+def is_rotated(transform):
+    return "90" in transform or "270" in transform
 
 
 def main():
@@ -272,7 +296,6 @@ def main():
     try:
         file = os.path.join(dir_name, "style.css")
         provider.load_from_path(file)
-        print("Using style: {}".format(file))
     except:
         sys.stderr.write("ERROR: {} file not found, using GTK styling\n".format(os.path.join(dir_name, "style.css")))
 
@@ -337,6 +360,7 @@ def main():
 
     global form_transform
     form_transform = builder.get_object("transform")
+    form_transform.connect("changed", update_widgets_from_form)
 
     global form_close
     form_close = builder.get_object("close")
