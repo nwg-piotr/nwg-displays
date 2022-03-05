@@ -20,6 +20,7 @@ SENSITIVITY = 1
 view_scale = 0.1
 snap_threshold = 10
 snap_threshold_scaled = None
+update_form = True
 
 EvMask = Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON1_MOTION_MASK
 
@@ -78,6 +79,8 @@ def on_button_press_event(widget, event):
         global max_x, max_y
         max_x = round_down_to_multiple(p.get_allocation().width - widget.get_allocation().width, SENSITIVITY)
         max_y = round_down_to_multiple(p.get_allocation().height - widget.get_allocation().height, SENSITIVITY)
+
+        update_form_from_widget(selected_output_button)
 
 
 def on_motion_notify_event(widget, event):
@@ -169,38 +172,40 @@ def on_motion_notify_event(widget, event):
 
 
 def update_form_from_widget(widget, *args):
-    form_name.set_text(widget.name)
-    form_description.set_text(widget.description)
-    form_active.set_active(widget.active)
-    form_dpms.set_active(widget.dpms)
-    form_adaptive_sync.set_active(widget.adaptive_sync)
-    form_view_scale.set_value(view_scale)  # not really from the widget, but from the global value
-    form_x.set_value(widget.x)
-    form_y.set_value(widget.y)
-    form_width.set_value(widget.width)
-    form_height.set_value(widget.height)
-    form_scale.set_value(widget.scale)
-    form_scale_filter.set_active_id(widget.scale_filter)
-    form_refresh.set_value(widget.refresh)
+    if update_form:
+        print("Updating form")
+        form_name.set_text(widget.name)
+        form_description.set_text(widget.description)
+        form_active.set_active(widget.active)
+        form_dpms.set_active(widget.dpms)
+        form_adaptive_sync.set_active(widget.adaptive_sync)
+        form_view_scale.set_value(view_scale)  # not really from the widget, but from the global value
+        form_x.set_value(widget.x)
+        form_y.set_value(widget.y)
+        form_width.set_value(widget.width)
+        form_height.set_value(widget.height)
+        form_scale.set_value(widget.scale)
+        form_scale_filter.set_active_id(widget.scale_filter)
+        form_refresh.set_value(widget.refresh)
 
-    form_modes.remove_all()
-    active = ""
-    for mode in widget.modes:
-        m = "{}x{}@{}Hz".format(mode["width"], mode["height"], mode["refresh"] / 1000)
-        form_modes.append(m, m)
-        # This is just to set active_id
-        if "90" in widget.transform or "270" in widget.transform:
-            if mode["width"] == widget.height and mode["height"] == widget.width and mode[
-                    "refresh"] / 1000 == widget.refresh:
-                active = m
-        else:
-            if mode["width"] == widget.width and mode["height"] == widget.height and mode[
-                    "refresh"] / 1000 == widget.refresh:
-                active = m
-    if active:
-        form_modes.set_active_id(active)
+        form_modes.remove_all()
+        active = ""
+        for mode in widget.modes:
+            m = "{}x{}@{}Hz".format(mode["width"], mode["height"], mode["refresh"] / 1000)
+            form_modes.append(m, m)
+            # This is just to set active_id
+            if "90" in widget.transform or "270" in widget.transform:
+                if mode["width"] == widget.height and mode["height"] == widget.width and mode[
+                        "refresh"] / 1000 == widget.refresh:
+                    active = m
+            else:
+                if mode["width"] == widget.width and mode["height"] == widget.height and mode[
+                        "refresh"] / 1000 == widget.refresh:
+                    active = m
+        if active:
+            form_modes.set_active_id(active)
 
-    form_transform.set_active_id(widget.transform)
+        form_transform.set_active_id(widget.transform)
 
 
 class DisplayButton(Gtk.Button):
@@ -230,8 +235,6 @@ class DisplayButton(Gtk.Button):
         self.set_events(EvMask)
         self.connect("button_press_event", on_button_press_event)
         self.connect("motion_notify_event", on_motion_notify_event)
-        self.connect("button-press-event", update_form_from_widget)
-        self.connect("button-release-event", update_form_from_widget)
         self.set_always_show_image(True)
         self.set_label(self.name)
         self.set_size_request(round(self.width * view_scale), round(self.height * view_scale))
@@ -252,8 +255,7 @@ class DisplayButton(Gtk.Button):
         self.set_size_request(round(self.width * view_scale), round(self.height * view_scale))
 
 
-def update_widgets_from_form(*args):
-    print("update_widgets_from_form")
+def update_widgets_from_form(*args, give_back=True):
     if selected_output_button:  # at first display_buttons are not yet instantiated
         global view_scale
         view_scale = form_view_scale.get_value()
@@ -270,6 +272,9 @@ def update_widgets_from_form(*args):
         for b in display_buttons:
             b.rescale()
             fixed.move(b, b.x * view_scale, b.y * view_scale)
+
+    global update_form
+    update_form = give_back
 
 
 def orientation_changed(transform, transform_old):
@@ -320,7 +325,7 @@ def main():
     form_view_scale = builder.get_object("view-scale")
     adj = Gtk.Adjustment(lower=0.1, upper=0.6, step_increment=0.05, page_increment=0.1, page_size=0.1)
     form_view_scale.configure(adj, 1, 2)
-    form_view_scale.connect("changed", update_widgets_from_form)
+    form_view_scale.connect("changed", update_widgets_from_form, False)
 
     global form_x
     form_x = builder.get_object("x")
