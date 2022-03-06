@@ -287,6 +287,18 @@ def on_pos_y_changed(widget):
         fixed.move(selected_output_button, selected_output_button.x * view_scale, selected_output_button.y * view_scale)
 
 
+def on_width_changed(widget):
+    if selected_output_button:
+        selected_output_button.width = round(widget.get_value())
+        selected_output_button.rescale()
+
+
+def on_height_changed(widget):
+    if selected_output_button:
+        selected_output_button.height = round(widget.get_value())
+        selected_output_button.rescale()
+
+
 def main():
     global snap_threshold, snap_threshold_scaled
     snap_threshold_scaled = snap_threshold
@@ -344,11 +356,13 @@ def main():
     form_width = builder.get_object("width")
     adj = Gtk.Adjustment(lower=0, upper=7680, step_increment=1, page_increment=10, page_size=1)
     form_width.configure(adj, 1, 0)
+    form_width.connect("value-changed", on_width_changed)
 
     global form_height
     form_height = builder.get_object("height")
     adj = Gtk.Adjustment(lower=0, upper=4320, step_increment=1, page_increment=10, page_size=1)
     form_height.configure(adj, 1, 0)
+    form_height.connect("value-changed", on_height_changed)
 
     global form_scale
     form_scale = builder.get_object("scale")
