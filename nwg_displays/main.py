@@ -112,7 +112,7 @@ def on_motion_notify_event(widget, event):
             if val not in snap_x:
                 snap_x.append(val)
 
-            val = round((db.x + db.width) * view_scale)
+            val = round((db.x + db.width / db.scale) * view_scale)
             if val not in snap_x:
                 snap_x.append(val)
 
@@ -120,7 +120,7 @@ def on_motion_notify_event(widget, event):
             if val not in snap_y:
                 snap_y.append(val)
 
-            val = round((db.y + db.height) * view_scale)
+            val = round((db.y + db.height / db.scale) * view_scale)
             if val not in snap_y:
                 snap_y.append(val)
 
@@ -131,7 +131,7 @@ def on_motion_notify_event(widget, event):
                 break
 
         for value in snap_x:
-            w = round(widget.width * view_scale)
+            w = round(widget.width * view_scale / widget.scale)
             if abs(w + x - value) < snap_threshold_scaled:
                 snap_h = value - w
                 break
@@ -142,7 +142,7 @@ def on_motion_notify_event(widget, event):
                 break
 
         for value in snap_y:
-            h = round(widget.height * view_scale)
+            h = round(widget.height * view_scale / widget.scale)
             if abs(h + y - value) < snap_threshold_scaled:
                 snap_v = value - h
                 break
@@ -236,7 +236,7 @@ class DisplayButton(Gtk.Button):
         self.connect("motion_notify_event", on_motion_notify_event)
         self.set_always_show_image(True)
         self.set_label(self.name)
-        self.set_size_request(round(self.width * view_scale), round(self.height * view_scale))
+        self.set_size_request(round(self.width * view_scale / self.scale), round(self.height * view_scale / self.scale))
         self.set_property("name", "output")
 
         self.show()
@@ -251,10 +251,10 @@ class DisplayButton(Gtk.Button):
         self.set_property("name", "output")
 
     def rescale(self):
-        self.set_size_request(round(self.width * view_scale), round(self.height * view_scale))
+        self.set_size_request(round(self.width * view_scale / self.scale), round(self.height * view_scale / self.scale))
 
 
-def on_scale_changed(*args):
+def on_view_scale_changed(*args):
     global view_scale
     view_scale = form_view_scale.get_value()
 
@@ -299,6 +299,12 @@ def on_height_changed(widget):
         selected_output_button.rescale()
 
 
+def on_scale_changed(widget):
+    if selected_output_button:
+        selected_output_button.scale = widget.get_value()
+        selected_output_button.rescale()
+
+
 def main():
     global snap_threshold, snap_threshold_scaled
     snap_threshold_scaled = snap_threshold
@@ -338,7 +344,7 @@ def main():
     form_view_scale = builder.get_object("view-scale")
     adj = Gtk.Adjustment(lower=0.1, upper=0.6, step_increment=0.05, page_increment=0.1, page_size=0.1)
     form_view_scale.configure(adj, 1, 2)
-    form_view_scale.connect("changed", on_scale_changed)
+    form_view_scale.connect("changed", on_view_scale_changed)
 
     global form_x
     form_x = builder.get_object("x")
@@ -366,8 +372,9 @@ def main():
 
     global form_scale
     form_scale = builder.get_object("scale")
-    adj = Gtk.Adjustment(lower=0.1, upper=1000, step_increment=0.1, page_increment=10, page_size=1)
+    adj = Gtk.Adjustment(lower=0.1, upper=10, step_increment=0.1, page_increment=10, page_size=1)
     form_scale.configure(adj, 0.1, 1)
+    form_scale.connect("value-changed", on_scale_changed)
 
     global form_scale_filter
     form_scale_filter = builder.get_object("scale-filter")
