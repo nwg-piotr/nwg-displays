@@ -73,3 +73,12 @@ def round_to_nearest_multiple(i, m):
     if i % m > m / 2:
         return (i / m + 1) * m
     return i / m * m
+
+
+def orientation_changed(transform, transform_old):
+    return (is_rotated(transform) and not is_rotated(transform_old)) or (
+            is_rotated(transform_old) and not is_rotated(transform))
+
+
+def is_rotated(transform):
+    return "90" in transform or "270" in transform
