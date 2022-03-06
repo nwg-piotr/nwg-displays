@@ -244,18 +244,6 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="halign">end</property>
-                    <property name="label" translatable="yes">Modes:</property>
-                  </object>
-                  <packing>
-                    <property name="left-attach">6</property>
-                    <property name="top-attach">2</property>
-                  </packing>
-                </child>
-                <child>
                   <object class="GtkComboBoxText" id="modes">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
@@ -443,6 +431,19 @@
                   <packing>
                     <property name="left-attach">7</property>
                     <property name="top-attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="halign">end</property>
+                    <property name="margin-end">6</property>
+                    <property name="label" translatable="yes">Modes:</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">6</property>
+                    <property name="top-attach">2</property>
                   </packing>
                 </child>
                 <child>

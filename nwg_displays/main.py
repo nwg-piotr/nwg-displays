@@ -18,7 +18,7 @@ from nwg_displays.tools import *
 # higher values make movement more performant
 # lower values make movement smoother
 SENSITIVITY = 1
-view_scale = 0.1
+view_scale = 0.15
 snap_threshold = 10
 snap_threshold_scaled = None
 
@@ -28,6 +28,13 @@ outputs = {}
 fixed = Gtk.Fixed()
 
 selected_output_button = None
+
+"""
+We need to rebuild the modes GtkComboBoxText on each DisplayButton click. Unfortunately appending an item fires the
+"change" event every time (and we have no "value-changed" event here). Setting `on_mode_changed_silent` True will 
+prevent the `on_mode_changed` function from working.
+"""
+on_mode_changed_silent = False
 
 offset_x = 0
 offset_y = 0
@@ -172,7 +179,7 @@ def on_motion_notify_event(widget, event):
 
 
 def update_form_from_widget(widget):
-    print("Updating form")
+    print("Updating form from widget", widget.name)
     form_name.set_text(widget.name)
     form_description.set_text(widget.description)
     form_active.set_active(widget.active)
@@ -186,6 +193,9 @@ def update_form_from_widget(widget):
     form_scale.set_value(widget.scale)
     form_scale_filter.set_active_id(widget.scale_filter)
     form_refresh.set_value(widget.refresh)
+
+    global on_mode_changed_silent
+    on_mode_changed_silent = True
 
     form_modes.remove_all()
     active = ""
@@ -206,6 +216,8 @@ def update_form_from_widget(widget):
 
     form_transform.set_active_id(widget.transform)
 
+    on_mode_changed_silent = False
+
 
 class DisplayButton(Gtk.Button):
     def __init__(self, name, description, x, y, width, height, transform, scale, scale_filter, refresh, modes, active,
@@ -222,7 +234,11 @@ class DisplayButton(Gtk.Button):
         self.scale = scale
         self.scale_filter = scale_filter
         self.refresh = refresh
-        self.modes = modes
+        self.modes = []
+        for m in modes:
+            if m not in self.modes:
+                self.modes.append(m)
+        # self.modes = modes
         self.active = active
         self.dpms = dpms
         self.adaptive_sync = adaptive_sync_status == "enabled"  # converts "enabled | disabled" to bool
@@ -305,6 +321,26 @@ def on_scale_changed(widget):
         selected_output_button.rescale()
 
 
+def on_scale_filter_changed(widget):
+    if selected_output_button:
+        selected_output_button.scale_filter = widget.get_active_id()
+
+
+def on_mode_changed(widget):
+    if selected_output_button and not on_mode_changed_silent:
+        mode = selected_output_button.modes[widget.get_active()]
+        if "90" in selected_output_button.transform or "270" in selected_output_button.transform:
+            selected_output_button.width = mode["height"]
+            selected_output_button.height = mode["width"]
+        else:
+            selected_output_button.width = mode["width"]
+            selected_output_button.height = mode["height"]
+        selected_output_button.refresh = mode["refresh"] / 1000
+        selected_output_button.rescale()
+
+        update_form_from_widget(selected_output_button)
+
+
 def main():
     global snap_threshold, snap_threshold_scaled
     snap_threshold_scaled = snap_threshold
@@ -378,6 +414,7 @@ def main():
 
     global form_scale_filter
     form_scale_filter = builder.get_object("scale-filter")
+    form_scale_filter.connect("changed", on_scale_filter_changed)
 
     global form_refresh
     form_refresh = builder.get_object("refresh")
@@ -386,6 +423,7 @@ def main():
 
     global form_modes
     form_modes = builder.get_object("modes")
+    form_modes.connect("changed", on_mode_changed)
 
     global form_transform
     form_transform = builder.get_object("transform")
