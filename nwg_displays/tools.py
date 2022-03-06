@@ -82,3 +82,13 @@ def orientation_changed(transform, transform_old):
 
 def is_rotated(transform):
     return "90" in transform or "270" in transform
+
+
+def apply_settings(display_buttons):
+    for db in display_buttons:
+        print('output "%s" {' % db.name)
+        print("    mode {}x{}@{}Hz".format(db.width, db.height, db.refresh))
+        print("    pos {} {}".format(db.x, db.y))
+        print("    transform {}".format(db.transform))
+        print("    scale {}".format(db.scale))
+        print("}")

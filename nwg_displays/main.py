@@ -46,7 +46,6 @@ max_y = 0
 # Glade form fields
 form_name = None
 form_description = None
-form_active = None
 form_dpms = None
 form_adaptive_sync = None
 form_view_scale = None
@@ -59,6 +58,7 @@ form_scale_filter = None
 form_refresh = None
 form_modes = None
 form_transform = None
+form_wrapper_box = None
 form_close = None
 form_apply = None
 
@@ -182,7 +182,6 @@ def update_form_from_widget(widget):
     print("Updating form from widget", widget.name)
     form_name.set_text(widget.name)
     form_description.set_text(widget.description)
-    form_active.set_active(widget.active)
     form_dpms.set_active(widget.dpms)
     form_adaptive_sync.set_active(widget.adaptive_sync)
     form_view_scale.set_value(view_scale)  # not really from the widget, but from the global value
@@ -244,6 +243,11 @@ class DisplayButton(Gtk.Button):
         self.adaptive_sync = adaptive_sync_status == "enabled"  # converts "enabled | disabled" to bool
         self.focused = focused
 
+        self.active_check_button = Gtk.CheckButton()
+        self.active_check_button.set_label(name)
+        self.active_check_button.set_active(self.active)
+        self.active_check_button.connect("toggled", self.on_active_check_button_toggled)
+
         # Button properties
         self.selected = False
         self.set_can_focus(False)
@@ -269,6 +273,16 @@ class DisplayButton(Gtk.Button):
     def rescale(self):
         self.set_size_request(round(self.width * view_scale / self.scale), round(self.height * view_scale / self.scale))
 
+    def on_active_check_button_toggled(self, w):
+        self.active = w.get_active()
+        if not self.active:
+            self.set_property("name", "inactive-output")
+        else:
+            if self == selected_output_button:
+                self.set_property("name", "selected-output")
+            else:
+                self.set_property("name", "output")
+
 
 def on_view_scale_changed(*args):
     global view_scale
@@ -289,6 +303,16 @@ def on_transform_changed(*args):
             selected_output_button.width, selected_output_button.height = selected_output_button.height, selected_output_button.width
             selected_output_button.transform = transform
             selected_output_button.rescale()
+
+
+def on_dpms_toggled(widget):
+    if selected_output_button:
+        selected_output_button.dpms = widget.get_active()
+
+
+def on_adaptive_sync_toggled(widget):
+    if selected_output_button:
+        selected_output_button.adaptive_sync = widget.get_active()
 
 
 def on_pos_x_changed(widget):
@@ -326,6 +350,13 @@ def on_scale_filter_changed(widget):
         selected_output_button.scale_filter = widget.get_active_id()
 
 
+def on_refresh_changed(widget):
+    if selected_output_button:
+        selected_output_button.refresh = widget.get_value()
+
+        update_form_from_widget(selected_output_button)
+
+
 def on_mode_changed(widget):
     if selected_output_button and not on_mode_changed_silent:
         mode = selected_output_button.modes[widget.get_active()]
@@ -339,6 +370,10 @@ def on_mode_changed(widget):
         selected_output_button.rescale()
 
         update_form_from_widget(selected_output_button)
+
+
+def on_apply_button(widget):
+    apply_settings(display_buttons)
 
 
 def main():
@@ -367,14 +402,13 @@ def main():
     global form_description
     form_description = builder.get_object("description")
 
-    global form_active
-    form_active = builder.get_object("active")
-
     global form_dpms
     form_dpms = builder.get_object("dpms")
+    form_dpms.connect("toggled", on_dpms_toggled)
 
     global form_adaptive_sync
     form_adaptive_sync = builder.get_object("adaptive-sync")
+    form_adaptive_sync.connect("toggled", on_adaptive_sync_toggled)
 
     global form_view_scale
     form_view_scale = builder.get_object("view-scale")
@@ -420,6 +454,7 @@ def main():
     form_refresh = builder.get_object("refresh")
     adj = Gtk.Adjustment(lower=1, upper=1200, step_increment=1, page_increment=10, page_size=1)
     form_refresh.configure(adj, 1, 3)
+    form_refresh.connect("changed", on_refresh_changed)
 
     global form_modes
     form_modes = builder.get_object("modes")
@@ -429,12 +464,16 @@ def main():
     form_transform = builder.get_object("transform")
     form_transform.connect("changed", on_transform_changed)
 
+    global form_wrapper_box
+    form_wrapper_box = builder.get_object("wrapper-box")
+
     global form_close
     form_close = builder.get_object("close")
     form_close.connect("clicked", Gtk.main_quit)
 
     global form_apply
     form_apply = builder.get_object("apply")
+    form_apply.connect("clicked", on_apply_button)
 
     wrapper = builder.get_object("wrapper")
     wrapper.set_property("name", "wrapper")
@@ -453,6 +492,12 @@ def main():
         display_buttons.append(b)
 
         fixed.put(b, round(item["x"] * view_scale), round(item["y"] * view_scale))
+
+        """b = Gtk.Button.new_with_label(key)
+        b.set_can_focus(False)
+        b.set_property("name", "output")"""
+
+        form_wrapper_box.pack_start(b.active_check_button, False, False, 3)
 
     if display_buttons:
         update_form_from_widget(display_buttons[0])
