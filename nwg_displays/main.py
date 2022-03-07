@@ -499,6 +499,12 @@ def main():
 
         form_wrapper_box.pack_start(b.active_check_button, False, False, 3)
 
+    inactive = list_inactive_outputs()
+    for name in inactive:
+        cb = Gtk.CheckButton()
+        cb.set_label(name)
+        form_wrapper_box.pack_start(cb, False, False, 3)
+
     if display_buttons:
         update_form_from_widget(display_buttons[0])
         display_buttons[0].select()

@@ -53,6 +53,23 @@ def list_outputs():
     return outputs_dict
 
 
+def list_inactive_outputs():
+    try:
+        from i3ipc import Connection
+    except ModuleNotFoundError:
+        print("'python-i3ipc' package required on sway, terminating")
+        sys.exit(1)
+
+    i3 = Connection()
+    outputs = i3.get_outputs()
+    inactive = []
+    for o in outputs:
+        if not o.active:
+            inactive.append(o.name)
+
+    return inactive
+
+
 def min_val(a, b):
     if b < a:
         return b
