@@ -92,9 +92,9 @@
                     </child>
                   </object>
                   <packing>
-                    <property name="left-attach">5</property>
+                    <property name="left-attach">6</property>
                     <property name="top-attach">4</property>
-                    <property name="width">3</property>
+                    <property name="width">2</property>
                   </packing>
                 </child>
                 <child>
@@ -102,7 +102,6 @@
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="halign">end</property>
-                    <property name="margin-end">6</property>
                     <property name="label" translatable="yes">Size:</property>
                   </object>
                   <packing>
@@ -125,8 +124,6 @@
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="halign">center</property>
-                    <property name="margin-start">3</property>
-                    <property name="margin-end">3</property>
                     <property name="label" translatable="yes">x</property>
                   </object>
                   <packing>
@@ -150,10 +147,7 @@
                     <property name="can-focus">False</property>
                     <property name="halign">end</property>
                     <property name="margin-left">6</property>
-                    <property name="margin-right">6</property>
-                    <property name="margin-start">6</property>
-                    <property name="margin-end">6</property>
-                    <property name="label" translatable="yes">Refresh rate:</property>
+                    <property name="label" translatable="yes">Refresh:</property>
                   </object>
                   <packing>
                     <property name="left-attach">4</property>
@@ -175,21 +169,10 @@
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="halign">end</property>
-                    <property name="margin-end">6</property>
                     <property name="label" translatable="yes">Modes:</property>
                   </object>
                   <packing>
                     <property name="left-attach">6</property>
-                    <property name="top-attach">3</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkComboBoxText" id="modes">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                  </object>
-                  <packing>
-                    <property name="left-attach">7</property>
                     <property name="top-attach">3</property>
                   </packing>
                 </child>
@@ -217,8 +200,6 @@
                     <property name="halign">end</property>
                     <property name="margin-left">6</property>
                     <property name="margin-right">6</property>
-                    <property name="margin-start">6</property>
-                    <property name="margin-end">6</property>
                     <property name="label" translatable="yes">Scale filter:</property>
                   </object>
                   <packing>
@@ -243,9 +224,7 @@
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="halign">end</property>
-                    <property name="margin-start">6</property>
-                    <property name="margin-end">6</property>
-                    <property name="label" translatable="yes">DPI scale:</property>
+                    <property name="label" translatable="yes">Scale:</property>
                   </object>
                   <packing>
                     <property name="left-attach">4</property>
@@ -269,8 +248,6 @@
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="halign">center</property>
-                    <property name="margin-start">3</property>
-                    <property name="margin-end">3</property>
                     <property name="label" translatable="yes">Y:</property>
                   </object>
                   <packing>
@@ -295,7 +272,6 @@
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="halign">end</property>
-                    <property name="margin-end">6</property>
                     <property name="label" translatable="yes">Position X:</property>
                   </object>
                   <packing>
@@ -338,37 +314,6 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkCheckButton" id="dpms">
-                    <property name="label" translatable="yes">DPMS</property>
-                    <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <property name="receives-default">False</property>
-                    <property name="halign">start</property>
-                    <property name="margin-left">12</property>
-                    <property name="margin-right">12</property>
-                    <property name="margin-start">12</property>
-                    <property name="margin-end">12</property>
-                    <property name="draw-indicator">True</property>
-                  </object>
-                  <packing>
-                    <property name="left-attach">4</property>
-                    <property name="top-attach">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkCheckButton" id="adaptive-sync">
-                    <property name="label" translatable="yes">Adaptive sync</property>
-                    <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <property name="receives-default">False</property>
-                    <property name="draw-indicator">True</property>
-                  </object>
-                  <packing>
-                    <property name="left-attach">5</property>
-                    <property name="top-attach">1</property>
-                  </packing>
-                </child>
-                <child>
                   <object class="GtkComboBoxText" id="transform">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
@@ -403,6 +348,7 @@
                   <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="halign">end</property>
                     <property name="valign">start</property>
                     <property name="margin-right">6</property>
                     <property name="margin-end">6</property>
@@ -484,7 +430,61 @@
                   <packing>
                     <property name="left-attach">0</property>
                     <property name="top-attach">4</property>
+                    <property name="width">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkBox">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <child>
+                      <object class="GtkCheckButton" id="dpms">
+                        <property name="label" translatable="yes">DPMS</property>
+                        <property name="visible">True</property>
+                        <property name="can-focus">True</property>
+                        <property name="receives-default">False</property>
+                        <property name="halign">start</property>
+                        <property name="margin-left">12</property>
+                        <property name="margin-right">12</property>
+                        <property name="margin-end">12</property>
+                        <property name="draw-indicator">True</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkCheckButton" id="adaptive-sync">
+                        <property name="label" translatable="yes">Adaptive sync</property>
+                        <property name="visible">True</property>
+                        <property name="can-focus">True</property>
+                        <property name="receives-default">False</property>
+                        <property name="draw-indicator">True</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="left-attach">4</property>
+                    <property name="top-attach">1</property>
                     <property name="width">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkComboBoxText" id="modes">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="double-buffered">False</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">7</property>
+                    <property name="top-attach">3</property>
                   </packing>
                 </child>
                 <child>
