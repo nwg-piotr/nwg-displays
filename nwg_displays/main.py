@@ -426,7 +426,7 @@ def main():
     snap_threshold_scaled = snap_threshold
 
     builder = Gtk.Builder()
-    builder.add_from_file("main.glade")
+    builder.add_from_file(os.path.join(dir_name, "glade/main.glade"))
 
     window = builder.get_object("window")
     screen = Gdk.Screen.get_default()

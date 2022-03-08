@@ -13,7 +13,9 @@ setup(
     description='nwg-shell output configuration utility',
     packages=find_packages(),
     include_package_data=True,
-    package_data={},
+    package_data={
+        "": ["glade/*"]
+    },
     url='https://github.com/nwg-piotr/nwg-displays',
     license='MIT',
     author='Piotr Miller',
