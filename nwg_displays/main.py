@@ -182,7 +182,7 @@ def on_motion_notify_event(widget, event):
 
 
 def update_form_from_widget(widget):
-    print("Updating form from widget", widget.name)
+    # print("Updating form from widget", widget.name)
     form_name.set_text(widget.name)
     form_description.set_text(widget.description)
     form_dpms.set_active(widget.dpms)
@@ -371,7 +371,8 @@ def on_mode_changed(widget):
 
 
 def on_apply_button(widget):
-    apply_settings(display_buttons)
+    global outputs_activity
+    apply_settings(display_buttons, outputs_activity)
 
 
 def on_output_toggled(check_btn, name):
@@ -379,13 +380,37 @@ def on_output_toggled(check_btn, name):
     outputs_activity[name] = check_btn.get_active()
 
 
-def on_switch_button(btn):
+def on_toggle_button(btn):
     i3 = Connection()
     global outputs_activity
     for key in outputs_activity:
         toggle = "enable" if outputs_activity[key] else "disable"
         cmd = "output {} {}".format(key, toggle)
         i3.command(cmd)
+
+    create_display_buttons()
+
+
+def create_display_buttons():
+    global display_buttons
+    for item in display_buttons:
+        item.destroy()
+    display_buttons = []
+
+    global outputs
+    outputs = list_outputs()
+    for key in outputs:
+        item = outputs[key]
+        b = DisplayButton(key, item["description"], item["x"], item["y"], round(item["width"]), round(item["height"]),
+                          item["transform"], item["scale"], item["scale_filter"], item["refresh"], item["modes"],
+                          item["active"], item["dpms"], item["adaptive_sync_status"], item["focused"])
+
+        display_buttons.append(b)
+
+        fixed.put(b, round(item["x"] * view_scale), round(item["y"] * view_scale))
+
+    display_buttons[0].select()
+    update_form_from_widget(display_buttons[0])
 
 
 def main():
@@ -493,17 +518,7 @@ def main():
     global fixed
     fixed = builder.get_object("fixed")
 
-    global outputs
-    outputs = list_outputs()
-    global display_buttons
-    for key in outputs:
-        item = outputs[key]
-        b = DisplayButton(key, item["description"], item["x"], item["y"], round(item["width"]), round(item["height"]),
-                          item["transform"], item["scale"], item["scale_filter"], item["refresh"], item["modes"],
-                          item["active"], item["dpms"], item["adaptive_sync_status"], item["focused"])
-        display_buttons.append(b)
-
-        fixed.put(b, round(item["x"] * view_scale), round(item["y"] * view_scale))
+    create_display_buttons()
 
     global outputs_activity
     outputs_activity = list_outputs_activity()
@@ -518,7 +533,7 @@ def main():
         form_wrapper_box.pack_start(cb, False, False, 3)
 
     btn = Gtk.Button.new_with_label("Toggle")
-    btn.connect("clicked", on_switch_button)
+    btn.connect("clicked", on_toggle_button)
     form_wrapper_box.pack_start(btn, False, False, 3)
 
     if display_buttons:

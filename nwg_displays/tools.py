@@ -1,6 +1,5 @@
 # !/usr/bin/env python3
 
-import sys
 import gi
 
 gi.require_version('Gdk', '3.0')
@@ -91,9 +90,11 @@ def is_rotated(transform):
     return "90" in transform or "270" in transform
 
 
-def apply_settings(display_buttons):
+def apply_settings(display_buttons, outputs_activity):
     lines = []
+    db_names = []
     for db in display_buttons:
+        db_names.append(db.name)
         lines.append('output "%s" {' % db.name)
         lines.append("    mode {}x{}@{}Hz".format(db.width, db.height, db.refresh))
         lines.append("    pos {} {}".format(db.x, db.y))
@@ -105,6 +106,10 @@ def apply_settings(display_buttons):
         dpms = "on" if db.dpms else "off"
         lines.append("    dpms {}".format(dpms))
         lines.append("}")
+
+    for key in outputs_activity:
+        if key not in db_names:
+            lines.append('output "{}" disable'.format(key))
 
     for line in lines:
         print(line)
