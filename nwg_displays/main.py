@@ -493,7 +493,8 @@ def main():
 
     global outputs_activity
     outputs_activity = list_outputs_activity()
-    lbl = Gtk.Label("Active:")
+    lbl = Gtk.Label()
+    lbl.set_text("Active:")
     form_wrapper_box.pack_start(lbl, False, False, 3)
     for key in outputs_activity:
         cb = Gtk.CheckButton()
