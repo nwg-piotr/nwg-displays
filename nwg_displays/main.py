@@ -26,8 +26,15 @@ snap_threshold_scaled = None
 
 EvMask = Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON1_MOTION_MASK
 
-outputs = {}
-outputs_activity = {}
+
+"""
+i3.get_outputs() does not return some output attributes, especially when connected via hdmi.
+i3.get_tree() on the other hand does not return inactive outputs. So we'll list attributes with .get_tree(),
+and the add inactive outputs, if any, from what we detect with .get_outputs()
+"""
+outputs = {}  # Active outputs, listed from the sway tree; stores name and all attributes.
+outputs_activity = {}  # Just a dictionary "name": is_active - from get_outputs()
+
 fixed = Gtk.Fixed()
 
 selected_output_button = None

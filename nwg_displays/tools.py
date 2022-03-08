@@ -93,6 +93,7 @@ def is_rotated(transform):
 def apply_settings(display_buttons, outputs_activity):
     lines = []
     db_names = []
+    # just active outputs have their buttons
     for db in display_buttons:
         db_names.append(db.name)
         lines.append('output "%s" {' % db.name)
@@ -107,6 +108,7 @@ def apply_settings(display_buttons, outputs_activity):
         lines.append("    dpms {}".format(dpms))
         lines.append("}")
 
+    # append inactive outputs, if any
     for key in outputs_activity:
         if key not in db_names:
             lines.append('output "{}" disable'.format(key))
