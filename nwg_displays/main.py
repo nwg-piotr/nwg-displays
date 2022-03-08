@@ -374,6 +374,20 @@ def on_apply_button(widget):
     apply_settings(display_buttons)
 
 
+def on_output_toggled(check_btn, name):
+    global outputs_activity
+    outputs_activity[name] = check_btn.get_active()
+
+
+def on_switch_button(btn):
+    i3 = Connection()
+    global outputs_activity
+    for key in outputs_activity:
+        toggle = "enable" if outputs_activity[key] else "disable"
+        cmd = "output {} {}".format(key, toggle)
+        i3.command(cmd)
+
+
 def main():
     global snap_threshold, snap_threshold_scaled
     snap_threshold_scaled = snap_threshold
@@ -513,20 +527,6 @@ def main():
 
     window.show_all()
     Gtk.main()
-
-
-def on_output_toggled(check_btn, name):
-    global outputs_activity
-    outputs_activity[name] = check_btn.get_active()
-
-
-def on_switch_button(btn):
-    i3 = Connection()
-    global outputs_activity
-    for key in outputs_activity:
-        toggle = "enable" if outputs_activity[key] else "disable"
-        cmd = "output {} {}".format(key, toggle)
-        i3.command(cmd)
 
 
 if __name__ == '__main__':
