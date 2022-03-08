@@ -4,6 +4,7 @@
 https://gist.github.com/KurtJacobson/57679e5036dc78e6a7a3ba5e0155dad1
 """
 
+import sys
 import os
 
 import gi
@@ -548,6 +549,7 @@ def main():
         display_buttons[0].select()
 
     window.show_all()
+
     Gtk.main()
 
 
