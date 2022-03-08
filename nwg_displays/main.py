@@ -11,6 +11,8 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
+from i3ipc import Connection
+
 dir_name = os.path.dirname(__file__)
 
 from nwg_displays.tools import *
@@ -25,6 +27,7 @@ snap_threshold_scaled = None
 EvMask = Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON1_MOTION_MASK
 
 outputs = {}
+outputs_activity = {}
 fixed = Gtk.Fixed()
 
 selected_output_button = None
@@ -242,11 +245,6 @@ class DisplayButton(Gtk.Button):
         self.dpms = dpms
         self.adaptive_sync = adaptive_sync_status == "enabled"  # converts "enabled | disabled" to bool
         self.focused = focused
-
-        self.active_check_button = Gtk.CheckButton()
-        self.active_check_button.set_label(name)
-        self.active_check_button.set_active(self.active)
-        self.active_check_button.connect("toggled", self.on_active_check_button_toggled)
 
         # Button properties
         self.selected = False
@@ -493,17 +491,19 @@ def main():
 
         fixed.put(b, round(item["x"] * view_scale), round(item["y"] * view_scale))
 
-        """b = Gtk.Button.new_with_label(key)
-        b.set_can_focus(False)
-        b.set_property("name", "output")"""
-
-        form_wrapper_box.pack_start(b.active_check_button, False, False, 3)
-
-    inactive = list_inactive_outputs()
-    for name in inactive:
+    global outputs_activity
+    outputs_activity = list_outputs_activity()
+    for key in outputs_activity:
         cb = Gtk.CheckButton()
-        cb.set_label(name)
+        cb.set_label(key)
+        cb.set_active(outputs_activity[key])
+        cb.connect("toggled", on_output_toggled, key)
         form_wrapper_box.pack_start(cb, False, False, 3)
+
+    btn = Gtk.Button.new_from_icon_name("ok", Gtk.IconSize.MENU)
+    btn.set_property("margin-top", 6)
+    btn.connect("clicked", on_switch_button)
+    form_wrapper_box.pack_start(btn, False, False, 3)
 
     if display_buttons:
         update_form_from_widget(display_buttons[0])
@@ -511,6 +511,20 @@ def main():
 
     window.show_all()
     Gtk.main()
+
+
+def on_output_toggled(check_btn, name):
+    global outputs_activity
+    outputs_activity[name] = check_btn.get_active()
+
+
+def on_switch_button(btn):
+    i3 = Connection()
+    global outputs_activity
+    for key in outputs_activity:
+        toggle = "enable" if outputs_activity[key] else "disable"
+        cmd = "output {} {}".format(key, toggle)
+        i3.command(cmd)
 
 
 if __name__ == '__main__':

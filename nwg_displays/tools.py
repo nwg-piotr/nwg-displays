@@ -6,6 +6,8 @@ import gi
 gi.require_version('Gdk', '3.0')
 from gi.repository import Gdk
 
+from i3ipc import Connection
+
 
 def list_outputs():
     """
@@ -13,11 +15,6 @@ def list_outputs():
     :return: {"name": str, "x": int, "y": int, "width": int, "height": int, "monitor": Gkd.Monitor}
     """
     outputs_dict = {}
-    try:
-        from i3ipc import Connection
-    except ModuleNotFoundError:
-        print("'python-i3ipc' package required on sway, terminating")
-        sys.exit(1)
 
     i3 = Connection()
     tree = i3.get_tree()
@@ -53,21 +50,14 @@ def list_outputs():
     return outputs_dict
 
 
-def list_inactive_outputs():
-    try:
-        from i3ipc import Connection
-    except ModuleNotFoundError:
-        print("'python-i3ipc' package required on sway, terminating")
-        sys.exit(1)
-
+def list_outputs_activity():
+    result = {}
     i3 = Connection()
     outputs = i3.get_outputs()
-    inactive = []
     for o in outputs:
-        if not o.active:
-            inactive.append(o.name)
+        result[o.name] = o.active
 
-    return inactive
+    return result
 
 
 def min_val(a, b):
@@ -102,10 +92,19 @@ def is_rotated(transform):
 
 
 def apply_settings(display_buttons):
+    lines = []
     for db in display_buttons:
-        print('output "%s" {' % db.name)
-        print("    mode {}x{}@{}Hz".format(db.width, db.height, db.refresh))
-        print("    pos {} {}".format(db.x, db.y))
-        print("    transform {}".format(db.transform))
-        print("    scale {}".format(db.scale))
-        print("}")
+        lines.append('output "%s" {' % db.name)
+        lines.append("    mode {}x{}@{}Hz".format(db.width, db.height, db.refresh))
+        lines.append("    pos {} {}".format(db.x, db.y))
+        lines.append("    transform {}".format(db.transform))
+        lines.append("    scale {}".format(db.scale))
+        lines.append("    scale_filter {}".format(db.scale_filter))
+        a_s = "on" if db.adaptive_sync else "off"
+        lines.append("    adaptive_sync {}".format(a_s))
+        dpms = "on" if db.dpms else "off"
+        lines.append("    dpms {}".format(dpms))
+        lines.append("}")
+
+    for line in lines:
+        print(line)
