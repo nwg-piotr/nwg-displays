@@ -1,11 +1,21 @@
 # !/usr/bin/env python3
 
+import os
+import json
 import gi
 
 gi.require_version('Gdk', '3.0')
 from gi.repository import Gdk
 
 from i3ipc import Connection
+
+
+def get_config_home():
+    xdg_config_home = os.getenv('XDG_CONFIG_HOME')
+    config_home = xdg_config_home if xdg_config_home else os.path.join(
+        os.getenv("HOME"), ".config")
+
+    return config_home
 
 
 def list_outputs():
@@ -115,3 +125,17 @@ def apply_settings(display_buttons, outputs_activity):
 
     for line in lines:
         print(line)
+
+
+def load_json(path):
+    try:
+        with open(path, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        print("Error loading json: {}".format(e))
+        return None
+
+
+def save_json(src_dict, path):
+    with open(path, 'w') as f:
+        json.dump(src_dict, f, indent=2)

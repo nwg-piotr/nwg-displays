@@ -22,11 +22,12 @@ from nwg_displays.tools import *
 # lower values make movement smoother
 SENSITIVITY = 1
 view_scale = 0.15
-snap_threshold = 10
 snap_threshold_scaled = None
 
 EvMask = Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON1_MOTION_MASK
 
+config_dir = os.path.join(get_config_home(), "nwg-outputs")
+settings = {"view-scale": 0.15, "snap-threshold": 10}
 
 """
 i3.get_outputs() does not return some output attributes, especially when connected via hdmi.
@@ -294,8 +295,8 @@ def on_view_scale_changed(*args):
     global view_scale
     view_scale = form_view_scale.get_value()
 
-    global snap_threshold, snap_threshold_scaled
-    snap_threshold_scaled = round(snap_threshold * view_scale * 10)
+    global snap_threshold_scaled
+    snap_threshold_scaled = round(settings["snap-threshold"] * view_scale * 10)
 
     for b in display_buttons:
         b.rescale()
@@ -422,8 +423,20 @@ def create_display_buttons():
 
 
 def main():
-    global snap_threshold, snap_threshold_scaled
-    snap_threshold_scaled = snap_threshold
+    config_file = os.path.join(config_dir, "config")
+    global settings
+    if not os.path.isfile(config_file):
+        if not os.path.isdir(config_dir):
+            os.makedirs(config_dir, exist_ok=True)
+        print("'{}' file not found, creating default".format(config_file))
+        save_json(settings, config_file)
+    else:
+        settings = load_json(config_file)
+
+    print("Settings loaded: {}".format(settings))
+
+    global snap_threshold_scaled
+    snap_threshold_scaled = settings["snap-threshold"]
 
     builder = Gtk.Builder()
     builder.add_from_file(os.path.join(dir_name, "resources/main.glade"))
