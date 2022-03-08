@@ -403,7 +403,7 @@
                         <property name="can-focus">False</property>
                         <property name="margin-right">6</property>
                         <property name="margin-end">6</property>
-                        <property name="icon-name">nwg-shell</property>
+                        <property name="icon-name">nwg-displays</property>
                         <property name="icon_size">3</property>
                       </object>
                       <packing>
