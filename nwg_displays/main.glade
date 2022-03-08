@@ -55,6 +55,9 @@
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="halign">end</property>
+                    <property name="margin-top">6</property>
+                    <property name="margin-bottom">6</property>
+                    <property name="homogeneous">True</property>
                     <child>
                       <object class="GtkButton" id="close">
                         <property name="label" translatable="yes">Close</property>
@@ -89,9 +92,9 @@
                     </child>
                   </object>
                   <packing>
-                    <property name="left-attach">6</property>
+                    <property name="left-attach">5</property>
                     <property name="top-attach">4</property>
-                    <property name="width">2</property>
+                    <property name="width">3</property>
                   </packing>
                 </child>
                 <child>
@@ -194,6 +197,8 @@
                   <object class="GtkComboBoxText" id="scale-filter">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="margin-top">6</property>
+                    <property name="margin-bottom">6</property>
                     <items>
                       <item id="linear" translatable="yes">linear</item>
                       <item id="nearest" translatable="yes">nearest</item>
@@ -225,6 +230,8 @@
                   <object class="GtkSpinButton" id="scale">
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
+                    <property name="margin-top">6</property>
+                    <property name="margin-bottom">6</property>
                   </object>
                   <packing>
                     <property name="left-attach">5</property>
@@ -249,6 +256,8 @@
                   <object class="GtkSpinButton" id="y">
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
+                    <property name="margin-top">6</property>
+                    <property name="margin-bottom">6</property>
                   </object>
                   <packing>
                     <property name="left-attach">3</property>
@@ -273,6 +282,8 @@
                   <object class="GtkSpinButton" id="x">
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
+                    <property name="margin-top">6</property>
+                    <property name="margin-bottom">6</property>
                   </object>
                   <packing>
                     <property name="left-attach">1</property>
@@ -389,39 +400,13 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkBox" id="wrapper-box">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="halign">start</property>
-                    <child>
-                      <placeholder/>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="left-attach">1</property>
-                    <property name="top-attach">4</property>
-                    <property name="width">5</property>
-                  </packing>
-                </child>
-                <child>
                   <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="halign">end</property>
-                    <property name="margin-end">6</property>
-                    <property name="label" translatable="yes">Active:</property>
-                  </object>
-                  <packing>
-                    <property name="left-attach">0</property>
-                    <property name="top-attach">4</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
+                    <property name="valign">start</property>
                     <property name="margin-right">6</property>
                     <property name="margin-end">6</property>
+                    <property name="margin-top">6</property>
                     <property name="label" translatable="yes">View scale:</property>
                   </object>
                   <packing>
@@ -434,6 +419,7 @@
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                     <property name="halign">start</property>
+                    <property name="valign">start</property>
                   </object>
                   <packing>
                     <property name="left-attach">1</property>
@@ -441,12 +427,29 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkBox">
+                  <object class="GtkBox" id="wrapper-box">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="halign">end</property>
-                    <property name="margin-end">6</property>
-                    <property name="margin-bottom">12</property>
+                    <property name="margin-bottom">18</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="left-attach">2</property>
+                    <property name="top-attach">0</property>
+                    <property name="width">6</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkBox">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="halign">start</property>
+                    <property name="margin-right">6</property>
+                    <property name="margin-start">6</property>
+                    <property name="margin-top">12</property>
                     <child>
                       <object class="GtkImage">
                         <property name="visible">True</property>
@@ -478,13 +481,10 @@
                     </child>
                   </object>
                   <packing>
-                    <property name="left-attach">6</property>
-                    <property name="top-attach">0</property>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">4</property>
                     <property name="width">2</property>
                   </packing>
-                </child>
-                <child>
-                  <placeholder/>
                 </child>
                 <child>
                   <placeholder/>

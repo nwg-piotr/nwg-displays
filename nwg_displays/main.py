@@ -493,6 +493,8 @@ def main():
 
     global outputs_activity
     outputs_activity = list_outputs_activity()
+    lbl = Gtk.Label("Active:")
+    form_wrapper_box.pack_start(lbl, False, False, 3)
     for key in outputs_activity:
         cb = Gtk.CheckButton()
         cb.set_label(key)
@@ -500,8 +502,7 @@ def main():
         cb.connect("toggled", on_output_toggled, key)
         form_wrapper_box.pack_start(cb, False, False, 3)
 
-    btn = Gtk.Button.new_from_icon_name("ok", Gtk.IconSize.MENU)
-    btn.set_property("margin-top", 6)
+    btn = Gtk.Button.new_with_label("Toggle")
     btn.connect("clicked", on_switch_button)
     form_wrapper_box.pack_start(btn, False, False, 3)
 
