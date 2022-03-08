@@ -426,7 +426,7 @@ def main():
     snap_threshold_scaled = snap_threshold
 
     builder = Gtk.Builder()
-    builder.add_from_file(os.path.join(dir_name, "glade/main.glade"))
+    builder.add_from_file(os.path.join(dir_name, "resources/main.glade"))
 
     window = builder.get_object("window")
     screen = Gdk.Screen.get_default()
@@ -434,10 +434,11 @@ def main():
     style_context = Gtk.StyleContext()
     style_context.add_provider_for_screen(screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
     try:
-        file = os.path.join(dir_name, "style.css")
+        file = os.path.join(dir_name, "resources/style.css")
         provider.load_from_path(file)
     except:
-        sys.stderr.write("ERROR: {} file not found, using GTK styling\n".format(os.path.join(dir_name, "style.css")))
+        sys.stderr.write("ERROR: {} file not found, using GTK styling\n".format(os.path.join(dir_name,
+                                                                                             "resources/style.css")))
 
     window.connect('destroy', Gtk.main_quit)
 
