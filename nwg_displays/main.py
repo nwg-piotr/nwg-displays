@@ -24,6 +24,8 @@ from gi.repository import Gtk, GLib
 
 from nwg_displays.tools import *
 
+from nwg_displays.__about__ import __version__
+
 dir_name = os.path.dirname(__file__)
 
 config_dir = os.path.join(get_config_home(), "nwg-outputs")
@@ -58,6 +60,7 @@ form_transform = None
 form_wrapper_box = None
 form_close = None
 form_apply = None
+form_version = None
 
 """
 We need to rebuild the modes GtkComboBoxText on each DisplayButton click. Unfortunately appending an item fires the
@@ -434,6 +437,19 @@ def create_display_buttons():
 
 def main():
     GLib.set_prgname('nwg-displays')
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-r",
+                        "--restore",
+                        action="store_true",
+                        help="restore default presets and styling")
+    parser.add_argument("-v",
+                        "--version",
+                        action="version",
+                        version="%(prog)s version {}".format(__version__),
+                        help="display version information")
+    args = parser.parse_args()
+
     config_file = os.path.join(config_dir, "config")
     global config
     if not os.path.isfile(config_file):
@@ -544,6 +560,10 @@ def main():
     global form_apply
     form_apply = builder.get_object("apply")
     form_apply.connect("clicked", on_apply_button)
+
+    global form_version
+    form_version = builder.get_object("version")
+    form_version.set_text("version {}".format(__version__))
 
     wrapper = builder.get_object("wrapper")
     wrapper.set_property("name", "wrapper")
