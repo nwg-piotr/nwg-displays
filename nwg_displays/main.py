@@ -1,33 +1,31 @@
 #!/usr/bin/env python
 
 """
+Output management utility for sway Wayland compositor, influenced by wdisplays and wlay
+Project: https://github.com/nwg-piotr/nwg-displays
+Author's email: nwg.piotr@gmail.com
+Copyright (c) 2022 Piotr Miller
+License: MIT
+Depends on: `python-i3ipc`
+
+All the code below was built around this glorious snippet:
 https://gist.github.com/KurtJacobson/57679e5036dc78e6a7a3ba5e0155dad1
+Thank you, Kurt Jacobson!
 """
 
 import sys
-import os
 
 import gi
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
-from i3ipc import Connection
+from nwg_displays.tools import *
 
 dir_name = os.path.dirname(__file__)
 
-from nwg_displays.tools import *
-
-# higher values make movement more performant
-# lower values make movement smoother
-SENSITIVITY = 1
-view_scale = 0.15
-snap_threshold_scaled = None
-
-EvMask = Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON1_MOTION_MASK
-
 config_dir = os.path.join(get_config_home(), "nwg-outputs")
-settings = {"view-scale": 0.15, "snap-threshold": 10}
+config = {"view-scale": 0.15, "snap-threshold": 10}
 
 """
 i3.get_outputs() does not return some output attributes, especially when connected via hdmi.
@@ -37,23 +35,8 @@ and the add inactive outputs, if any, from what we detect with .get_outputs()
 outputs = {}  # Active outputs, listed from the sway tree; stores name and all attributes.
 outputs_activity = {}  # Just a dictionary "name": is_active - from get_outputs()
 
-fixed = Gtk.Fixed()
-
+display_buttons = []
 selected_output_button = None
-
-"""
-We need to rebuild the modes GtkComboBoxText on each DisplayButton click. Unfortunately appending an item fires the
-"change" event every time (and we have no "value-changed" event here). Setting `on_mode_changed_silent` True will 
-prevent the `on_mode_changed` function from working.
-"""
-on_mode_changed_silent = False
-
-offset_x = 0
-offset_y = 0
-px = 0
-py = 0
-max_x = 0
-max_y = 0
 
 # Glade form fields
 form_name = None
@@ -74,7 +57,28 @@ form_wrapper_box = None
 form_close = None
 form_apply = None
 
-display_buttons = []
+"""
+We need to rebuild the modes GtkComboBoxText on each DisplayButton click. Unfortunately appending an item fires the
+"change" event every time (and we have no "value-changed" event here). Setting `on_mode_changed_silent` True will 
+prevent the `on_mode_changed` function from working.
+"""
+on_mode_changed_silent = False
+
+# Value from config adjusted to current view scale
+snap_threshold_scaled = None
+
+fixed = Gtk.Fixed()
+
+SENSITIVITY = 1
+
+EvMask = Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON1_MOTION_MASK
+
+offset_x = 0
+offset_y = 0
+px = 0
+py = 0
+max_x = 0
+max_y = 0
 
 
 def on_button_press_event(widget, event):
@@ -127,19 +131,19 @@ def on_motion_notify_event(widget, event):
             if db.name == widget.name:
                 continue
 
-            val = round(db.x * view_scale)
+            val = round(db.x * config["view-scale"])
             if val not in snap_x:
                 snap_x.append(val)
 
-            val = round((db.x + db.width / db.scale) * view_scale)
+            val = round((db.x + db.width / db.scale) * config["view-scale"])
             if val not in snap_x:
                 snap_x.append(val)
 
-            val = round(db.y * view_scale)
+            val = round(db.y * config["view-scale"])
             if val not in snap_y:
                 snap_y.append(val)
 
-            val = round((db.y + db.height / db.scale) * view_scale)
+            val = round((db.y + db.height / db.scale) * config["view-scale"])
             if val not in snap_y:
                 snap_y.append(val)
 
@@ -150,7 +154,7 @@ def on_motion_notify_event(widget, event):
                 break
 
         for value in snap_x:
-            w = round(widget.width * view_scale / widget.scale)
+            w = round(widget.width * config["view-scale"] / widget.scale)
             if abs(w + x - value) < snap_threshold_scaled:
                 snap_h = value - w
                 break
@@ -161,42 +165,41 @@ def on_motion_notify_event(widget, event):
                 break
 
         for value in snap_y:
-            h = round(widget.height * view_scale / widget.scale)
+            h = round(widget.height * config["view-scale"] / widget.scale)
             if abs(h + y - value) < snap_threshold_scaled:
                 snap_v = value - h
                 break
 
         if snap_h is None and snap_v is None:
             fixed.move(widget, x, y)
-            widget.x = round(x / view_scale)
-            widget.y = round(y / view_scale)
+            widget.x = round(x / config["view-scale"])
+            widget.y = round(y / config["view-scale"])
         else:
 
             if snap_h is not None and snap_v is not None:
                 fixed.move(widget, snap_h, snap_v)
-                widget.x = round(snap_h / view_scale)
-                widget.y = round(snap_v / view_scale)
+                widget.x = round(snap_h / config["view-scale"])
+                widget.y = round(snap_v / config["view-scale"])
 
             elif snap_h is not None:
                 fixed.move(widget, snap_h, y)
-                widget.x = round(snap_h / view_scale)
-                widget.y = round(y / view_scale)
+                widget.x = round(snap_h / config["view-scale"])
+                widget.y = round(y / config["view-scale"])
 
             elif snap_v is not None:
                 fixed.move(widget, x, snap_v)
-                widget.x = round(x / view_scale)
-                widget.y = round(snap_v / view_scale)
+                widget.x = round(x / config["view-scale"])
+                widget.y = round(snap_v / config["view-scale"])
 
     update_form_from_widget(widget)
 
 
 def update_form_from_widget(widget):
-    # print("Updating form from widget", widget.name)
     form_name.set_text(widget.name)
     form_description.set_text(widget.description)
     form_dpms.set_active(widget.dpms)
     form_adaptive_sync.set_active(widget.adaptive_sync)
-    form_view_scale.set_value(view_scale)  # not really from the widget, but from the global value
+    form_view_scale.set_value(config["view-scale"])  # not really from the widget, but from the global value
     form_x.set_value(widget.x)
     form_y.set_value(widget.y)
     form_width.set_value(widget.width)
@@ -216,11 +219,11 @@ def update_form_from_widget(widget):
         # This is just to set active_id
         if "90" in widget.transform or "270" in widget.transform:
             if mode["width"] == widget.height and mode["height"] == widget.width and mode[
-                    "refresh"] / 1000 == widget.refresh:
+                "refresh"] / 1000 == widget.refresh:
                 active = m
         else:
             if mode["width"] == widget.width and mode["height"] == widget.height and mode[
-                    "refresh"] / 1000 == widget.refresh:
+                "refresh"] / 1000 == widget.refresh:
                 active = m
     if active:
         form_modes.set_active_id(active)
@@ -263,7 +266,8 @@ class DisplayButton(Gtk.Button):
         self.connect("motion_notify_event", on_motion_notify_event)
         self.set_always_show_image(True)
         self.set_label(self.name)
-        self.set_size_request(round(self.width * view_scale / self.scale), round(self.height * view_scale / self.scale))
+        self.set_size_request(round(self.width * config["view-scale"] / self.scale),
+                              round(self.height * config["view-scale"] / self.scale))
         self.set_property("name", "output")
 
         self.show()
@@ -278,7 +282,8 @@ class DisplayButton(Gtk.Button):
         self.set_property("name", "output")
 
     def rescale(self):
-        self.set_size_request(round(self.width * view_scale / self.scale), round(self.height * view_scale / self.scale))
+        self.set_size_request(round(self.width * config["view-scale"] / self.scale),
+                              round(self.height * config["view-scale"] / self.scale))
 
     def on_active_check_button_toggled(self, w):
         self.active = w.get_active()
@@ -292,15 +297,14 @@ class DisplayButton(Gtk.Button):
 
 
 def on_view_scale_changed(*args):
-    global view_scale
-    view_scale = form_view_scale.get_value()
+    config["view-scale"] = round(form_view_scale.get_value(), 2)
 
     global snap_threshold_scaled
-    snap_threshold_scaled = round(settings["snap-threshold"] * view_scale * 10)
+    snap_threshold_scaled = round(config["snap-threshold"] * config["view-scale"] * 10)
 
     for b in display_buttons:
         b.rescale()
-        fixed.move(b, b.x * view_scale, b.y * view_scale)
+        fixed.move(b, b.x * config["view-scale"], b.y * config["view-scale"])
 
 
 def on_transform_changed(*args):
@@ -325,13 +329,15 @@ def on_adaptive_sync_toggled(widget):
 def on_pos_x_changed(widget):
     if selected_output_button:
         selected_output_button.x = round(widget.get_value())
-        fixed.move(selected_output_button, selected_output_button.x * view_scale, selected_output_button.y * view_scale)
+        fixed.move(selected_output_button, selected_output_button.x * config["view-scale"],
+                   selected_output_button.y * config["view-scale"])
 
 
 def on_pos_y_changed(widget):
     if selected_output_button:
         selected_output_button.y = round(widget.get_value())
-        fixed.move(selected_output_button, selected_output_button.x * view_scale, selected_output_button.y * view_scale)
+        fixed.move(selected_output_button, selected_output_button.x * config["view-scale"],
+                   selected_output_button.y * config["view-scale"])
 
 
 def on_width_changed(widget):
@@ -382,6 +388,8 @@ def on_mode_changed(widget):
 def on_apply_button(widget):
     global outputs_activity
     apply_settings(display_buttons, outputs_activity)
+    # save config file
+    save_json(config, os.path.join(config_dir, "config"))
 
 
 def on_output_toggled(check_btn, name):
@@ -416,7 +424,7 @@ def create_display_buttons():
 
         display_buttons.append(b)
 
-        fixed.put(b, round(item["x"] * view_scale), round(item["y"] * view_scale))
+        fixed.put(b, round(item["x"] * config["view-scale"]), round(item["y"] * config["view-scale"]))
 
     display_buttons[0].select()
     update_form_from_widget(display_buttons[0])
@@ -424,19 +432,19 @@ def create_display_buttons():
 
 def main():
     config_file = os.path.join(config_dir, "config")
-    global settings
+    global config
     if not os.path.isfile(config_file):
         if not os.path.isdir(config_dir):
             os.makedirs(config_dir, exist_ok=True)
         print("'{}' file not found, creating default".format(config_file))
-        save_json(settings, config_file)
+        save_json(config, config_file)
     else:
-        settings = load_json(config_file)
+        config = load_json(config_file)
 
-    print("Settings loaded: {}".format(settings))
+    print("Settings loaded: {}".format(config))
 
     global snap_threshold_scaled
-    snap_threshold_scaled = settings["snap-threshold"]
+    snap_threshold_scaled = config["snap-threshold"]
 
     builder = Gtk.Builder()
     builder.add_from_file(os.path.join(dir_name, "resources/main.glade"))
