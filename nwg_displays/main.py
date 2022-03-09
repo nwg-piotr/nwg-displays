@@ -465,6 +465,7 @@ def main():
 
     global output_path
     output_path = args.output_path
+    print("Output path: '{}'".format(output_path))
 
     global generic_names
     generic_names = args.generic_names
@@ -479,7 +480,7 @@ def main():
     else:
         config = load_json(config_file)
 
-    print("Settings loaded: {}".format(config))
+    print("Settings: {}".format(config))
 
     global snap_threshold_scaled
     snap_threshold_scaled = config["snap-threshold"]

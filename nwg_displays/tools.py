@@ -146,11 +146,13 @@ def apply_settings(display_buttons, outputs_activity, output_path, g_names=False
                 lines.append('output "{}" disable'.format(key))
                 cmds.append('output "{}" disable'.format(key))
 
+    print("\nSaving: \n")
     for line in lines:
         print(line)
 
     save_list_to_text_file(lines, output_path)
 
+    print("\nExecuting: \n")
     for cmd in cmds:
         print(cmd)
 
