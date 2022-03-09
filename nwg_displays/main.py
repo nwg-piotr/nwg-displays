@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Output management utility for sway Wayland compositor, influenced by wdisplays and wlay
+Output management utility for sway Wayland compositor, inspired by wdisplays and wlay
 Project: https://github.com/nwg-piotr/nwg-displays
 Author's email: nwg.piotr@gmail.com
 Copyright (c) 2022 Piotr Miller
