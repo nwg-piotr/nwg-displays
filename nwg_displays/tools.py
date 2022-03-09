@@ -100,7 +100,7 @@ def is_rotated(transform):
     return "90" in transform or "270" in transform
 
 
-def apply_settings(display_buttons, outputs_activity):
+def apply_settings(display_buttons, outputs_activity, output_path):
     lines = []
     db_names = []
     # just active outputs have their buttons
@@ -126,6 +126,8 @@ def apply_settings(display_buttons, outputs_activity):
     for line in lines:
         print(line)
 
+    save_list_to_text_file(lines, output_path)
+
 
 def load_json(path):
     try:
@@ -139,3 +141,10 @@ def load_json(path):
 def save_json(src_dict, path):
     with open(path, 'w') as f:
         json.dump(src_dict, f, indent=2)
+
+
+def save_list_to_text_file(data, file_path):
+    text_file = open(file_path, "w")
+    for line in data:
+        text_file.write(line + "\n")
+    text_file.close()

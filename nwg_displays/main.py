@@ -29,7 +29,13 @@ from nwg_displays.__about__ import __version__
 dir_name = os.path.dirname(__file__)
 
 config_dir = os.path.join(get_config_home(), "nwg-outputs")
+sway_config_dir = os.path.join(get_config_home(), "sway")
+if not os.path.isdir(sway_config_dir):
+    print("WARNING: Couldn't find sway config directory '{}'".format(sway_config_dir), file=sys.stderr)
+    sway_config_dir = ""
+
 config = {"view-scale": 0.15, "snap-threshold": 10}
+output_path = ""
 
 """
 i3.get_outputs() does not return some output attributes, especially when connected via hdmi.
@@ -224,11 +230,11 @@ def update_form_from_widget(widget):
         # This is just to set active_id
         if "90" in widget.transform or "270" in widget.transform:
             if mode["width"] == widget.height and mode["height"] == widget.width and mode[
-                "refresh"] / 1000 == widget.refresh:
+                    "refresh"] / 1000 == widget.refresh:
                 active = m
         else:
             if mode["width"] == widget.width and mode["height"] == widget.height and mode[
-                "refresh"] / 1000 == widget.refresh:
+                    "refresh"] / 1000 == widget.refresh:
                 active = m
     if active:
         form_modes.set_active_id(active)
@@ -392,7 +398,7 @@ def on_mode_changed(widget):
 
 def on_apply_button(widget):
     global outputs_activity
-    apply_settings(display_buttons, outputs_activity)
+    apply_settings(display_buttons, outputs_activity, output_path)
     # save config file
     save_json(config, os.path.join(config_dir, "config"))
 
@@ -439,16 +445,20 @@ def main():
     GLib.set_prgname('nwg-displays')
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-r",
-                        "--restore",
-                        action="store_true",
-                        help="restore default presets and styling")
+    parser.add_argument("-o",
+                        "--output_path",
+                        type=str,
+                        default="{}/outputs.test".format(sway_config_dir),
+                        help="path to save Outputs config to, default: {}".format("{}/outputs.test".format(sway_config_dir)))
     parser.add_argument("-v",
                         "--version",
                         action="version",
                         version="%(prog)s version {}".format(__version__),
                         help="display version information")
     args = parser.parse_args()
+
+    global output_path
+    output_path = args.output_path
 
     config_file = os.path.join(config_dir, "config")
     global config
