@@ -100,33 +100,63 @@ def is_rotated(transform):
     return "90" in transform or "270" in transform
 
 
-def apply_settings(display_buttons, outputs_activity, output_path):
+def apply_settings(display_buttons, outputs_activity, output_path, g_names=False):
     lines = []
+    cmds = []
     db_names = []
     # just active outputs have their buttons
     for db in display_buttons:
-        db_names.append(db.name)
-        lines.append('output "%s" {' % db.name)
+        name = db.name if not g_names else db.description
+        db_names.append(name)
+
+        lines.append('output "%s" {' % name)
+        cmd = 'output "{}"'.format(name)
+
         lines.append("    mode {}x{}@{}Hz".format(db.width, db.height, db.refresh))
+        cmd + " mode {}x{}@{}Hz".format(db.width, db.height, db.refresh)
+
         lines.append("    pos {} {}".format(db.x, db.y))
+        cmd += " pos {} {}".format(db.x, db.y)
+
         lines.append("    transform {}".format(db.transform))
+        cmd += " transform {}".format(db.transform)
+
         lines.append("    scale {}".format(db.scale))
+        cmd += " scale {}".format(db.scale)
+
         lines.append("    scale_filter {}".format(db.scale_filter))
+        cmd += " scale_filter {}".format(db.scale_filter)
+
         a_s = "on" if db.adaptive_sync else "off"
         lines.append("    adaptive_sync {}".format(a_s))
+        cmd += " adaptive_sync {}".format(a_s)
+
         dpms = "on" if db.dpms else "off"
         lines.append("    dpms {}".format(dpms))
-        lines.append("}")
+        cmd += " dpms {}".format(dpms)
 
-    # append inactive outputs, if any
-    for key in outputs_activity:
-        if key not in db_names:
-            lines.append('output "{}" disable'.format(key))
+        lines.append("}")
+        cmds.append(cmd)
+
+    # Append inactive outputs, if any. Note: if Thunderbolt output names actually are different after every reboot
+    # (wish I knew), we have no way to disable them on startup.
+    if not g_names:
+        for key in outputs_activity:
+            if key not in db_names:
+                lines.append('output "{}" disable'.format(key))
+                cmds.append('output "{}" disable'.format(key))
 
     for line in lines:
         print(line)
 
     save_list_to_text_file(lines, output_path)
+
+    for cmd in cmds:
+        print(cmd)
+
+    i3 = Connection()
+    for cmd in cmds:
+        i3.command(cmd)
 
 
 def load_json(path):

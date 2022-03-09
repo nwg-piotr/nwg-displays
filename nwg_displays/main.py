@@ -14,7 +14,6 @@ Thank you, Kurt Jacobson!
 """
 
 import argparse
-
 import sys
 
 import gi
@@ -36,6 +35,7 @@ if not os.path.isdir(sway_config_dir):
 
 config = {"view-scale": 0.15, "snap-threshold": 10}
 output_path = ""
+generic_names = False
 
 """
 i3.get_outputs() does not return some output attributes, especially when connected via hdmi.
@@ -230,11 +230,11 @@ def update_form_from_widget(widget):
         # This is just to set active_id
         if "90" in widget.transform or "270" in widget.transform:
             if mode["width"] == widget.height and mode["height"] == widget.width and mode[
-                    "refresh"] / 1000 == widget.refresh:
+                "refresh"] / 1000 == widget.refresh:
                 active = m
         else:
             if mode["width"] == widget.width and mode["height"] == widget.height and mode[
-                    "refresh"] / 1000 == widget.refresh:
+                "refresh"] / 1000 == widget.refresh:
                 active = m
     if active:
         form_modes.set_active_id(active)
@@ -322,7 +322,8 @@ def on_transform_changed(*args):
     if selected_output_button:
         transform = form_transform.get_active_id()
         if orientation_changed(transform, selected_output_button.transform):
-            selected_output_button.width, selected_output_button.height = selected_output_button.height, selected_output_button.width
+            selected_output_button.width, selected_output_button.height = selected_output_button.height, \
+                                                                          selected_output_button.width
             selected_output_button.transform = transform
             selected_output_button.rescale()
 
@@ -398,7 +399,7 @@ def on_mode_changed(widget):
 
 def on_apply_button(widget):
     global outputs_activity
-    apply_settings(display_buttons, outputs_activity, output_path)
+    apply_settings(display_buttons, outputs_activity, output_path, g_names=generic_names)
     # save config file
     save_json(config, os.path.join(config_dir, "config"))
 
@@ -448,8 +449,13 @@ def main():
     parser.add_argument("-o",
                         "--output_path",
                         type=str,
-                        default="{}/outputs.test".format(sway_config_dir),
-                        help="path to save Outputs config to, default: {}".format("{}/outputs.test".format(sway_config_dir)))
+                        default="{}/outputs".format(sway_config_dir),
+                        help="path to save Outputs config to, default: {}".format(
+                            "{}/outputs".format(sway_config_dir)))
+    parser.add_argument("-g",
+                        "--generic_names",
+                        action="store_true",
+                        help="use Generic output names")
     parser.add_argument("-v",
                         "--version",
                         action="version",
@@ -459,6 +465,9 @@ def main():
 
     global output_path
     output_path = args.output_path
+
+    global generic_names
+    generic_names = args.generic_names
 
     config_file = os.path.join(config_dir, "config")
     global config
