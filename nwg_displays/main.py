@@ -13,12 +13,14 @@ https://gist.github.com/KurtJacobson/57679e5036dc78e6a7a3ba5e0155dad1
 Thank you, Kurt Jacobson!
 """
 
+import argparse
+
 import sys
 
 import gi
 
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk, GLib
 
 from nwg_displays.tools import *
 
@@ -431,6 +433,7 @@ def create_display_buttons():
 
 
 def main():
+    GLib.set_prgname('nwg-displays')
     config_file = os.path.join(config_dir, "config")
     global config
     if not os.path.isfile(config_file):
