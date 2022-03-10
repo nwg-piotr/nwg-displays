@@ -2,4 +2,4 @@
 
 Output management utility for sway Wayland compositor, inspired by wdisplays and wlay.
 
-![obraz](https://user-images.githubusercontent.com/20579136/157458393-8cbdf223-7050-44dc-8d80-61b5a6c9d318.png)
+![2022-03-10-033822_screenshot](https://user-images.githubusercontent.com/20579136/157577549-f921b9a3-d0f3-4747-8585-5e6a1da63925.png)
