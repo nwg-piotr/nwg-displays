@@ -46,7 +46,7 @@ It's a simple `jsnon` file:
 {
   "view-scale": 0.15,
   "snap-threshold": 10,
-  "indicator-timeout": 300
+  "indicator-timeout": 500
 }
 ```
 
