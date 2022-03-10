@@ -154,19 +154,19 @@ def on_motion_notify_event(widget, event):
             if db.name == widget.name:
                 continue
 
-            val = round(db.x * config["view-scale"])
+            val = db.x * config["view-scale"]
             if val not in snap_x:
                 snap_x.append(val)
 
-            val = round((db.x + db.width / db.scale) * config["view-scale"])
+            val = (db.x + db.width / db.scale) * config["view-scale"]
             if val not in snap_x:
                 snap_x.append(val)
 
-            val = round(db.y * config["view-scale"])
+            val = db.y * config["view-scale"]
             if val not in snap_y:
                 snap_y.append(val)
 
-            val = round((db.y + db.height / db.scale) * config["view-scale"])
+            val = (db.y + db.height / db.scale) * config["view-scale"]
             if val not in snap_y:
                 snap_y.append(val)
 
@@ -177,7 +177,7 @@ def on_motion_notify_event(widget, event):
                 break
 
         for value in snap_x:
-            w = round(widget.width * config["view-scale"] / widget.scale)
+            w = widget.width * config["view-scale"] / widget.scale
             if abs(w + x - value) < snap_threshold_scaled:
                 snap_h = value - w
                 break
@@ -188,10 +188,17 @@ def on_motion_notify_event(widget, event):
                 break
 
         for value in snap_y:
-            h = round(widget.height * config["view-scale"] / widget.scale)
+            h = widget.height * config["view-scale"] / widget.scale
             if abs(h + y - value) < snap_threshold_scaled:
                 snap_v = value - h
                 break
+
+        # Just in case ;)
+        if snap_h and snap_h < 0:
+            snap_h = 0
+
+        if snap_v and snap_v < 0:
+            snap_v = 0
 
         if snap_h is None and snap_v is None:
             fixed.move(widget, x, y)
