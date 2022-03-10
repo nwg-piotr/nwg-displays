@@ -321,11 +321,12 @@ def on_view_scale_changed(*args):
 def on_transform_changed(*args):
     if selected_output_button:
         transform = form_transform.get_active_id()
-        selected_output_button.transform = transform
         if orientation_changed(transform, selected_output_button.transform):
             selected_output_button.width, selected_output_button.height = selected_output_button.height, \
                                                                           selected_output_button.width
             selected_output_button.rescale()
+
+        selected_output_button.transform = transform
 
 
 def on_dpms_toggled(widget):
