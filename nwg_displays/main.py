@@ -477,7 +477,6 @@ class Indicator(Gtk.Window):
         box.pack_start(label, True, True, 10)
 
         self.set_size_request(width, height)
-        self.show_all()
         if self.timeout > 0:
             self.show_up(self.timeout * 2)
 
