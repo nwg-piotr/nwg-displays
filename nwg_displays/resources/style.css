@@ -9,7 +9,7 @@
 }
 
 #output:hover {
-	background: rgba (92, 92, 92, 0.1)
+	background: rgba (92, 92, 92, 0.05)
 }
 
 #selected-output {
@@ -39,10 +39,11 @@
 }
 
 #indicator {
-    background: rgba (0, 0, 0, 0.9);
+    background: rgba (0, 0, 0, 0.8);
     border: 1px solid;
     border-radius: 0px;
     border-color: rgba (200, 200, 255, 0.6);
+    color: #eee
 }
 
 #indicator-label {
