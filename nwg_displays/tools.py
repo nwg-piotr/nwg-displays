@@ -1,6 +1,7 @@
 # !/usr/bin/env python3
 
 import os
+import sys
 import json
 import gi
 
@@ -159,6 +160,21 @@ def apply_settings(display_buttons, outputs_activity, output_path, g_names=False
     i3 = Connection()
     for cmd in cmds:
         i3.command(cmd)
+
+
+def config_keys_missing(config, config_file):
+    key_missing = False
+    defaults = {"view-scale": 0.15, "snap-threshold": 10, "indicator-timeout": 500}
+    for key in defaults:
+        if key not in config:
+            config[key] = defaults[key]
+            print("Added missing config key: '{}'".format(key), file=sys.stderr)
+            key_missing = True
+
+    if key_missing:
+        save_json(config, config_file)
+
+    return key_missing
 
 
 def load_json(path):

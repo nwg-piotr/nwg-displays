@@ -6,7 +6,7 @@ Project: https://github.com/nwg-piotr/nwg-displays
 Author's email: nwg.piotr@gmail.com
 Copyright (c) 2022 Piotr Miller
 License: MIT
-Depends on: `python-i3ipc`
+Depends on: 'python-i3ipc' 'gtk-layer-shell'
 
 All the code below was built around this glorious snippet:
 https://gist.github.com/KurtJacobson/57679e5036dc78e6a7a3ba5e0155dad1
@@ -19,7 +19,16 @@ import sys
 import gi
 
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, GLib
+try:
+    gi.require_version('GtkLayerShell', '0.1')
+except ValueError:
+    raise RuntimeError('\n\n' +
+                       'If you haven\'t installed GTK Layer Shell, you need to point Python to the\n' +
+                       'library by setting GI_TYPELIB_PATH and LD_LIBRARY_PATH to <build-dir>/src/.\n' +
+                       'For example you might need to run:\n\n' +
+                       'GI_TYPELIB_PATH=build/src LD_LIBRARY_PATH=build/src python3 ' + ' '.join(sys.argv))
+
+from gi.repository import Gtk, GLib, GtkLayerShell
 
 from nwg_displays.tools import *
 
@@ -33,7 +42,7 @@ if not os.path.isdir(sway_config_dir):
     print("WARNING: Couldn't find sway config directory '{}'".format(sway_config_dir), file=sys.stderr)
     sway_config_dir = ""
 
-config = {"view-scale": 0.15, "snap-threshold": 10}
+config = {}
 output_path = ""
 generic_names = False
 
@@ -93,6 +102,9 @@ max_y = 0
 
 
 def on_button_press_event(widget, event):
+    if widget != selected_output_button:
+        widget.indicator.show_up()
+
     if event.button == 1:
         for db in display_buttons:
             if db.name == widget.name:
@@ -230,11 +242,11 @@ def update_form_from_widget(widget):
         # This is just to set active_id
         if "90" in widget.transform or "270" in widget.transform:
             if mode["width"] == widget.height and mode["height"] == widget.width and mode[
-                "refresh"] / 1000 == widget.refresh:
+                    "refresh"] / 1000 == widget.refresh:
                 active = m
         else:
             if mode["width"] == widget.width and mode["height"] == widget.height and mode[
-                "refresh"] / 1000 == widget.refresh:
+                    "refresh"] / 1000 == widget.refresh:
                 active = m
     if active:
         form_modes.set_active_id(active)
@@ -246,7 +258,7 @@ def update_form_from_widget(widget):
 
 class DisplayButton(Gtk.Button):
     def __init__(self, name, description, x, y, width, height, transform, scale, scale_filter, refresh, modes, active,
-                 dpms, adaptive_sync_status, focused):
+                 dpms, adaptive_sync_status, focused, monitor):
         super().__init__()
         # Output properties
         self.name = name
@@ -277,9 +289,13 @@ class DisplayButton(Gtk.Button):
         self.connect("motion_notify_event", on_motion_notify_event)
         self.set_always_show_image(True)
         self.set_label(self.name)
-        self.set_size_request(round(self.width * config["view-scale"] / self.scale),
-                              round(self.height * config["view-scale"] / self.scale))
+
+        width = round(self.width * config["view-scale"] / self.scale)
+        height = round(self.height * config["view-scale"] / self.scale)
+        self.set_size_request(width, height)
         self.set_property("name", "output")
+
+        self.indicator = Indicator(monitor, name, width, height, config["indicator-timeout"])
 
         self.show()
 
@@ -433,7 +449,7 @@ def create_display_buttons():
         item = outputs[key]
         b = DisplayButton(key, item["description"], item["x"], item["y"], round(item["width"]), round(item["height"]),
                           item["transform"], item["scale"], item["scale_filter"], item["refresh"], item["modes"],
-                          item["active"], item["dpms"], item["adaptive_sync_status"], item["focused"])
+                          item["active"], item["dpms"], item["adaptive_sync_status"], item["focused"], item["monitor"])
 
         display_buttons.append(b)
 
@@ -441,6 +457,37 @@ def create_display_buttons():
 
     display_buttons[0].select()
     update_form_from_widget(display_buttons[0])
+
+
+class Indicator(Gtk.Window):
+    def __init__(self, monitor, name, width, height, timeout):
+        super().__init__()
+        self.timeout = timeout
+        self.set_property("name", "indicator")
+
+        GtkLayerShell.init_for_window(self)
+        GtkLayerShell.set_layer(self, GtkLayerShell.Layer.OVERLAY)
+        GtkLayerShell.set_monitor(self, monitor)
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.add(box)
+        label = Gtk.Label()
+        box.set_property("name", "indicator-label")
+        label.set_text(name)
+        box.pack_start(label, True, True, 10)
+
+        self.set_size_request(width, height)
+        self.show_all()
+        if self.timeout > 0:
+            self.show_up(self.timeout * 2)
+
+    def show_up(self, timeout=None):
+        if self.timeout > 0:
+            self.show_all()
+            if timeout:
+                GLib.timeout_add(timeout, self.hide)
+            else:
+                GLib.timeout_add(self.timeout, self.hide)
 
 
 def main():
@@ -479,6 +526,9 @@ def main():
         print("'{}' file not found, creating default".format(config_file))
         save_json(config, config_file)
     else:
+        config = load_json(config_file)
+
+    if config_keys_missing(config, config_file):
         config = load_json(config_file)
 
     print("Settings: {}".format(config))

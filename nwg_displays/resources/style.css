@@ -35,5 +35,16 @@
 }
 
 #wrapper {
-    background: rgba (0, 0, 0, 0.5)
+    background: rgba (0, 0, 0, 0.5);
+}
+
+#indicator {
+    background: rgba (0, 0, 0, 0.9);
+    border: 1px solid;
+    border-radius: 0px;
+    border-color: rgba (200, 200, 255, 0.6);
+}
+
+#indicator-label {
+    font-size: 24px
 }
