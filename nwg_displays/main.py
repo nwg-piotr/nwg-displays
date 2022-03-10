@@ -489,6 +489,11 @@ class Indicator(Gtk.Window):
                 GLib.timeout_add(self.timeout, self.hide)
 
 
+def handle_keyboard(window, event):
+    if event.type == Gdk.EventType.KEY_RELEASE and event.keyval == Gdk.KEY_Escape:
+        window.close()
+
+
 def main():
     GLib.set_prgname('nwg-displays')
 
@@ -550,6 +555,7 @@ def main():
         sys.stderr.write("ERROR: {} file not found, using GTK styling\n".format(os.path.join(dir_name,
                                                                                              "resources/style.css")))
 
+    window.connect("key-release-event", handle_keyboard)
     window.connect('destroy', Gtk.main_quit)
 
     global form_name
