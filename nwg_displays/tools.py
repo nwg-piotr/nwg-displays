@@ -70,6 +70,15 @@ def list_outputs_activity():
     return result
 
 
+def focused_output_height():
+    i3 = Connection()
+    outputs = i3.get_outputs()
+    for o in outputs:
+        if o.focused:
+            return o.rect.height
+    return None
+
+
 def min_val(a, b):
     if b < a:
         return b

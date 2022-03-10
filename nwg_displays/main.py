@@ -676,6 +676,10 @@ def main():
         update_form_from_widget(display_buttons[0])
         display_buttons[0].select()
 
+    # Hint for small screens: enable floating for the window
+    h = focused_output_height()
+    window.set_size_request(0, h * 0.9)
+
     window.show_all()
 
     Gtk.main()
