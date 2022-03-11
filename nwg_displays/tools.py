@@ -1,8 +1,9 @@
 # !/usr/bin/env python3
 
+import json
 import os
 import sys
-import json
+
 import gi
 
 gi.require_version('Gdk', '3.0')
@@ -20,10 +21,6 @@ def get_config_home():
 
 
 def list_outputs():
-    """
-    Get output names and geometry from i3 tree, assign to Gdk.Display monitors.
-    :return: {"name": str, "x": int, "y": int, "width": int, "height": int, "monitor": Gkd.Monitor}
-    """
     outputs_dict = {}
 
     i3 = Connection()
@@ -148,27 +145,40 @@ def apply_settings(display_buttons, outputs_activity, output_path, g_names=False
         lines.append("}")
         cmds.append(cmd)
 
-    # Append inactive outputs, if any. Note: if Thunderbolt output names actually are different after every reboot
-    # (wish I knew), we have no way to disable them on startup.
     if not g_names:
         for key in outputs_activity:
             if key not in db_names:
                 lines.append('output "{}" disable'.format(key))
                 cmds.append('output "{}" disable'.format(key))
+    else:
+        for key in outputs_activity:
+            desc = inactive_output_description(key)
+            if desc not in db_names:
+                lines.append('output "{}" disable'.format(desc))
+                cmds.append('output "{}" disable'.format(desc))
 
-    print("\nSaving: \n")
+    print("[Saving]")
     for line in lines:
         print(line)
 
     save_list_to_text_file(lines, output_path)
 
-    print("\nExecuting: \n")
+    print("[Executing]")
     for cmd in cmds:
         print(cmd)
 
     i3 = Connection()
     for cmd in cmds:
         i3.command(cmd)
+
+
+def inactive_output_description(name):
+    i3 = Connection()
+    for item in i3.get_outputs():
+        if item.name == name:
+            return "{} {} {}".format(item.ipc_data["make"], item.ipc_data["model"],
+                                     item.ipc_data["serial"])
+    return None
 
 
 def config_keys_missing(config, config_file):

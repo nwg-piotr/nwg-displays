@@ -441,7 +441,8 @@ def on_toggle_button(btn):
         cmd = "output {} {}".format(key, toggle)
         i3.command(cmd)
 
-    create_display_buttons()
+    # If the output has just been turned back on, Gdk.Display.get_default() may need some time
+    GLib.timeout_add(1000, create_display_buttons)
 
 
 def create_display_buttons():
