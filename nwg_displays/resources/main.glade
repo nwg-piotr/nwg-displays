@@ -46,7 +46,7 @@
                 <property name="can-focus">False</property>
                 <property name="margin-start">10</property>
                 <property name="margin-end">10</property>
-                <property name="margin-top">10</property>
+                <property name="margin-top">6</property>
                 <property name="margin-bottom">10</property>
                 <property name="row-spacing">6</property>
                 <property name="column-spacing">6</property>
@@ -310,7 +310,7 @@
                   <packing>
                     <property name="left-attach">1</property>
                     <property name="top-attach">1</property>
-                    <property name="width">3</property>
+                    <property name="width">5</property>
                   </packing>
                 </child>
                 <child>
@@ -378,7 +378,7 @@
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="halign">end</property>
-                    <property name="margin-bottom">18</property>
+                    <property name="margin-bottom">6</property>
                     <child>
                       <placeholder/>
                     </child>
@@ -451,13 +451,16 @@
                   <object class="GtkBox">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="valign">center</property>
+                    <property name="margin-top">12</property>
                     <child>
                       <object class="GtkCheckButton" id="dpms">
                         <property name="label" translatable="yes">DPMS</property>
                         <property name="visible">True</property>
                         <property name="can-focus">True</property>
                         <property name="receives-default">False</property>
-                        <property name="halign">start</property>
+                        <property name="halign">end</property>
+                        <property name="valign">center</property>
                         <property name="draw-indicator">True</property>
                       </object>
                       <packing>
@@ -472,7 +475,8 @@
                         <property name="visible">True</property>
                         <property name="can-focus">True</property>
                         <property name="receives-default">False</property>
-                        <property name="halign">start</property>
+                        <property name="halign">end</property>
+                        <property name="valign">center</property>
                         <property name="draw-indicator">True</property>
                       </object>
                       <packing>
@@ -483,8 +487,8 @@
                     </child>
                   </object>
                   <packing>
-                    <property name="left-attach">4</property>
-                    <property name="top-attach">1</property>
+                    <property name="left-attach">3</property>
+                    <property name="top-attach">4</property>
                     <property name="width">2</property>
                   </packing>
                 </child>
@@ -500,13 +504,19 @@
                   </packing>
                 </child>
                 <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
+                  <object class="GtkButton" id="workspacec">
+                    <property name="label" translatable="yes">Workspaces</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">True</property>
+                    <property name="halign">start</property>
+                    <property name="valign">center</property>
+                    <property name="margin-top">12</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">5</property>
+                    <property name="top-attach">4</property>
+                  </packing>
                 </child>
               </object>
               <packing>
