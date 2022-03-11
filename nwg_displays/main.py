@@ -640,6 +640,7 @@ def main():
     global form_close
     form_close = builder.get_object("close")
     form_close.connect("clicked", Gtk.main_quit)
+    form_close.grab_focus()
 
     global form_apply
     form_apply = builder.get_object("apply")
