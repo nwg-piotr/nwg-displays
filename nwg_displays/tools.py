@@ -67,12 +67,15 @@ def list_outputs_activity():
     return result
 
 
-def focused_output_height():
+def max_window_height():
     i3 = Connection()
     outputs = i3.get_outputs()
     for o in outputs:
         if o.focused:
-            return o.rect.height
+            if o.rect.width > o.rect.height:
+                return o.rect.height * 0.9
+            else:
+                return o.rect.height / 2 * 0.9
     return None
 
 
