@@ -504,7 +504,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="workspacec">
+                  <object class="GtkButton" id="workspaces">
                     <property name="label" translatable="yes">Workspaces</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>

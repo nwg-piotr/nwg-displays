@@ -73,9 +73,12 @@ form_refresh = None
 form_modes = None
 form_transform = None
 form_wrapper_box = None
+form_workspaces = None
 form_close = None
 form_apply = None
 form_version = None
+
+dialog_win = None
 
 """
 We need to rebuild the modes GtkComboBoxText on each DisplayButton click. Unfortunately appending an item fires the
@@ -502,6 +505,23 @@ def handle_keyboard(window, event):
         window.close()
 
 
+def create_workspaces_window(btn, parent):
+    global dialog_win
+    if dialog_win:
+        dialog_win.destroy()
+    dialog_win = Gtk.Window()
+    # dialog_win.set_attached_to(parent)
+    # dialog_win.set_transient_for(parent)
+    dialog_win.set_resizable(False)
+    # dialog_win.set_keep_above(True)
+    dialog_win.set_modal(True)
+    dialog_win.connect("key-release-event", handle_keyboard)
+    lbl = Gtk.Label()
+    lbl.set_text("test 1, 2, 3")
+    dialog_win.add(lbl)
+    dialog_win.show_all()
+
+
 def main():
     GLib.set_prgname('nwg-displays')
 
@@ -636,6 +656,10 @@ def main():
 
     global form_wrapper_box
     form_wrapper_box = builder.get_object("wrapper-box")
+
+    global form_workspaces
+    form_workspaces = builder.get_object("workspaces")
+    form_workspaces.connect("clicked", create_workspaces_window, window)
 
     global form_close
     form_close = builder.get_object("close")
