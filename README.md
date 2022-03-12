@@ -18,14 +18,14 @@ This program is a part of the [nwg-shell](https://github.com/nwg-piotr/nwg-shell
 ## Usage
 
 ```text
-usage: main.py [-h] [-g] [-o OUTPUTS_PATH] [-n NUM_WS] [-v]
+$ nwg-displays -h
+usage: nwg-displays [-h] [-g] [-o OUTPUTS_PATH] [-n NUM_WS] [-v]
 
 options:
   -h, --help            show this help message and exit
   -g, --generic_names   use Generic output names
   -o OUTPUTS_PATH, --outputs_path OUTPUTS_PATH
-                        path to save Outputs config to, default:
-                        /home/piotr/.config/sway/outputs
+                        path to save Outputs config to, default: /home/piotr/.config/sway/outputs
   -n NUM_WS, --num_ws NUM_WS
                         number of Workspaces in use, default: 8
   -v, --version         display version information
