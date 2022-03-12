@@ -16,14 +16,16 @@ This program is a part of the [nwg-shell](https://github.com/nwg-piotr/nwg-shell
 ## Usage
 
 ```text
-$ nwg-displays -h
-usage: nwg-displays [-h] [-o OUTPUT_PATH] [-g] [-v]
+usage: main.py [-h] [-g] [-o OUTPUTS_PATH] [-n NUM_WS] [-v]
 
 options:
   -h, --help            show this help message and exit
-  -o OUTPUT_PATH, --output_path OUTPUT_PATH
-                        path to save Outputs config to, default: /home/piotr/.config/sway/outputs
   -g, --generic_names   use Generic output names
+  -o OUTPUTS_PATH, --outputs_path OUTPUTS_PATH
+                        path to save Outputs config to, default:
+                        /home/piotr/.config/sway/outputs
+  -n NUM_WS, --num_ws NUM_WS
+                        number of Workspaces in use, default: 8
   -v, --version         display version information
 ```
 
@@ -32,6 +34,27 @@ The configuration saved to a file may be easily used in the sway config:
 ```text
 ...
 include ~/.config/sway/outputs
+...
+```
+
+The program also saves the `~/.config/sway/workspaces` file, which defines the workspace -> output associations.
+
+```text
+workspace 1 output DP-1
+workspace 2 output DP-1
+workspace 3 output DP-1
+workspace 4 output eDP-1
+workspace 5 output eDP-1
+workspace 6 output eDP-1
+workspace 7 output HDMI-A-1
+workspace 8 output HDMI-A-1
+```
+
+You may include it in the sway config file, instead of editing associations manually:
+
+```text
+...
+include ~/.config/sway/workspaces
 ...
 ```
 

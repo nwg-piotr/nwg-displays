@@ -3,6 +3,7 @@
 import json
 import os
 import sys
+import subprocess
 
 import gi
 
@@ -110,7 +111,7 @@ def is_rotated(transform):
     return "90" in transform or "270" in transform
 
 
-def apply_settings(display_buttons, outputs_activity, output_path, g_names=False):
+def apply_settings(display_buttons, outputs_activity, outputs_path, g_names=False):
     lines = []
     cmds = []
     db_names = []
@@ -164,7 +165,7 @@ def apply_settings(display_buttons, outputs_activity, output_path, g_names=False
     for line in lines:
         print(line)
 
-    save_list_to_text_file(lines, output_path)
+    save_list_to_text_file(lines, outputs_path)
 
     print("[Executing]")
     for cmd in cmds:
@@ -218,3 +219,29 @@ def save_list_to_text_file(data, file_path):
     for line in data:
         text_file.write(line + "\n")
     text_file.close()
+
+
+def load_workspaces(path):
+    result = {}
+    try:
+        with open(path, 'r') as file:
+            data = file.read().splitlines()
+            for i in range(len(data)):
+                result[i+1] = data[i].split()[3]
+            return result
+    except Exception as e:
+        print(e)
+        return result
+
+
+def save_workspaces(data_dict, path):
+    text_file = open(path, "w")
+    for key in data_dict:
+        line = "workspace {} output {}".format(key, data_dict[key])
+        text_file.write(line + "\n")
+    text_file.close()
+
+
+def notify(summary, body, timeout=3000):
+    cmd = "notify-send '{}' '{}' -i /usr/share/pixmaps/nwg-displays.svg -t {}".format(summary, body, timeout)
+    subprocess.call(cmd, shell=True)
