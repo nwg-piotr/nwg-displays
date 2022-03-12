@@ -17,11 +17,11 @@ This program is a part of the [nwg-shell](https://github.com/nwg-piotr/nwg-shell
 
 ```text
 $ nwg-displays -h
-usage: nwg-displays [-h] [-o OUTPUT_PATH] [-g] [-v]
+usage: nwg-displays [-h] [-o OUTPUTS_PATH] [-g] [-v]
 
 options:
   -h, --help            show this help message and exit
-  -o OUTPUT_PATH, --output_path OUTPUT_PATH
+  -o OUTPUTS_PATH, --output_path OUTPUTS_PATH
                         path to save Outputs config to, default: /home/piotr/.config/sway/outputs
   -g, --generic_names   use Generic output names
   -v, --version         display version information

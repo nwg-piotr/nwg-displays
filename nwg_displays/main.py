@@ -43,8 +43,9 @@ if not os.path.isdir(sway_config_dir):
     sway_config_dir = ""
 
 config = {}
-output_path = ""
+outputs_path = ""
 generic_names = False
+num_ws = 0
 
 """
 i3.get_outputs() does not return some output attributes, especially when connected via hdmi.
@@ -53,6 +54,7 @@ and the add inactive outputs, if any, from what we detect with .get_outputs()
 """
 outputs = {}  # Active outputs, listed from the sway tree; stores name and all attributes.
 outputs_activity = {}  # Just a dictionary "name": is_active - from get_outputs()
+workspaces = {}  # "workspace_num": "display_name"
 
 display_buttons = []
 selected_output_button = None
@@ -426,7 +428,7 @@ def on_mode_changed(widget):
 
 def on_apply_button(widget):
     global outputs_activity
-    apply_settings(display_buttons, outputs_activity, output_path, g_names=generic_names)
+    apply_settings(display_buttons, outputs_activity, outputs_path, g_names=generic_names)
     # save config file
     save_json(config, os.path.join(config_dir, "config"))
 
@@ -506,6 +508,9 @@ def handle_keyboard(window, event):
 
 
 def create_workspaces_window(btn, parent):
+    global sway_config_dir
+    global workspaces
+    workspaces = load_workspaces(os.path.join(sway_config_dir, "workspaces"))
     global dialog_win
     if dialog_win:
         dialog_win.destroy()
@@ -516,26 +521,82 @@ def create_workspaces_window(btn, parent):
     # dialog_win.set_keep_above(True)
     dialog_win.set_modal(True)
     dialog_win.connect("key-release-event", handle_keyboard)
-    lbl = Gtk.Label()
-    lbl.set_text("test 1, 2, 3")
-    dialog_win.add(lbl)
+    grid = Gtk.Grid()
+    for prop in ["margin_start", "margin_end", "margin_top", "margin_bottom"]:
+        grid.set_property(prop, 10)
+    grid.set_column_spacing(12)
+    grid.set_row_spacing(12)
+    dialog_win.add(grid)
+    global num_ws
+    global outputs
+    last_row = 0
+    for i in range(num_ws):
+        lbl = Gtk.Label()
+        lbl.set_text("workspace {} output ".format(i + 1))
+        grid.attach(lbl, 0, i, 1, 1)
+        combo = Gtk.ComboBoxText()
+        for key in outputs:
+            combo.append(key, key)
+            if i + 1 in workspaces:
+                combo.set_active_id(workspaces[i + 1])
+            combo.connect("changed", on_ws_combo_changed, i + 1)
+        grid.attach(combo, 1, i, 1, 1)
+        last_row = i
+
+    box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+    grid.attach(box, 0, last_row + 1, 2, 1)
+
+    btn_apply = Gtk.Button()
+    btn_apply.set_label("Apply")
+    btn_apply.connect("clicked", on_workspaces_apply_btn, dialog_win)
+    box.pack_end(btn_apply, False, False, 0)
+
+    btn_close = Gtk.Button()
+    btn_close.set_label("Close")
+    btn_close.connect("clicked", close_dialog, dialog_win)
+    box.pack_end(btn_close, False, False, 6)
+
     dialog_win.show_all()
+
+
+def on_ws_combo_changed(combo, ws_num):
+    global workspaces
+    workspaces[ws_num] = combo.get_active_id()
+
+
+def close_dialog(w, win):
+    win.close()
+
+
+def on_workspaces_apply_btn(w, win):
+    global workspaces
+    save_workspaces(workspaces, os.path.join(sway_config_dir, "workspaces"))
+    close_dialog(w, win)
+    notify("Workspaces assignment", "Restart sway for changes to take effect")
 
 
 def main():
     GLib.set_prgname('nwg-displays')
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-o",
-                        "--output_path",
-                        type=str,
-                        default="{}/outputs".format(sway_config_dir),
-                        help="path to save Outputs config to, default: {}".format(
-                            "{}/outputs".format(sway_config_dir)))
     parser.add_argument("-g",
                         "--generic_names",
                         action="store_true",
                         help="use Generic output names")
+
+    parser.add_argument("-o",
+                        "--outputs_path",
+                        type=str,
+                        default="{}/outputs".format(sway_config_dir),
+                        help="path to save Outputs config to, default: {}".format(
+                            "{}/outputs".format(sway_config_dir)))
+
+    parser.add_argument("-n",
+                        "--num_ws",
+                        type=int,
+                        default=8,
+                        help="number of Workspaces in use, default: 8")
+
     parser.add_argument("-v",
                         "--version",
                         action="version",
@@ -543,12 +604,16 @@ def main():
                         help="display version information")
     args = parser.parse_args()
 
-    global output_path
-    output_path = args.output_path
-    print("Output path: '{}'".format(output_path))
+    global outputs_path
+    outputs_path = args.outputs_path
+    print("Output path: '{}'".format(outputs_path))
 
     global generic_names
     generic_names = args.generic_names
+
+    global num_ws
+    num_ws = args.num_ws
+    print("Number of workspaces: {}".format(num_ws))
 
     config_file = os.path.join(config_dir, "config")
     global config
