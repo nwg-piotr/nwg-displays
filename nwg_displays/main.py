@@ -511,6 +511,7 @@ def create_workspaces_window(btn, parent):
     global sway_config_dir
     global workspaces
     workspaces = load_workspaces(os.path.join(sway_config_dir, "workspaces"))
+    old_workspaces = workspaces.copy()
     global dialog_win
     if dialog_win:
         dialog_win.destroy()
@@ -548,7 +549,7 @@ def create_workspaces_window(btn, parent):
 
     btn_apply = Gtk.Button()
     btn_apply.set_label("Apply")
-    btn_apply.connect("clicked", on_workspaces_apply_btn, dialog_win)
+    btn_apply.connect("clicked", on_workspaces_apply_btn, dialog_win, old_workspaces)
     box.pack_end(btn_apply, False, False, 0)
 
     btn_close = Gtk.Button()
@@ -568,11 +569,13 @@ def close_dialog(w, win):
     win.close()
 
 
-def on_workspaces_apply_btn(w, win):
+def on_workspaces_apply_btn(w, win, old_workspaces):
     global workspaces
-    save_workspaces(workspaces, os.path.join(sway_config_dir, "workspaces"))
+    if workspaces != old_workspaces:
+        save_workspaces(workspaces, os.path.join(sway_config_dir, "workspaces"))
+        notify("Workspaces assignment", "Restart sway for changes to take effect")
+
     close_dialog(w, win)
-    notify("Workspaces assignment", "Restart sway for changes to take effect")
 
 
 def main():

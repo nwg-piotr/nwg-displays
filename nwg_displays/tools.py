@@ -242,6 +242,6 @@ def save_workspaces(data_dict, path):
     text_file.close()
 
 
-def notify(summary, body):
-    cmd = "notify-send '{}' '{}' -i /usr/share/pixmaps/nwg-displays.svg -t 5000 -u low".format(summary, body)
+def notify(summary, body, timeout=3000):
+    cmd = "notify-send '{}' '{}' -i /usr/share/pixmaps/nwg-displays.svg -t {}".format(summary, body, timeout)
     subprocess.call(cmd, shell=True)
