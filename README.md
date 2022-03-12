@@ -7,9 +7,9 @@ This program is a part of the [nwg-shell](https://github.com/nwg-piotr/nwg-shell
 **nwg-displays is expected to:**
 
 - provide an intuitive GUI to manage multiple displays;
-- apply settings on the fly;
+- apply settings;
 - save outputs configuration to a text file;
-- save workspace -> output assignment to a text file;
+- save workspace -> output assignments to a text file;
 - support sway only.
 
 ![2022-03-12-110614_screenshot](https://user-images.githubusercontent.com/20579136/158013748-5b27f742-0e6a-4d82-a5ac-06368b4df008.png)
