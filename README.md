@@ -58,7 +58,9 @@ include ~/.config/sway/workspaces
 ...
 ```
 
-Use `--generic_names` if your output names happen to be different on every restart, e.g. when you use Thunderbolt outputs. 
+Use `--generic_names` if your output names happen to be different on every restart, e.g. when you use Thunderbolt outputs.
+
+Use `--num_ws` if you use workspaces in a number other than 8.
 
 ## Settings
 
