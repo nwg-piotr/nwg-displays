@@ -123,7 +123,7 @@ def apply_settings(display_buttons, outputs_activity, output_path, g_names=False
         cmd = 'output "{}"'.format(name)
 
         lines.append("    mode {}x{}@{}Hz".format(db.width, db.height, db.refresh))
-        cmd + " mode {}x{}@{}Hz".format(db.width, db.height, db.refresh)
+        cmd += " mode {}x{}@{}Hz".format(db.width, db.height, db.refresh)
 
         lines.append("    pos {} {}".format(db.x, db.y))
         cmd += " pos {} {}".format(db.x, db.y)
