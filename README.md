@@ -7,23 +7,27 @@ This program is a part of the [nwg-shell](https://github.com/nwg-piotr/nwg-shell
 **nwg-displays is expected to:**
 
 - provide an intuitive GUI to manage multiple displays;
-- apply settings on the fly;
+- apply settings;
 - save outputs configuration to a text file;
+- save workspace -> output assignments to a text file;
 - support sway only.
 
-![2022-03-10-033822_screenshot](https://user-images.githubusercontent.com/20579136/157577549-f921b9a3-d0f3-4747-8585-5e6a1da63925.png)
+![2022-03-12-110614_screenshot](https://user-images.githubusercontent.com/20579136/158013748-5b27f742-0e6a-4d82-a5ac-06368b4df008.png)
+
 
 ## Usage
 
 ```text
 $ nwg-displays -h
-usage: nwg-displays [-h] [-o OUTPUT_PATH] [-g] [-v]
+usage: nwg-displays [-h] [-g] [-o OUTPUTS_PATH] [-n NUM_WS] [-v]
 
 options:
   -h, --help            show this help message and exit
-  -o OUTPUT_PATH, --output_path OUTPUT_PATH
-                        path to save Outputs config to, default: /home/piotr/.config/sway/outputs
   -g, --generic_names   use Generic output names
+  -o OUTPUTS_PATH, --outputs_path OUTPUTS_PATH
+                        path to save Outputs config to, default: /home/piotr/.config/sway/outputs
+  -n NUM_WS, --num_ws NUM_WS
+                        number of Workspaces in use, default: 8
   -v, --version         display version information
 ```
 
@@ -35,7 +39,30 @@ include ~/.config/sway/outputs
 ...
 ```
 
-Use `--generic_names` if your output names happen to be different on every restart, e.g. when you use Thunderbolt outputs. 
+The program also saves the `~/.config/sway/workspaces` file, which defines the workspace -> output associations.
+
+```text
+workspace 1 output DP-1
+workspace 2 output DP-1
+workspace 3 output DP-1
+workspace 4 output eDP-1
+workspace 5 output eDP-1
+workspace 6 output eDP-1
+workspace 7 output HDMI-A-1
+workspace 8 output HDMI-A-1
+```
+
+You may include it in the sway config file, instead of editing associations manually:
+
+```text
+...
+include ~/.config/sway/workspaces
+...
+```
+
+Use `--generic_names` if your output names happen to be different on every restart, e.g. when you use Thunderbolt outputs.
+
+Use `--num_ws` if you use workspaces in a number other than 8.
 
 ## Settings
 
