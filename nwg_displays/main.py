@@ -476,11 +476,13 @@ class Indicator(Gtk.Window):
     def __init__(self, monitor, name, width, height, timeout):
         super().__init__()
         self.timeout = timeout
+        self.monitor = monitor
         self.set_property("name", "indicator")
 
         GtkLayerShell.init_for_window(self)
         GtkLayerShell.set_layer(self, GtkLayerShell.Layer.OVERLAY)
-        GtkLayerShell.set_monitor(self, monitor)
+        if monitor:
+            GtkLayerShell.set_monitor(self, monitor)
 
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.add(box)
@@ -494,7 +496,7 @@ class Indicator(Gtk.Window):
             self.show_up(self.timeout * 2)
 
     def show_up(self, timeout=None):
-        if self.timeout > 0:
+        if self.timeout > 0 and self.monitor:
             self.show_all()
             if timeout:
                 GLib.timeout_add(timeout, self.hide)

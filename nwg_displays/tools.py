@@ -2,8 +2,8 @@
 
 import json
 import os
-import sys
 import subprocess
+import sys
 
 import gi
 
@@ -46,14 +46,19 @@ def list_outputs():
                                                                        item.ipc_data["serial"])
             outputs_dict[item.name]["focused"] = item.ipc_data["focused"]
 
+            outputs_dict[item.name]["monitor"] = None
+
     display = Gdk.Display.get_default()
     for i in range(display.get_n_monitors()):
         monitor = display.get_monitor(i)
         geometry = monitor.get_geometry()
 
         for key in outputs_dict:
-            if int(outputs_dict[key]["x"]) == geometry.x and int(outputs_dict[key]["y"]) == geometry.y:
+            if int(outputs_dict[key]["x"]) == geometry.x and int(outputs_dict[key]["y"]) == geometry.y and int(
+                    outputs_dict[key]["width"]) == geometry.width and int(
+                    outputs_dict[key]["height"]) == geometry.height:
                 outputs_dict[key]["monitor"] = monitor
+                break
 
     return outputs_dict
 
@@ -227,7 +232,7 @@ def load_workspaces(path):
         with open(path, 'r') as file:
             data = file.read().splitlines()
             for i in range(len(data)):
-                result[i+1] = data[i].split()[3]
+                result[i + 1] = data[i].split()[3]
             return result
     except Exception as e:
         print(e)
