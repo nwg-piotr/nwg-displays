@@ -4,6 +4,8 @@ Output management utility for sway Wayland compositor, inspired by wdisplays and
 
 This program is a part of the [nwg-shell](https://github.com/nwg-piotr/nwg-shell) project.
 
+[![Packaging status](https://repology.org/badge/vertical-allrepos/nwg-displays.svg)](https://repology.org/project/nwg-displays/versions)
+
 **nwg-displays is expected to:**
 
 - provide an intuitive GUI to manage multiple displays;
