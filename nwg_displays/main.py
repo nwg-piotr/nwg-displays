@@ -518,10 +518,7 @@ def create_workspaces_window(btn, parent):
     if dialog_win:
         dialog_win.destroy()
     dialog_win = Gtk.Window()
-    # dialog_win.set_attached_to(parent)
-    # dialog_win.set_transient_for(parent)
     dialog_win.set_resizable(False)
-    # dialog_win.set_keep_above(True)
     dialog_win.set_modal(True)
     dialog_win.connect("key-release-event", handle_keyboard)
     grid = Gtk.Grid()
@@ -703,7 +700,7 @@ def main():
     global form_scale
     form_scale = builder.get_object("scale")
     adj = Gtk.Adjustment(lower=0.1, upper=10, step_increment=0.1, page_increment=10, page_size=1)
-    form_scale.configure(adj, 0.1, 1)
+    form_scale.configure(adj, 0.1, 2)
     form_scale.connect("value-changed", on_scale_changed)
 
     global form_scale_filter
