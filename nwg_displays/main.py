@@ -30,7 +30,7 @@ except ValueError:
 
 from gi.repository import Gtk, GLib, GtkLayerShell
 
-from nwg_displays.tools import *
+from tools import *
 
 from nwg_displays.__about__ import __version__
 
@@ -64,6 +64,7 @@ form_name = None
 form_description = None
 form_dpms = None
 form_adaptive_sync = None
+form_custom_mode = None
 form_view_scale = None
 form_x = None
 form_y = None
@@ -234,6 +235,7 @@ def update_form_from_widget(widget):
     form_description.set_text(widget.description)
     form_dpms.set_active(widget.dpms)
     form_adaptive_sync.set_active(widget.adaptive_sync)
+    form_custom_mode.set_active(widget.custom_mode)
     form_view_scale.set_value(config["view-scale"])  # not really from the widget, but from the global value
     form_x.set_value(widget.x)
     form_y.set_value(widget.y)
@@ -270,7 +272,7 @@ def update_form_from_widget(widget):
 
 class DisplayButton(Gtk.Button):
     def __init__(self, name, description, x, y, width, height, transform, scale, scale_filter, refresh, modes, active,
-                 dpms, adaptive_sync_status, focused, monitor):
+                 dpms, adaptive_sync_status, custom_mode_status, focused, monitor):
         super().__init__()
         # Output properties
         self.name = name
@@ -291,6 +293,7 @@ class DisplayButton(Gtk.Button):
         self.active = active
         self.dpms = dpms
         self.adaptive_sync = adaptive_sync_status == "enabled"  # converts "enabled | disabled" to bool
+        self.custom_mode = custom_mode_status == "enabled"
         self.focused = focused
 
         # Button properties
@@ -365,6 +368,10 @@ def on_dpms_toggled(widget):
 def on_adaptive_sync_toggled(widget):
     if selected_output_button:
         selected_output_button.adaptive_sync = widget.get_active()
+
+def on_custom_mode_toggle(widget):
+    if selected_output_button:
+        selected_output_button.custom_mode = widget.get_active()
 
 
 def on_pos_x_changed(widget):
@@ -462,7 +469,7 @@ def create_display_buttons():
         item = outputs[key]
         b = DisplayButton(key, item["description"], item["x"], item["y"], round(item["width"]), round(item["height"]),
                           item["transform"], item["scale"], item["scale_filter"], item["refresh"], item["modes"],
-                          item["active"], item["dpms"], item["adaptive_sync_status"], item["focused"], item["monitor"])
+                          item["active"], item["dpms"], item["adaptive_sync_status"], "disabled", item["focused"], item["monitor"])
 
         display_buttons.append(b)
 
@@ -666,6 +673,10 @@ def main():
     global form_adaptive_sync
     form_adaptive_sync = builder.get_object("adaptive-sync")
     form_adaptive_sync.connect("toggled", on_adaptive_sync_toggled)
+
+    global form_custom_mode
+    form_custom_mode = builder.get_object("custom-mode")
+    form_custom_mode.connect("toggled", on_custom_mode_toggle)
 
     global form_view_scale
     form_view_scale = builder.get_object("view-scale")

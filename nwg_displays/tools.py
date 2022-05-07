@@ -128,8 +128,9 @@ def apply_settings(display_buttons, outputs_activity, outputs_path, g_names=Fals
         lines.append('output "%s" {' % name)
         cmd = 'output "{}"'.format(name)
 
-        lines.append("    mode {}x{}@{}Hz".format(db.width, db.height, db.refresh))
-        cmd += " mode {}x{}@{}Hz".format(db.width, db.height, db.refresh)
+        custom_mode_str = "--custom" if db.custom_mode else ""
+        lines.append("    mode {} {}x{}@{}Hz".format(custom_mode_str, db.width, db.height, db.refresh))
+        cmd += " mode {} {}x{}@{}Hz".format(custom_mode_str, db.width, db.height, db.refresh)
 
         lines.append("    pos {} {}".format(db.x, db.y))
         cmd += " pos {} {}".format(db.x, db.y)
