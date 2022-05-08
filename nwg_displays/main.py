@@ -30,7 +30,7 @@ except ValueError:
 
 from gi.repository import Gtk, GLib, GtkLayerShell
 
-from tools import *
+from nwg_displays.tools import *
 
 from nwg_displays.__about__ import __version__
 
