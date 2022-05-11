@@ -293,7 +293,7 @@ class DisplayButton(Gtk.Button):
         self.active = active
         self.dpms = dpms
         self.adaptive_sync = adaptive_sync_status == "enabled"  # converts "enabled | disabled" to bool
-        self.custom_mode = custom_mode_status == "enabled"
+        self.custom_mode = custom_mode_status
         self.focused = focused
 
         # Button properties
@@ -371,7 +371,14 @@ def on_adaptive_sync_toggled(widget):
 
 def on_custom_mode_toggle(widget):
     if selected_output_button:
-        selected_output_button.custom_mode = widget.get_active()
+        outputs = set(config["custom-mode"])
+        turned_on = widget.get_active()
+        selected_output_button.custom_mode = turned_on
+        if turned_on:
+            outputs.add(selected_output_button.name)
+        else:
+            outputs.discard(selected_output_button.name)
+        config["custom-mode"] = tuple(outputs)
 
 
 def on_pos_x_changed(widget):
@@ -467,9 +474,10 @@ def create_display_buttons():
     outputs = list_outputs()
     for key in outputs:
         item = outputs[key]
+        custom_mode = key in config["custom-mode"]
         b = DisplayButton(key, item["description"], item["x"], item["y"], round(item["width"]), round(item["height"]),
                           item["transform"], item["scale"], item["scale_filter"], item["refresh"], item["modes"],
-                          item["active"], item["dpms"], item["adaptive_sync_status"], "disabled", item["focused"], item["monitor"])
+                          item["active"], item["dpms"], item["adaptive_sync_status"], custom_mode, item["focused"], item["monitor"])
 
         display_buttons.append(b)
 

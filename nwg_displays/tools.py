@@ -193,7 +193,10 @@ def inactive_output_description(name):
 
 def config_keys_missing(config, config_file):
     key_missing = False
-    defaults = {"view-scale": 0.15, "snap-threshold": 10, "indicator-timeout": 500}
+    defaults = {"view-scale": 0.15,
+                "snap-threshold": 10,
+                "indicator-timeout": 500,
+                "custom-mode": [],}
     for key in defaults:
         if key not in config:
             config[key] = defaults[key]
