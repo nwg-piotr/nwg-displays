@@ -128,8 +128,9 @@ def apply_settings(display_buttons, outputs_activity, outputs_path, g_names=Fals
         lines.append('output "%s" {' % name)
         cmd = 'output "{}"'.format(name)
 
-        lines.append("    mode {}x{}@{}Hz".format(db.width, db.height, db.refresh))
-        cmd += " mode {}x{}@{}Hz".format(db.width, db.height, db.refresh)
+        custom_mode_str = "--custom" if db.custom_mode else ""
+        lines.append("    mode {} {}x{}@{}Hz".format(custom_mode_str, db.width, db.height, db.refresh))
+        cmd += " mode {} {}x{}@{}Hz".format(custom_mode_str, db.width, db.height, db.refresh)
 
         lines.append("    pos {} {}".format(db.x, db.y))
         cmd += " pos {} {}".format(db.x, db.y)
@@ -192,7 +193,10 @@ def inactive_output_description(name):
 
 def config_keys_missing(config, config_file):
     key_missing = False
-    defaults = {"view-scale": 0.15, "snap-threshold": 10, "indicator-timeout": 500}
+    defaults = {"view-scale": 0.15,
+                "snap-threshold": 10,
+                "indicator-timeout": 500,
+                "custom-mode": [],}
     for key in defaults:
         if key not in config:
             config[key] = defaults[key]

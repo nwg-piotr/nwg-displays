@@ -4,3 +4,4 @@
 /build/
 /dist/
 /nwg_displays/resources/#main.glade#
+/nwg_displays/__pycache__
