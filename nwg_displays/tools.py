@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 
 import gi
 
@@ -83,6 +84,16 @@ def max_window_height():
             else:
                 return o.rect.height / 2 * 0.9
     return None
+
+
+def scale_if_floating():
+    pid = os.getpid()
+    i3 = Connection()
+    node = i3.get_tree().find_by_pid(pid)[0]
+    if node.type == "floating_con":
+        h = int(max_window_height())
+        if h:
+            i3.command("resize set height {}".format(h))
 
 
 def min_val(a, b):

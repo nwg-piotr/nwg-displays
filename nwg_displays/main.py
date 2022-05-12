@@ -789,13 +789,11 @@ def main():
         update_form_from_widget(display_buttons[0])
         display_buttons[0].select()
 
-    # I case the user wanted the window to be floating, we need to request it's height.
-    # This will work for the focused output.
-    h = max_window_height()
-    if h:
-        window.set_size_request(0, h)
-
     window.show_all()
+
+    # Gtk.Fixed does not respect expand properties. That's why we need
+    # to scale the window automagically if opened as a floating_con
+    Gdk.threads_add_timeout(GLib.PRIORITY_LOW, 100, scale_if_floating)
 
     Gtk.main()
 
