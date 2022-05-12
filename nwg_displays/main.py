@@ -758,7 +758,7 @@ def main():
 
     global form_version
     form_version = builder.get_object("version")
-    form_version.set_text("version {}".format(__version__))
+    form_version.set_text("v{}".format(__version__))
 
     wrapper = builder.get_object("wrapper")
     wrapper.set_property("name", "wrapper")
@@ -781,6 +781,7 @@ def main():
         form_wrapper_box.pack_start(cb, False, False, 3)
 
     btn = Gtk.Button.new_with_label("Toggle")
+    btn.set_tooltip_text("Enables/disables outputs.")
     btn.connect("clicked", on_toggle_button)
     form_wrapper_box.pack_start(btn, False, False, 3)
 
