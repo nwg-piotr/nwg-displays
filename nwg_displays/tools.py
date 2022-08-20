@@ -31,8 +31,10 @@ def list_outputs():
         if item.type == "output" and not item.name.startswith("__"):
             outputs_dict[item.name] = {"x": item.rect.x,
                                        "y": item.rect.y,
-                                       "width": item.rect.width,
-                                       "height": item.rect.height}
+                                       "logical width": item.rect.width,
+                                       "logical height": item.rect.height,
+                                       "width":item.ipc_data["current_mode"]["width"],
+                                       "height":item.ipc_data["current_mode"]["height"]}
 
             outputs_dict[item.name]["active"] = item.ipc_data["active"]
             outputs_dict[item.name]["dpms"] = item.ipc_data["dpms"]
@@ -56,8 +58,8 @@ def list_outputs():
 
         for key in outputs_dict:
             if int(outputs_dict[key]["x"]) == geometry.x and int(outputs_dict[key]["y"]) == geometry.y and int(
-                    outputs_dict[key]["width"]) == geometry.width and int(
-                    outputs_dict[key]["height"]) == geometry.height:
+                    outputs_dict[key]["logical width"]) == geometry.width and int(
+                    outputs_dict[key]["logical height"]) == geometry.height:
                 outputs_dict[key]["monitor"] = monitor
                 break
 
