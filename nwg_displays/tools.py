@@ -33,8 +33,8 @@ def list_outputs():
                                        "y": item.rect.y,
                                        "logical width": item.rect.width,
                                        "logical height": item.rect.height,
-                                       "width":item.ipc_data["current_mode"]["width"],
-                                       "height":item.ipc_data["current_mode"]["height"]}
+                                       "physical width": item.ipc_data["current_mode"]["width"],
+                                       "physical height": item.ipc_data["current_mode"]["height"]}
 
             outputs_dict[item.name]["active"] = item.ipc_data["active"]
             outputs_dict[item.name]["dpms"] = item.ipc_data["dpms"]
@@ -142,8 +142,8 @@ def apply_settings(display_buttons, outputs_activity, outputs_path, g_names=Fals
         cmd = 'output "{}"'.format(name)
 
         custom_mode_str = "--custom" if db.custom_mode else ""
-        lines.append("    mode {} {}x{}@{}Hz".format(custom_mode_str, db.width, db.height, db.refresh))
-        cmd += " mode {} {}x{}@{}Hz".format(custom_mode_str, db.width, db.height, db.refresh)
+        lines.append("    mode {} {}x{}@{}Hz".format(custom_mode_str, db.physical_width, db.physical_height, db.refresh))
+        cmd += " mode {} {}x{}@{}Hz".format(custom_mode_str, db.physical_width, db.physical_height, db.refresh)
 
         lines.append("    pos {} {}".format(db.x, db.y))
         cmd += " pos {} {}".format(db.x, db.y)

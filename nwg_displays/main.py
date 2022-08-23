@@ -164,7 +164,7 @@ def on_motion_notify_event(widget, event):
             if val not in snap_x:
                 snap_x.append(val)
 
-            val = (db.x + db.width / db.scale) * config["view-scale"]
+            val = (db.x + db.logical_width) * config["view-scale"]
             if val not in snap_x:
                 snap_x.append(val)
 
@@ -172,7 +172,7 @@ def on_motion_notify_event(widget, event):
             if val not in snap_y:
                 snap_y.append(val)
 
-            val = (db.y + db.height / db.scale) * config["view-scale"]
+            val = (db.y + db.logical_height) * config["view-scale"]
             if val not in snap_y:
                 snap_y.append(val)
 
@@ -183,7 +183,7 @@ def on_motion_notify_event(widget, event):
                 break
 
         for value in snap_x:
-            w = widget.width * config["view-scale"] / widget.scale
+            w = widget.logical_width * config["view-scale"]
             if abs(w + x - value) < snap_threshold_scaled:
                 snap_h = value - w
                 break
@@ -194,7 +194,7 @@ def on_motion_notify_event(widget, event):
                 break
 
         for value in snap_y:
-            h = widget.height * config["view-scale"] / widget.scale
+            h = widget.logical_height * config["view-scale"]
             if abs(h + y - value) < snap_threshold_scaled:
                 snap_v = value - h
                 break
@@ -239,8 +239,8 @@ def update_form_from_widget(widget):
     form_view_scale.set_value(config["view-scale"])  # not really from the widget, but from the global value
     form_x.set_value(widget.x)
     form_y.set_value(widget.y)
-    form_width.set_value(widget.width)
-    form_height.set_value(widget.height)
+    form_width.set_value(widget.physical_width)
+    form_height.set_value(widget.physical_height)
     form_scale.set_value(widget.scale)
     form_scale_filter.set_active_id(widget.scale_filter)
     form_refresh.set_value(widget.refresh)
@@ -254,14 +254,10 @@ def update_form_from_widget(widget):
         m = "{}x{}@{}Hz".format(mode["width"], mode["height"], mode["refresh"] / 1000)
         form_modes.append(m, m)
         # This is just to set active_id
-        if "90" in widget.transform or "270" in widget.transform:
-            if mode["width"] == widget.height and mode["height"] == widget.width and mode[
-                    "refresh"] / 1000 == widget.refresh:
-                active = m
-        else:
-            if mode["width"] == widget.width and mode["height"] == widget.height and mode[
-                    "refresh"] / 1000 == widget.refresh:
-                active = m
+
+        if mode["width"] == widget.physical_width and mode["height"] == widget.physical_height and mode[
+                "refresh"] / 1000 == widget.refresh:
+            active = m
     if active:
         form_modes.set_active_id(active)
 
@@ -271,7 +267,7 @@ def update_form_from_widget(widget):
 
 
 class DisplayButton(Gtk.Button):
-    def __init__(self, name, description, x, y, width, height, transform, scale, scale_filter, refresh, modes, active,
+    def __init__(self, name, description, x, y, physical_width, physical_height, transform, scale, scale_filter, refresh, modes, active,
                  dpms, adaptive_sync_status, custom_mode_status, focused, monitor):
         super().__init__()
         # Output properties
@@ -279,8 +275,8 @@ class DisplayButton(Gtk.Button):
         self.description = description
         self.x = x
         self.y = y
-        self.width = width
-        self.height = height
+        self.physical_width = physical_width
+        self.physical_height = physical_height
         self.transform = transform
         self.scale = scale
         self.scale_filter = scale_filter
@@ -305,14 +301,26 @@ class DisplayButton(Gtk.Button):
         self.set_always_show_image(True)
         self.set_label(self.name)
 
-        width = round(self.width * config["view-scale"] / self.scale)
-        height = round(self.height * config["view-scale"] / self.scale)
-        self.set_size_request(width, height)
+        self.rescale_transform()
         self.set_property("name", "output")
 
-        self.indicator = Indicator(monitor, name, width, height, config["indicator-timeout"])
+        self.indicator = Indicator(monitor, name, self.logical_width, self.logical_height, config["indicator-timeout"])
 
         self.show()
+
+    @property
+    def logical_width(self):
+        if is_rotated(self.transform):
+            return self.physical_height / self.scale
+        else:
+            return self.physical_width / self.scale
+
+    @property
+    def logical_height(self):
+        if is_rotated(self.transform):
+            return self.physical_width / self.scale
+        else:
+            return self.physical_height / self.scale
 
     def select(self):
         self.selected = True
@@ -323,9 +331,9 @@ class DisplayButton(Gtk.Button):
     def unselect(self):
         self.set_property("name", "output")
 
-    def rescale(self):
-        self.set_size_request(round(self.width * config["view-scale"] / self.scale),
-                              round(self.height * config["view-scale"] / self.scale))
+    def rescale_transform(self):
+        self.set_size_request(round(self.logical_width * config["view-scale"]),
+                              round(self.logical_height * config["view-scale"]))
 
     def on_active_check_button_toggled(self, w):
         self.active = w.get_active()
@@ -345,19 +353,15 @@ def on_view_scale_changed(*args):
     snap_threshold_scaled = round(config["snap-threshold"] * config["view-scale"] * 10)
 
     for b in display_buttons:
-        b.rescale()
+        b.rescale_transform()
         fixed.move(b, b.x * config["view-scale"], b.y * config["view-scale"])
 
 
 def on_transform_changed(*args):
     if selected_output_button:
         transform = form_transform.get_active_id()
-        if orientation_changed(transform, selected_output_button.transform):
-            selected_output_button.width, selected_output_button.height = selected_output_button.height, \
-                                                                          selected_output_button.width
-            selected_output_button.rescale()
-
         selected_output_button.transform = transform
+        selected_output_button.rescale_transform()
 
 
 def on_dpms_toggled(widget):
@@ -397,20 +401,20 @@ def on_pos_y_changed(widget):
 
 def on_width_changed(widget):
     if selected_output_button:
-        selected_output_button.width = round(widget.get_value())
-        selected_output_button.rescale()
+        selected_output_button.physical_width = round(widget.get_value())
+        selected_output_button.rescale_transform()
 
 
 def on_height_changed(widget):
     if selected_output_button:
-        selected_output_button.height = round(widget.get_value())
-        selected_output_button.rescale()
+        selected_output_button.physical_height = round(widget.get_value())
+        selected_output_button.rescale_transform()
 
 
 def on_scale_changed(widget):
     if selected_output_button:
         selected_output_button.scale = widget.get_value()
-        selected_output_button.rescale()
+        selected_output_button.rescale_transform()
 
 
 def on_scale_filter_changed(widget):
@@ -428,14 +432,10 @@ def on_refresh_changed(widget):
 def on_mode_changed(widget):
     if selected_output_button and not on_mode_changed_silent:
         mode = selected_output_button.modes[widget.get_active()]
-        if "90" in selected_output_button.transform or "270" in selected_output_button.transform:
-            selected_output_button.width = mode["height"]
-            selected_output_button.height = mode["width"]
-        else:
-            selected_output_button.width = mode["width"]
-            selected_output_button.height = mode["height"]
+        selected_output_button.physical_width = mode["width"]
+        selected_output_button.physical_height = mode["height"]
         selected_output_button.refresh = mode["refresh"] / 1000
-        selected_output_button.rescale()
+        selected_output_button.rescale_transform()
 
         update_form_from_widget(selected_output_button)
 
@@ -475,7 +475,7 @@ def create_display_buttons():
     for key in outputs:
         item = outputs[key]
         custom_mode = key in config["custom-mode"]
-        b = DisplayButton(key, item["description"], item["x"], item["y"], round(item["width"]), round(item["height"]),
+        b = DisplayButton(key, item["description"], item["x"], item["y"], round(item["physical width"]), round(item["physical height"]),
                           item["transform"], item["scale"], item["scale_filter"], item["refresh"], item["modes"],
                           item["active"], item["dpms"], item["adaptive_sync_status"], custom_mode, item["focused"], item["monitor"])
 
