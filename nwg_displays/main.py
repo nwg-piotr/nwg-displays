@@ -256,7 +256,7 @@ def update_form_from_widget(widget):
         # This is just to set active_id
 
         if mode["width"] == widget.physical_width and mode["height"] == widget.physical_height and mode[
-                "refresh"] / 1000 == widget.refresh:
+            "refresh"] / 1000 == widget.refresh:
             active = m
     if active:
         form_modes.set_active_id(active)
@@ -267,7 +267,8 @@ def update_form_from_widget(widget):
 
 
 class DisplayButton(Gtk.Button):
-    def __init__(self, name, description, x, y, physical_width, physical_height, transform, scale, scale_filter, refresh, modes, active,
+    def __init__(self, name, description, x, y, physical_width, physical_height, transform, scale, scale_filter,
+                 refresh, modes, active,
                  dpms, adaptive_sync_status, custom_mode_status, focused, monitor):
         super().__init__()
         # Output properties
@@ -304,7 +305,8 @@ class DisplayButton(Gtk.Button):
         self.rescale_transform()
         self.set_property("name", "output")
 
-        self.indicator = Indicator(monitor, name, self.logical_width, self.logical_height, config["indicator-timeout"])
+        self.indicator = Indicator(monitor, name, round(self.physical_width * config["view-scale"]),
+                                   round(self.physical_height * config["view-scale"]), config["indicator-timeout"])
 
         self.show()
 
@@ -372,6 +374,7 @@ def on_dpms_toggled(widget):
 def on_adaptive_sync_toggled(widget):
     if selected_output_button:
         selected_output_button.adaptive_sync = widget.get_active()
+
 
 def on_custom_mode_toggle(widget):
     if selected_output_button:
@@ -475,9 +478,11 @@ def create_display_buttons():
     for key in outputs:
         item = outputs[key]
         custom_mode = key in config["custom-mode"]
-        b = DisplayButton(key, item["description"], item["x"], item["y"], round(item["physical width"]), round(item["physical height"]),
+        b = DisplayButton(key, item["description"], item["x"], item["y"], round(item["physical width"]),
+                          round(item["physical height"]),
                           item["transform"], item["scale"], item["scale_filter"], item["refresh"], item["modes"],
-                          item["active"], item["dpms"], item["adaptive_sync_status"], custom_mode, item["focused"], item["monitor"])
+                          item["active"], item["dpms"], item["adaptive_sync_status"], custom_mode, item["focused"],
+                          item["monitor"])
 
         display_buttons.append(b)
 
