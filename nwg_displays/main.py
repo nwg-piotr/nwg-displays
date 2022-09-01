@@ -14,6 +14,7 @@ Thank you, Kurt Jacobson!
 """
 
 import argparse
+import os.path
 import sys
 
 import gi
@@ -36,7 +37,10 @@ from nwg_displays.__about__ import __version__
 
 dir_name = os.path.dirname(__file__)
 
-config_dir = os.path.join(get_config_home(), "nwg-outputs")
+config_dir = os.path.join(get_config_home(), "nwg-displays")
+# This was done by mistake, and the config file need to be migrated to the proper path
+old_config_dir = os.path.join(get_config_home(), "nwg-outputs")
+
 sway_config_dir = os.path.join(get_config_home(), "sway")
 if not os.path.isdir(sway_config_dir):
     print("WARNING: Couldn't find sway config directory '{}'".format(sway_config_dir), file=sys.stderr)
@@ -642,8 +646,16 @@ def main():
     if not os.path.isfile(config_file):
         if not os.path.isdir(config_dir):
             os.makedirs(config_dir, exist_ok=True)
-        print("'{}' file not found, creating default".format(config_file))
-        save_json(config, config_file)
+
+        # migrate old config file, if not yet migrated
+        old_config_file = os.path.join(old_config_dir, "config")
+        if os.path.isfile(old_config_file):
+            print("Migrating config to the proper path...")
+            os.rename(old_config_file, config_file)
+            os.removedirs(old_config_dir)
+        else:
+            print("'{}' file not found, creating default".format(config_file))
+            save_json(config, config_file)
     else:
         config = load_json(config_file)
 
