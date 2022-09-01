@@ -644,16 +644,13 @@ def main():
     config_file = os.path.join(config_dir, "config")
     global config
     if not os.path.isfile(config_file):
-        if not os.path.isdir(config_dir):
-            os.makedirs(config_dir, exist_ok=True)
-
         # migrate old config file, if not yet migrated
-        old_config_file = os.path.join(old_config_dir, "config")
-        if os.path.isfile(old_config_file):
+        if os.path.isfile(os.path.join(old_config_dir, "config")):
             print("Migrating config to the proper path...")
-            os.rename(old_config_file, config_file)
-            os.removedirs(old_config_dir)
+            os.rename(old_config_dir, config_dir)
         else:
+            if not os.path.isdir(config_dir):
+                os.makedirs(config_dir, exist_ok=True)
             print("'{}' file not found, creating default".format(config_file))
             save_json(config, config_file)
     else:
