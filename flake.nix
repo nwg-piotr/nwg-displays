@@ -1,5 +1,5 @@
 {
-  description = "An output management utility for the sway Wayland compositor, inspired by wdisplays and wlay."
+  description = "An output management utility for the sway Wayland compositor, inspired by wdisplays and wlay.";
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
