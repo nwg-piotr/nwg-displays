@@ -13,7 +13,8 @@
 
       perSystem = { config, inputs', pkgs, system, ... }: 
         {
-          packages = {
+          packages = rec {
+            default = nwg-displays;
             nwg-displays = pkgs.python3Packages.buildPythonApplication
             rec {
               pname = "nwg-displays";
