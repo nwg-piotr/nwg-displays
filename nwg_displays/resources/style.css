@@ -1,6 +1,6 @@
 #output {
-	background: rgba (0, 0, 0, 0.4);
-	border-radius: 0px;
+	background: rgba(0, 0, 0, 0.4);
+	border-radius: 0;
 	border: 1px solid;
 	border-color: rgba (200, 200, 200, 0.3);
 	color: #eee;
@@ -13,8 +13,8 @@
 }
 
 #selected-output {
-    background: rgba (0, 0, 0, 0.4);
-	border-radius: 0px;
+    background: rgba(0, 0, 0, 0.4);
+	border-radius: 0;
 	border: 1px solid;
 	border-color: rgba (200, 200, 255, 0.6);
 	color: #eee;
@@ -24,8 +24,8 @@
 }
 
 #inactive-output {
-    background: rgba (0, 0, 0, 0.4);
-	border-radius: 0px;
+    background: rgba(0, 0, 0, 0.4);
+	border-radius: 0;
 	border: none;
 	border-color: rgba (200, 200, 255, 0.6);
 	color: #333;
@@ -39,9 +39,9 @@
 }
 
 #indicator {
-    background: rgba (0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.8);
     border: 1px solid;
-    border-radius: 0px;
+    border-radius: 0;
     border-color: rgba (200, 200, 255, 0.6);
     color: #eee
 }
