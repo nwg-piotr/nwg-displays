@@ -110,6 +110,30 @@ py = 0
 max_x = 0
 max_y = 0
 
+voc = {}
+
+def load_vocabulary():
+    global voc
+    # basic vocabulary (for en_US)
+    voc = load_json(os.path.join(dir_name, "langs", "en_US.json"))
+    if not voc:
+        eprint("Failed loading vocabulary, terminating")
+        sys.exit(1)
+
+    shell_data = load_shell_data()
+    lang = os.getenv("LANG").split(".")[0] if not shell_data["interface-locale"] else shell_data["interface-locale"]
+    # translate if translation available
+    if lang != "en_US":
+        loc_file = os.path.join(dir_name, "langs", "{}.json".format(lang))
+        if os.path.isfile(loc_file):
+            # localized vocabulary
+            loc = load_json(loc_file)
+            if not loc:
+                eprint("Failed loading translation into '{}'".format(lang))
+            else:
+                for key in loc:
+                    voc[key] = loc[key]
+
 
 def on_button_press_event(widget, event):
     if widget != selected_output_button:
@@ -571,12 +595,12 @@ def create_workspaces_window(btn, parent):
     grid.attach(box, 0, last_row + 1, 2, 1)
 
     btn_apply = Gtk.Button()
-    btn_apply.set_label("Apply")
+    btn_apply.set_label(voc["apply"])
     btn_apply.connect("clicked", on_workspaces_apply_btn, dialog_win, old_workspaces)
     box.pack_end(btn_apply, False, False, 0)
 
     btn_close = Gtk.Button()
-    btn_close.set_label("Close")
+    btn_close.set_label(voc["close"])
     btn_close.connect("clicked", close_dialog, dialog_win)
     box.pack_end(btn_close, False, False, 6)
 
@@ -630,6 +654,8 @@ def main():
                         help="display version information")
     args = parser.parse_args()
 
+    load_vocabulary()
+
     global outputs_path
     outputs_path = args.outputs_path
     print("Output path: '{}'".format(outputs_path))
@@ -682,6 +708,15 @@ def main():
     window.connect("key-release-event", handle_keyboard)
     window.connect('destroy', Gtk.main_quit)
 
+    builder.get_object("lbl-modes").set_label("{}:".format(voc["modes"]))
+    builder.get_object("lbl-position-x").set_label("{}:".format(voc["position-x"]))
+    builder.get_object("lbl-refresh").set_label("{}:".format(voc["refresh"]))
+    builder.get_object("lbl-scale").set_label("{}:".format(voc["scale"]))
+    builder.get_object("lbl-scale-filter").set_label("{}:".format(voc["scale-filter"]))
+    builder.get_object("lbl-size").set_label("{}:".format(voc["size"]))
+    builder.get_object("lbl-transform").set_label("{}:".format(voc["transform"]))
+    builder.get_object("lbl-zoom").set_label("{}:".format(voc["zoom"]))
+
     global form_name
     form_name = builder.get_object("name")
 
@@ -690,18 +725,24 @@ def main():
 
     global form_dpms
     form_dpms = builder.get_object("dpms")
+    form_dpms.set_tooltip_text(voc["dpms-tooltip"])
     form_dpms.connect("toggled", on_dpms_toggled)
 
     global form_adaptive_sync
     form_adaptive_sync = builder.get_object("adaptive-sync")
+    form_adaptive_sync.set_label(voc["adaptive-sync"])
+    form_adaptive_sync.set_tooltip_text(voc["adaptive-sync-tooltip"])
     form_adaptive_sync.connect("toggled", on_adaptive_sync_toggled)
 
     global form_custom_mode
     form_custom_mode = builder.get_object("custom-mode")
+    form_custom_mode.set_label(voc["custom-mode"])
+    form_custom_mode.set_tooltip_text(voc["custom-mode-tooltip"])
     form_custom_mode.connect("toggled", on_custom_mode_toggle)
 
     global form_view_scale
     form_view_scale = builder.get_object("view-scale")
+    form_view_scale.set_tooltip_text(voc["view-scale-tooltip"])
     adj = Gtk.Adjustment(lower=0.1, upper=0.6, step_increment=0.05, page_increment=0.1, page_size=0.1)
     form_view_scale.configure(adj, 1, 2)
     form_view_scale.connect("changed", on_view_scale_changed)
@@ -738,6 +779,7 @@ def main():
 
     global form_scale_filter
     form_scale_filter = builder.get_object("scale-filter")
+    form_scale_filter.set_tooltip_text(voc["scale-filter-tooltip"])
     form_scale_filter.connect("changed", on_scale_filter_changed)
 
     global form_refresh
@@ -748,10 +790,12 @@ def main():
 
     global form_modes
     form_modes = builder.get_object("modes")
+    form_modes.set_tooltip_text(voc["modes-tooltip"])
     form_modes.connect("changed", on_mode_changed)
 
     global form_transform
     form_transform = builder.get_object("transform")
+    form_transform.set_tooltip_text(voc["transform-tooltip"])
     form_transform.connect("changed", on_transform_changed)
 
     global form_wrapper_box
@@ -759,15 +803,19 @@ def main():
 
     global form_workspaces
     form_workspaces = builder.get_object("workspaces")
+    form_workspaces.set_label(voc["workspaces"])
+    form_workspaces.set_tooltip_text(voc["workspaces-tooltip"])
     form_workspaces.connect("clicked", create_workspaces_window, window)
 
     global form_close
     form_close = builder.get_object("close")
+    form_close.set_label(voc["close"])
     form_close.connect("clicked", Gtk.main_quit)
     form_close.grab_focus()
 
     global form_apply
     form_apply = builder.get_object("apply")
+    form_apply.set_label(voc["apply"])
     form_apply.connect("clicked", on_apply_button)
 
     global form_version
@@ -785,7 +833,7 @@ def main():
     global outputs_activity
     outputs_activity = list_outputs_activity()
     lbl = Gtk.Label()
-    lbl.set_text("Active:")
+    lbl.set_text("{}:".format(voc["active"]))
     form_wrapper_box.pack_start(lbl, False, False, 3)
     for key in outputs_activity:
         cb = Gtk.CheckButton()
@@ -794,8 +842,8 @@ def main():
         cb.connect("toggled", on_output_toggled, key)
         form_wrapper_box.pack_start(cb, False, False, 3)
 
-    btn = Gtk.Button.new_with_label("Toggle")
-    btn.set_tooltip_text("Enables/disables outputs.")
+    btn = Gtk.Button.new_with_label(voc["toggle"])
+    btn.set_tooltip_text(voc["toggle-tooltip"])
     btn.connect("clicked", on_toggle_button)
     form_wrapper_box.pack_start(btn, False, False, 3)
 

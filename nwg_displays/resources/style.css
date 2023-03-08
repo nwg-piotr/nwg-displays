@@ -1,8 +1,8 @@
 #output {
-	background: rgba (0, 0, 0, 0.4);
-	border-radius: 0px;
+	background: rgba(0, 0, 0, 0.4);
+	border-radius: 0;
 	border: 1px solid;
-	border-color: rgba (200, 200, 200, 0.3);
+	border-color: rgba(200, 200, 200, 0.3);
 	color: #eee;
 	text-shadow: none;
 	box-shadow: none
@@ -13,10 +13,10 @@
 }
 
 #selected-output {
-    background: rgba (0, 0, 0, 0.4);
-	border-radius: 0px;
+    background: rgba(0, 0, 0, 0.4);
+	border-radius: 0;
 	border: 1px solid;
-	border-color: rgba (200, 200, 255, 0.6);
+	border-color: rgba(200, 200, 255, 0.6);
 	color: #eee;
 	text-shadow: none;
 	box-shadow: none;
@@ -24,10 +24,10 @@
 }
 
 #inactive-output {
-    background: rgba (0, 0, 0, 0.4);
-	border-radius: 0px;
+    background: rgba(0, 0, 0, 0.4);
+	border-radius: 0;
 	border: none;
-	border-color: rgba (200, 200, 255, 0.6);
+	border-color: rgba(200, 200, 255, 0.6);
 	color: #333;
 	text-shadow: none;
 	box-shadow: none;
@@ -35,14 +35,14 @@
 }
 
 #wrapper {
-    background: rgba (0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.5);
 }
 
 #indicator {
-    background: rgba (0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.8);
     border: 1px solid;
-    border-radius: 0px;
-    border-color: rgba (200, 200, 255, 0.6);
+    border-radius: 0;
+    border-color: rgba(200, 200, 255, 0.6);
     color: #eee
 }
 
