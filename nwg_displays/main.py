@@ -110,6 +110,30 @@ py = 0
 max_x = 0
 max_y = 0
 
+voc = {}
+
+def load_vocabulary():
+    global voc
+    # basic vocabulary (for en_US)
+    voc = load_json(os.path.join(dir_name, "langs", "en_US.json"))
+    if not voc:
+        eprint("Failed loading vocabulary, terminating")
+        sys.exit(1)
+
+    shell_data = load_shell_data()
+    lang = os.getenv("LANG").split(".")[0] if not shell_data["interface-locale"] else shell_data["interface-locale"]
+    # translate if translation available
+    if lang != "en_US":
+        loc_file = os.path.join(dir_name, "langs", "{}.json".format(lang))
+        if os.path.isfile(loc_file):
+            # localized vocabulary
+            loc = load_json(loc_file)
+            if not loc:
+                eprint("Failed loading translation into '{}'".format(lang))
+            else:
+                for key in loc:
+                    voc[key] = loc[key]
+
 
 def on_button_press_event(widget, event):
     if widget != selected_output_button:
@@ -629,6 +653,8 @@ def main():
                         version="%(prog)s version {}".format(__version__),
                         help="display version information")
     args = parser.parse_args()
+
+    load_vocabulary()
 
     global outputs_path
     outputs_path = args.outputs_path
