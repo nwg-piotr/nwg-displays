@@ -2,6 +2,7 @@
 
 import json
 import os
+import socket
 import subprocess
 import sys
 
@@ -10,8 +11,8 @@ import gi
 gi.require_version('Gdk', '3.0')
 from gi.repository import Gdk
 
-from i3ipc import Connection
-
+if os.getenv("SWAYSOCK"):
+    from i3ipc import Connection
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -25,35 +26,63 @@ def get_config_home():
     return config_home
 
 
+def hyprctl(cmd):
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s.connect("/tmp/hypr/{}/.socket.sock".format(os.getenv("HYPRLAND_INSTANCE_SIGNATURE")))
+
+    s.send(cmd.encode("utf-8"))
+    output = s.recv(20480).decode('utf-8')
+    s.close()
+
+    return output
+
+
 def list_outputs():
     outputs_dict = {}
 
-    i3 = Connection()
-    tree = i3.get_tree()
-    for item in tree:
-        if item.type == "output" and not item.name.startswith("__"):
-            outputs_dict[item.name] = {"x": item.rect.x,
-                                       "y": item.rect.y,
-                                       "logical width": item.rect.width,
-                                       "logical height": item.rect.height,
-                                       "physical width": item.ipc_data["current_mode"]["width"],
-                                       "physical height": item.ipc_data["current_mode"]["height"]}
+    if os.getenv("SWAYSOCK"):
+        i3 = Connection()
+        tree = i3.get_tree()
+        for item in tree:
+            if item.type == "output" and not item.name.startswith("__"):
+                outputs_dict[item.name] = {"x": item.rect.x,
+                                           "y": item.rect.y,
+                                           "logical-width": item.rect.width,
+                                           "logical-height": item.rect.height,
+                                           "physical-width": item.ipc_data["current_mode"]["width"],
+                                           "physical-height": item.ipc_data["current_mode"]["height"]}
 
-            outputs_dict[item.name]["active"] = item.ipc_data["active"]
-            outputs_dict[item.name]["dpms"] = item.ipc_data["dpms"]
-            outputs_dict[item.name]["transform"] = item.ipc_data["transform"] if "transform" in item.ipc_data else None
-            outputs_dict[item.name]["scale"] = float(item.ipc_data["scale"]) if "scale" in item.ipc_data else None
-            outputs_dict[item.name]["scale_filter"] = item.ipc_data["scale_filter"]
-            outputs_dict[item.name]["adaptive_sync_status"] = item.ipc_data["adaptive_sync_status"]
-            outputs_dict[item.name]["refresh"] = \
-                item.ipc_data["current_mode"]["refresh"] / 1000 if "refresh" in item.ipc_data["current_mode"] else None
-            outputs_dict[item.name]["modes"] = item.ipc_data["modes"] if "modes" in item.ipc_data else []
-            outputs_dict[item.name]["description"] = "{} {} {}".format(item.ipc_data["make"], item.ipc_data["model"],
-                                                                       item.ipc_data["serial"])
-            outputs_dict[item.name]["focused"] = item.ipc_data["focused"]
+                outputs_dict[item.name]["active"] = item.ipc_data["active"]
+                outputs_dict[item.name]["dpms"] = item.ipc_data["dpms"]
+                outputs_dict[item.name]["transform"] = item.ipc_data["transform"] if "transform" in item.ipc_data else None
+                outputs_dict[item.name]["scale"] = float(item.ipc_data["scale"]) if "scale" in item.ipc_data else None
+                outputs_dict[item.name]["scale_filter"] = item.ipc_data["scale_filter"]
+                outputs_dict[item.name]["adaptive_sync_status"] = item.ipc_data["adaptive_sync_status"]
+                outputs_dict[item.name]["refresh"] = \
+                    item.ipc_data["current_mode"]["refresh"] / 1000 if "refresh" in item.ipc_data["current_mode"] else None
+                outputs_dict[item.name]["modes"] = item.ipc_data["modes"] if "modes" in item.ipc_data else []
+                outputs_dict[item.name]["description"] = "{} {} {}".format(item.ipc_data["make"], item.ipc_data["model"],
+                                                                           item.ipc_data["serial"])
+                outputs_dict[item.name]["focused"] = item.ipc_data["focused"]
 
-            outputs_dict[item.name]["monitor"] = None
+                outputs_dict[item.name]["monitor"] = None
 
+    elif os.getenv("HYPRLAND_INSTANCE_SIGNATURE"):
+        output = hyprctl("j/monitors")
+        monitors = json.loads(output)
+        for m in monitors:
+            outputs_dict[m["name"]] = {"x": m["x"],
+                                       "y": m["y"],
+                                       "logical-width": int(m["width"] / m["scale"]),
+                                       "logical-height": int(m["height"] / m["scale"]),
+                                       "physical-width": m["width"],
+                                       "physical-height": m["height"]}
+
+    else:
+        eprint("Neither sway nor Hyprland socket found, terminating.")
+        sys.exit(1)
+
+    # assign Gdk monitors
     display = Gdk.Display.get_default()
     for i in range(display.get_n_monitors()):
         monitor = display.get_monitor(i)
@@ -61,44 +90,50 @@ def list_outputs():
 
         for key in outputs_dict:
             if int(outputs_dict[key]["x"]) == geometry.x and int(outputs_dict[key]["y"]) == geometry.y and int(
-                    outputs_dict[key]["logical width"]) == geometry.width and int(
-                    outputs_dict[key]["logical height"]) == geometry.height:
+                    outputs_dict[key]["logical-width"]) == geometry.width and int(
+                    outputs_dict[key]["logical-height"]) == geometry.height:
                 outputs_dict[key]["monitor"] = monitor
                 break
 
+    for key in outputs_dict:
+        print(key, outputs_dict[key])
+    exit()
     return outputs_dict
 
 
 def list_outputs_activity():
     result = {}
-    i3 = Connection()
-    outputs = i3.get_outputs()
-    for o in outputs:
-        result[o.name] = o.active
+    if os.getenv("SWAYSOCK"):
+        i3 = Connection()
+        outputs = i3.get_outputs()
+        for o in outputs:
+            result[o.name] = o.active
 
     return result
 
 
 def max_window_height():
-    i3 = Connection()
-    outputs = i3.get_outputs()
-    for o in outputs:
-        if o.focused:
-            if o.rect.width > o.rect.height:
-                return o.rect.height * 0.9
-            else:
-                return o.rect.height / 2 * 0.9
+    if os.getenv("SWAYSOCK"):
+        i3 = Connection()
+        outputs = i3.get_outputs()
+        for o in outputs:
+            if o.focused:
+                if o.rect.width > o.rect.height:
+                    return o.rect.height * 0.9
+                else:
+                    return o.rect.height / 2 * 0.9
     return None
 
 
 def scale_if_floating():
     pid = os.getpid()
-    i3 = Connection()
-    node = i3.get_tree().find_by_pid(pid)[0]
-    if node.type == "floating_con":
-        h = int(max_window_height())
-        if h:
-            i3.command("resize set height {}".format(h))
+    if os.getenv("SWAYSOCK"):
+        i3 = Connection()
+        node = i3.get_tree().find_by_pid(pid)[0]
+        if node.type == "floating_con":
+            h = int(max_window_height())
+            if h:
+                i3.command("resize set height {}".format(h))
 
 
 def min_val(a, b):
@@ -193,17 +228,19 @@ def apply_settings(display_buttons, outputs_activity, outputs_path, g_names=Fals
     for cmd in cmds:
         print(cmd)
 
-    i3 = Connection()
-    for cmd in cmds:
-        i3.command(cmd)
+    if os.getenv("SWAYSOCK"):
+        i3 = Connection()
+        for cmd in cmds:
+            i3.command(cmd)
 
 
 def inactive_output_description(name):
-    i3 = Connection()
-    for item in i3.get_outputs():
-        if item.name == name:
-            return "{} {} {}".format(item.ipc_data["make"], item.ipc_data["model"],
-                                     item.ipc_data["serial"])
+    if os.getenv("SWAYSOCK"):
+        i3 = Connection()
+        for item in i3.get_outputs():
+            if item.name == name:
+                return "{} {} {}".format(item.ipc_data["make"], item.ipc_data["model"],
+                                         item.ipc_data["serial"])
     return None
 
 
