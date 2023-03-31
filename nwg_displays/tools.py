@@ -14,6 +14,7 @@ from gi.repository import Gdk
 if os.getenv("SWAYSOCK"):
     from i3ipc import Connection
 
+
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
@@ -37,10 +38,24 @@ def hyprctl(cmd):
     return output
 
 
+def is_command(cmd):
+    cmd = cmd.split()[0]
+    cmd = "command -v {}".format(cmd)
+    try:
+        is_cmd = subprocess.check_output(
+            cmd, shell=True).decode("utf-8").strip()
+        if is_cmd:
+            return True
+
+    except subprocess.CalledProcessError:
+        return False
+
+
 def list_outputs():
     outputs_dict = {}
 
     if os.getenv("SWAYSOCK"):
+        eprint("Running on sway")
         i3 = Connection()
         tree = i3.get_tree()
         for item in tree:
@@ -54,32 +69,58 @@ def list_outputs():
 
                 outputs_dict[item.name]["active"] = item.ipc_data["active"]
                 outputs_dict[item.name]["dpms"] = item.ipc_data["dpms"]
-                outputs_dict[item.name]["transform"] = item.ipc_data["transform"] if "transform" in item.ipc_data else None
+                outputs_dict[item.name]["transform"] = item.ipc_data[
+                    "transform"] if "transform" in item.ipc_data else None
                 outputs_dict[item.name]["scale"] = float(item.ipc_data["scale"]) if "scale" in item.ipc_data else None
                 outputs_dict[item.name]["scale_filter"] = item.ipc_data["scale_filter"]
                 outputs_dict[item.name]["adaptive_sync_status"] = item.ipc_data["adaptive_sync_status"]
                 outputs_dict[item.name]["refresh"] = \
-                    item.ipc_data["current_mode"]["refresh"] / 1000 if "refresh" in item.ipc_data["current_mode"] else None
+                    item.ipc_data["current_mode"]["refresh"] / 1000 if "refresh" in item.ipc_data[
+                        "current_mode"] else None
                 outputs_dict[item.name]["modes"] = item.ipc_data["modes"] if "modes" in item.ipc_data else []
-                outputs_dict[item.name]["description"] = "{} {} {}".format(item.ipc_data["make"], item.ipc_data["model"],
+                outputs_dict[item.name]["description"] = "{} {} {}".format(item.ipc_data["make"],
+                                                                           item.ipc_data["model"],
                                                                            item.ipc_data["serial"])
                 outputs_dict[item.name]["focused"] = item.ipc_data["focused"]
 
                 outputs_dict[item.name]["monitor"] = None
 
     elif os.getenv("HYPRLAND_INSTANCE_SIGNATURE"):
+        eprint("Running on Hyprland")
+        # This will be tricky. The `hyprctl monitors` command returns just a part of the output attributes that we need.
+        # The `wlr-randr` command returns almost everything, but not "focused". We need to use both commands. :/
         output = hyprctl("j/monitors")
-        monitors = json.loads(output)
-        for m in monitors:
-            outputs_dict[m["name"]] = {"x": m["x"],
-                                       "y": m["y"],
-                                       "logical-width": int(m["width"] / m["scale"]),
-                                       "logical-height": int(m["height"] / m["scale"]),
-                                       "physical-width": m["width"],
-                                       "physical-height": m["height"]}
+        d = json.loads(output)
+        for item in d:
+            outputs_dict[item["name"]] = {"id": item["id"],
+                                          "x": item["x"],
+                                          "y": item["y"],
+                                          "physical-width": item["width"],
+                                          "physical-height": item["height"],
+                                          "logical-width": int(item["width"] * item["scale"]),
+                                          "logical-height": int(item["height"] * item["scale"]),
+                                          "dpms": None, # unobtanium in both methods
+                                          "scale": item["scale"],
+                                          "scale_filer": None, # unavailable in both methods
+                                          "refresh": item["refreshRate"],
+                                          "description": "{} {} {}".format(item["make"], item["model"], item["serial"]),
+                                          "monitor": None
+                                          }
+        print(outputs_dict)
+        # if not is_command("wlr-randr"):
+        #     eprint("wlr-randr package required, but not found, terminating.")
+        #     sys.exit(1)
+        # lines = subprocess.check_output("wlr-randr", shell=True).decode("utf-8").strip().splitlines()
+        # for line in lines:
+        #     name, w, h, x, y, description = None, None, None, None, None, None
+        #     if not line.startswith(" "):
+        #         name = line.split()[0]
+        #         # very tricky way to obtain this value...
+        #         description = line.replace(name, "")[2:-4]
+
 
     else:
-        eprint("Neither sway nor Hyprland socket found, terminating.")
+        eprint("On Wayland, but not sway, we need the `wlr-randr` packege, terminating.")
         sys.exit(1)
 
     # assign Gdk monitors
@@ -89,9 +130,7 @@ def list_outputs():
         geometry = monitor.get_geometry()
 
         for key in outputs_dict:
-            if int(outputs_dict[key]["x"]) == geometry.x and int(outputs_dict[key]["y"]) == geometry.y and int(
-                    outputs_dict[key]["logical-width"]) == geometry.width and int(
-                    outputs_dict[key]["logical-height"]) == geometry.height:
+            if int(outputs_dict[key]["x"]) == geometry.x and int(outputs_dict[key]["y"]) == geometry.y:
                 outputs_dict[key]["monitor"] = monitor
                 break
 
@@ -180,7 +219,8 @@ def apply_settings(display_buttons, outputs_activity, outputs_path, g_names=Fals
         cmd = 'output "{}"'.format(name)
 
         custom_mode_str = "--custom" if db.custom_mode else ""
-        lines.append("    mode {} {}x{}@{}Hz".format(custom_mode_str, db.physical_width, db.physical_height, db.refresh))
+        lines.append(
+            "    mode {} {}x{}@{}Hz".format(custom_mode_str, db.physical_width, db.physical_height, db.refresh))
         cmd += " mode {} {}x{}@{}Hz".format(custom_mode_str, db.physical_width, db.physical_height, db.refresh)
 
         lines.append("    pos {} {}".format(db.x, db.y))
@@ -249,7 +289,7 @@ def config_keys_missing(config, config_file):
     defaults = {"view-scale": 0.15,
                 "snap-threshold": 10,
                 "indicator-timeout": 500,
-                "custom-mode": [],}
+                "custom-mode": [], }
     for key in defaults:
         if key not in config:
             config[key] = defaults[key]

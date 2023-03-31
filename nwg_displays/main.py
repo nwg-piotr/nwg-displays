@@ -36,6 +36,7 @@ from nwg_displays.tools import *
 from nwg_displays.__about__ import __version__
 
 dir_name = os.path.dirname(__file__)
+sway = os.getenv("SWAYSOCK") is not None
 
 config_dir = os.path.join(get_config_home(), "nwg-displays")
 # This was done by mistake, and the config file need to be migrated to the proper path
@@ -665,7 +666,8 @@ def main():
 
     global num_ws
     num_ws = args.num_ws
-    print("Number of workspaces: {}".format(num_ws))
+    if sway:
+        print("Number of workspaces: {}".format(num_ws))
 
     config_file = os.path.join(config_dir, "config")
     global config
