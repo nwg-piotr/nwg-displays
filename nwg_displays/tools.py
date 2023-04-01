@@ -134,7 +134,7 @@ def list_outputs():
                     outputs_dict[name]["refresh"] = float(parts[2])
 
     else:
-        eprint("On Wayland, but not sway, we need the `wlr-randr` package, terminating.")
+        eprint("This program only supports sway and Hyprland, and we seem to be elsewhere, terminating.")
         sys.exit(1)
 
     # assign Gdk monitors
@@ -149,7 +149,7 @@ def list_outputs():
                 break
 
     for key in outputs_dict:
-        print(key, outputs_dict[key])
+        eprint(key, outputs_dict[key])
     return outputs_dict
 
 

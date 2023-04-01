@@ -661,7 +661,6 @@ def main():
 
     global outputs_path
     outputs_path = args.outputs_path
-    print("Output path: '{}'".format(outputs_path))
 
     global generic_names
     generic_names = args.generic_names
@@ -689,7 +688,7 @@ def main():
     if config_keys_missing(config, config_file):
         config = load_json(config_file)
 
-    print("Settings: {}".format(config))
+    eprint("Settings: {}".format(config))
 
     global snap_threshold_scaled
     snap_threshold_scaled = config["snap-threshold"]
@@ -737,15 +736,21 @@ def main():
 
     global form_adaptive_sync
     form_adaptive_sync = builder.get_object("adaptive-sync")
-    form_adaptive_sync.set_label(voc["adaptive-sync"])
-    form_adaptive_sync.set_tooltip_text(voc["adaptive-sync-tooltip"])
-    form_adaptive_sync.connect("toggled", on_adaptive_sync_toggled)
+    if sway:
+        form_adaptive_sync.set_label(voc["adaptive-sync"])
+        form_adaptive_sync.set_tooltip_text(voc["adaptive-sync-tooltip"])
+        form_adaptive_sync.connect("toggled", on_adaptive_sync_toggled)
+    else:
+        form_adaptive_sync.set_sensitive(False)
 
     global form_custom_mode
     form_custom_mode = builder.get_object("custom-mode")
-    form_custom_mode.set_label(voc["custom-mode"])
-    form_custom_mode.set_tooltip_text(voc["custom-mode-tooltip"])
-    form_custom_mode.connect("toggled", on_custom_mode_toggle)
+    if sway:
+        form_custom_mode.set_label(voc["custom-mode"])
+        form_custom_mode.set_tooltip_text(voc["custom-mode-tooltip"])
+        form_custom_mode.connect("toggled", on_custom_mode_toggle)
+    else:
+        form_custom_mode.set_sensitive(False)
 
     global form_view_scale
     form_view_scale = builder.get_object("view-scale")
