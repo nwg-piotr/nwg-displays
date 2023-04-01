@@ -91,33 +91,47 @@ def list_outputs():
         # The `wlr-randr` command returns almost everything, but not "focused". We need to use both commands. :/
         output = hyprctl("j/monitors")
         d = json.loads(output)
+        transforms = ["normal", "90", "180", "270", "flipped", "flipped-90", "flipped-180", "flipped-270"]
         for item in d:
-            outputs_dict[item["name"]] = {"id": item["id"],
-                                          "x": item["x"],
+            outputs_dict[item["name"]] = {"x": item["x"],
                                           "y": item["y"],
                                           "physical-width": item["width"],
                                           "physical-height": item["height"],
-                                          "logical-width": int(item["width"] * item["scale"]),
-                                          "logical-height": int(item["height"] * item["scale"]),
-                                          "dpms": None, # unobtanium in both methods
+                                          "logical-width": int(item["width"] / item["scale"]),
+                                          "logical-height": int(item["height"] / item["scale"]),
+                                          "active": None,  # we'll get it from wlr-randr
+                                          "dpms": None,  # unobtanium in both methods
+                                          "transform": transforms[item["transform"]],  # we'll get it from wlr-randr
                                           "scale": item["scale"],
-                                          "scale_filer": None, # unavailable in both methods
-                                          "refresh": item["refreshRate"],
+                                          "scale_filter": None,  # unavailable in both methods
+                                          "adaptive_sync_status": None,  # we'll get it from wlr-randr
+                                          "refresh": None,  # we could get it here, but rounded up
                                           "description": "{} {} {}".format(item["make"], item["model"], item["serial"]),
+                                          "modes": [],  # we'll get it from wlr-randr
+                                          "focused": item["focused"] == "yes",
                                           "monitor": None
                                           }
-        print(outputs_dict)
-        # if not is_command("wlr-randr"):
-        #     eprint("wlr-randr package required, but not found, terminating.")
-        #     sys.exit(1)
-        # lines = subprocess.check_output("wlr-randr", shell=True).decode("utf-8").strip().splitlines()
-        # for line in lines:
-        #     name, w, h, x, y, description = None, None, None, None, None, None
-        #     if not line.startswith(" "):
-        #         name = line.split()[0]
-        #         # very tricky way to obtain this value...
-        #         description = line.replace(name, "")[2:-4]
-
+        if not is_command("wlr-randr"):
+            eprint("wlr-randr package required, but not found, terminating.")
+            sys.exit(1)
+        lines = subprocess.check_output("wlr-randr", shell=True).decode("utf-8").strip().splitlines()
+        name = ""
+        for line in lines:
+            if not line.startswith(" "):
+                name = line.split()[0]
+            if name and line.startswith("  Enabled"):
+                outputs_dict[name]["active"] = line.split()[1] == "yes"
+            if name and line.startswith("  Adaptive Sync:"):
+                outputs_dict[name]["adaptive_sync_status"] = line.split()[1]
+            if line.startswith("    "):
+                parts = line.split()
+                mode = {"width": int(parts[0].split("x")[0]), "height": int(parts[0].split("x")[1]),
+                        "refresh": float(parts[2]) * 1000}
+                modes = outputs_dict[name]["modes"]
+                modes.append(mode)
+                outputs_dict[name]["modes"] = modes
+                if "current" in line:
+                    outputs_dict[name]["refresh"] = float(parts[2])
 
     else:
         eprint("On Wayland, but not sway, we need the `wlr-randr` packege, terminating.")
@@ -136,7 +150,6 @@ def list_outputs():
 
     for key in outputs_dict:
         print(key, outputs_dict[key])
-    exit()
     return outputs_dict
 
 

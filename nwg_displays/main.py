@@ -37,6 +37,7 @@ from nwg_displays.__about__ import __version__
 
 dir_name = os.path.dirname(__file__)
 sway = os.getenv("SWAYSOCK") is not None
+hypr = os.getenv("HYPRLAND_INSTANCE_SIGNATURE") is not None
 
 config_dir = os.path.join(get_config_home(), "nwg-displays")
 # This was done by mistake, and the config file need to be migrated to the proper path
@@ -280,7 +281,8 @@ def update_form_from_widget(widget):
     form_modes.remove_all()
     active = ""
     for mode in widget.modes:
-        m = "{}x{}@{}Hz".format(mode["width"], mode["height"], mode["refresh"] / 1000)
+        m = "{}x{}@{}Hz".format(mode["width"], mode["height"], mode["refresh"] / 1000, mode[
+            "refresh"] / 1000, widget.refresh)
         form_modes.append(m, m)
         # This is just to set active_id
 
@@ -507,8 +509,8 @@ def create_display_buttons():
     for key in outputs:
         item = outputs[key]
         custom_mode = key in config["custom-mode"]
-        b = DisplayButton(key, item["description"], item["x"], item["y"], round(item["physical width"]),
-                          round(item["physical height"]),
+        b = DisplayButton(key, item["description"], item["x"], item["y"], round(item["physical-width"]),
+                          round(item["physical-height"]),
                           item["transform"], item["scale"], item["scale_filter"], item["refresh"], item["modes"],
                           item["active"], item["dpms"], item["adaptive_sync_status"], custom_mode, item["focused"],
                           item["monitor"])
@@ -727,8 +729,11 @@ def main():
 
     global form_dpms
     form_dpms = builder.get_object("dpms")
-    form_dpms.set_tooltip_text(voc["dpms-tooltip"])
-    form_dpms.connect("toggled", on_dpms_toggled)
+    if sway:
+        form_dpms.set_tooltip_text(voc["dpms-tooltip"])
+        form_dpms.connect("toggled", on_dpms_toggled)
+    else:
+        form_dpms.set_sensitive(False)
 
     global form_adaptive_sync
     form_adaptive_sync = builder.get_object("adaptive-sync")
@@ -781,8 +786,12 @@ def main():
 
     global form_scale_filter
     form_scale_filter = builder.get_object("scale-filter")
-    form_scale_filter.set_tooltip_text(voc["scale-filter-tooltip"])
-    form_scale_filter.connect("changed", on_scale_filter_changed)
+    if sway:
+        form_scale_filter.set_tooltip_text(voc["scale-filter-tooltip"])
+        form_scale_filter.connect("changed", on_scale_filter_changed)
+    else:
+        form_scale_filter.set_sensitive(False)
+
 
     global form_refresh
     form_refresh = builder.get_object("refresh")
