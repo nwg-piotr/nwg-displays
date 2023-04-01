@@ -134,7 +134,7 @@ def list_outputs():
                     outputs_dict[name]["refresh"] = float(parts[2])
 
     else:
-        eprint("On Wayland, but not sway, we need the `wlr-randr` packege, terminating.")
+        eprint("On Wayland, but not sway, we need the `wlr-randr` package, terminating.")
         sys.exit(1)
 
     # assign Gdk monitors
@@ -160,6 +160,16 @@ def list_outputs_activity():
         outputs = i3.get_outputs()
         for o in outputs:
             result[o.name] = o.active
+
+    elif os.getenv("HYPRLAND_INSTANCE_SIGNATURE"):
+        lines = subprocess.check_output("wlr-randr", shell=True).decode("utf-8").strip().splitlines()
+        name = ""
+        for line in lines:
+            if not line.startswith(" "):
+                name = line.split()[0]
+            if name and line.startswith("  Enabled"):
+                result[name] = line.split()[1] == "yes"
+
 
     return result
 
