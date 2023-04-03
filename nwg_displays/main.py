@@ -36,6 +36,8 @@ from nwg_displays.tools import *
 from nwg_displays.__about__ import __version__
 
 dir_name = os.path.dirname(__file__)
+sway = os.getenv("SWAYSOCK") is not None
+hypr = os.getenv("HYPRLAND_INSTANCE_SIGNATURE") is not None
 
 config_dir = os.path.join(get_config_home(), "nwg-displays")
 # This was done by mistake, and the config file need to be migrated to the proper path
@@ -45,6 +47,11 @@ sway_config_dir = os.path.join(get_config_home(), "sway")
 if not os.path.isdir(sway_config_dir):
     print("WARNING: Couldn't find sway config directory '{}'".format(sway_config_dir), file=sys.stderr)
     sway_config_dir = ""
+
+hypr_config_dir = os.path.join(os.getenv("HOME"), ".config/hypr/")
+if not os.path.isdir(hypr_config_dir):
+    print("WARNING: Couldn't find Hyprland config directory '{}'".format(hypr_config_dir), file=sys.stderr)
+    hypr_config_dir = ""
 
 config = {}
 outputs_path = ""
@@ -59,6 +66,7 @@ and the add inactive outputs, if any, from what we detect with .get_outputs()
 outputs = {}  # Active outputs, listed from the sway tree; stores name and all attributes.
 outputs_activity = {}  # Just a dictionary "name": is_active - from get_outputs()
 workspaces = {}  # "workspace_num": "display_name"
+default_workspaces_hypr = {}
 
 display_buttons = []
 selected_output_button = None
@@ -111,6 +119,7 @@ max_x = 0
 max_y = 0
 
 voc = {}
+
 
 def load_vocabulary():
     global voc
@@ -279,7 +288,8 @@ def update_form_from_widget(widget):
     form_modes.remove_all()
     active = ""
     for mode in widget.modes:
-        m = "{}x{}@{}Hz".format(mode["width"], mode["height"], mode["refresh"] / 1000)
+        m = "{}x{}@{}Hz".format(mode["width"], mode["height"], mode["refresh"] / 1000, mode[
+            "refresh"] / 1000, widget.refresh)
         form_modes.append(m, m)
         # This is just to set active_id
 
@@ -506,8 +516,8 @@ def create_display_buttons():
     for key in outputs:
         item = outputs[key]
         custom_mode = key in config["custom-mode"]
-        b = DisplayButton(key, item["description"], item["x"], item["y"], round(item["physical width"]),
-                          round(item["physical height"]),
+        b = DisplayButton(key, item["description"], item["x"], item["y"], round(item["physical-width"]),
+                          round(item["physical-height"]),
                           item["transform"], item["scale"], item["scale_filter"], item["refresh"], item["modes"],
                           item["active"], item["dpms"], item["adaptive_sync_status"], custom_mode, item["focused"],
                           item["monitor"])
@@ -557,7 +567,7 @@ def handle_keyboard(window, event):
         window.close()
 
 
-def create_workspaces_window(btn, parent):
+def create_workspaces_window(btn):
     global sway_config_dir
     global workspaces
     workspaces = load_workspaces(os.path.join(sway_config_dir, "workspaces"))
@@ -596,7 +606,82 @@ def create_workspaces_window(btn, parent):
 
     btn_apply = Gtk.Button()
     btn_apply.set_label(voc["apply"])
-    btn_apply.connect("clicked", on_workspaces_apply_btn, dialog_win, old_workspaces)
+    if sway_config_dir:
+        btn_apply.connect("clicked", on_workspaces_apply_btn, dialog_win, old_workspaces)
+    else:
+        btn_apply.set_sensitive(False)
+        btn_apply.set_tooltip_text("Config dir not found")
+    box.pack_end(btn_apply, False, False, 0)
+
+    btn_close = Gtk.Button()
+    btn_close.set_label(voc["close"])
+    btn_close.connect("clicked", close_dialog, dialog_win)
+    box.pack_end(btn_close, False, False, 6)
+
+    dialog_win.show_all()
+
+
+def create_workspaces_window_hypr(btn):
+    global workspaces, default_workspaces_hypr
+    workspaces, default_workspaces_hypr = load_workspaces_hypr(
+        os.path.join(os.getenv("HOME"), ".config", "hypr", "workspaces.conf"))
+    eprint("WS->Mon:", workspaces)
+    eprint("Mon->def_WS:", default_workspaces_hypr)
+    global dialog_win
+    if dialog_win:
+        dialog_win.destroy()
+    dialog_win = Gtk.Window()
+    dialog_win.set_resizable(False)
+    dialog_win.set_modal(True)
+    dialog_win.connect("key-release-event", handle_keyboard)
+    grid = Gtk.Grid()
+    for prop in ["margin_start", "margin_end", "margin_top", "margin_bottom"]:
+        grid.set_property(prop, 10)
+    grid.set_column_spacing(12)
+    grid.set_row_spacing(6)
+    dialog_win.add(grid)
+    global outputs
+    last_row = 0
+    for i in range(10):
+        lbl = Gtk.Label()
+        lbl.set_text("wsbind={},".format(i + 1))
+        lbl.set_property("halign", Gtk.Align.END)
+        grid.attach(lbl, 0, i, 1, 1)
+        combo = Gtk.ComboBoxText()
+        for key in outputs:
+            combo.append(key, key)
+            if i + 1 in workspaces:
+                combo.set_active_id(workspaces[i + 1])
+            combo.connect("changed", on_ws_combo_changed, i + 1)
+        grid.attach(combo, 1, i, 1, 1)
+        last_row = i
+
+    for key in outputs:
+        lbl = Gtk.Label.new("workspace={},".format(key))
+        lbl.set_property("halign", Gtk.Align.END)
+        grid.attach(lbl, 0, last_row+1, 1, 1)
+
+        combo = Gtk.ComboBoxText()
+        for n in range(1,11):
+            combo.append(str(n), str(n))
+        if key in default_workspaces_hypr:
+            combo.set_active_id(str(default_workspaces_hypr[key]))
+        combo.connect("changed", on_default_ws2mon_changed, key)
+        grid.attach(combo, 1, last_row + 1, 1, 1)
+
+        last_row += 1
+
+
+    box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+    grid.attach(box, 0, last_row + 1, 2, 1)
+
+    btn_apply = Gtk.Button()
+    btn_apply.set_label(voc["apply"])
+    if hypr_config_dir:
+        btn_apply.connect("clicked", on_workspaces_apply_btn_hypr, dialog_win)
+    else:
+        btn_apply.set_sensitive(False)
+        btn_apply.set_tooltip_text("Config dir not found")
     box.pack_end(btn_apply, False, False, 0)
 
     btn_close = Gtk.Button()
@@ -612,6 +697,11 @@ def on_ws_combo_changed(combo, ws_num):
     workspaces[ws_num] = combo.get_active_id()
 
 
+def on_default_ws2mon_changed(combo, monitor):
+    global default_workspaces_hypr
+    default_workspaces_hypr[monitor] = combo.get_active_id()
+
+
 def close_dialog(w, win):
     win.close()
 
@@ -625,6 +715,23 @@ def on_workspaces_apply_btn(w, win, old_workspaces):
     close_dialog(w, win)
 
 
+def on_workspaces_apply_btn_hypr(w, win):
+    global workspaces, default_workspaces_hypr
+    # save_workspaces(workspaces, os.path.join(sway_config_dir, "workspaces"))
+    text_file = open(os.path.join(os.getenv("HOME"), ".config/hypr/workspaces.conf"), "w")
+    for key in workspaces:
+        line = "wsbind={},{}".format(key, workspaces[key])
+        text_file.write(line + "\n")
+
+    for key in default_workspaces_hypr:
+        line = "workspace={},{}".format(key, default_workspaces_hypr[key])
+        text_file.write(line + "\n")
+
+    text_file.close()
+
+    close_dialog(w, win)
+
+
 def main():
     GLib.set_prgname('nwg-displays')
 
@@ -634,12 +741,20 @@ def main():
                         action="store_true",
                         help="use Generic output names")
 
-    parser.add_argument("-o",
-                        "--outputs_path",
-                        type=str,
-                        default="{}/outputs".format(sway_config_dir),
-                        help="path to save Outputs config to, default: {}".format(
-                            "{}/outputs".format(sway_config_dir)))
+    if sway:
+        parser.add_argument("-o",
+                            "--outputs_path",
+                            type=str,
+                            default="{}/outputs".format(sway_config_dir),
+                            help="path to save Outputs config to, default: {}".format(
+                                "{}/outputs".format(sway_config_dir)))
+    elif hypr:
+        parser.add_argument("-m",
+                            "--monitors_path",
+                            type=str,
+                            default="{}/monitors.conf".format(hypr_config_dir),
+                            help="path to save the monitors.conf file to, default: {}".format(
+                                "{}/.config/hypr/monitors.conf".format(os.getenv("HOME"))))
 
     parser.add_argument("-n",
                         "--num_ws",
@@ -657,15 +772,26 @@ def main():
     load_vocabulary()
 
     global outputs_path
-    outputs_path = args.outputs_path
-    print("Output path: '{}'".format(outputs_path))
+    if sway:
+        if os.path.isdir(sway_config_dir):
+            outputs_path = args.outputs_path
+        else:
+            eprint("sway config directory not found!")
+            outputs_path = ""
+    elif hypr:
+        if os.path.isdir(hypr_config_dir):
+            outputs_path = args.monitors_path
+        else:
+            eprint("Hyprland config directory not found!")
+            outputs_path = ""
 
     global generic_names
     generic_names = args.generic_names
 
     global num_ws
     num_ws = args.num_ws
-    print("Number of workspaces: {}".format(num_ws))
+    if sway:
+        print("Number of workspaces: {}".format(num_ws))
 
     config_file = os.path.join(config_dir, "config")
     global config
@@ -685,7 +811,7 @@ def main():
     if config_keys_missing(config, config_file):
         config = load_json(config_file)
 
-    print("Settings: {}".format(config))
+    eprint("Settings: {}".format(config))
 
     global snap_threshold_scaled
     snap_threshold_scaled = config["snap-threshold"]
@@ -725,20 +851,29 @@ def main():
 
     global form_dpms
     form_dpms = builder.get_object("dpms")
-    form_dpms.set_tooltip_text(voc["dpms-tooltip"])
-    form_dpms.connect("toggled", on_dpms_toggled)
+    if sway:
+        form_dpms.set_tooltip_text(voc["dpms-tooltip"])
+        form_dpms.connect("toggled", on_dpms_toggled)
+    else:
+        form_dpms.set_sensitive(False)
 
     global form_adaptive_sync
     form_adaptive_sync = builder.get_object("adaptive-sync")
-    form_adaptive_sync.set_label(voc["adaptive-sync"])
-    form_adaptive_sync.set_tooltip_text(voc["adaptive-sync-tooltip"])
-    form_adaptive_sync.connect("toggled", on_adaptive_sync_toggled)
+    if sway:
+        form_adaptive_sync.set_label(voc["adaptive-sync"])
+        form_adaptive_sync.set_tooltip_text(voc["adaptive-sync-tooltip"])
+        form_adaptive_sync.connect("toggled", on_adaptive_sync_toggled)
+    else:
+        form_adaptive_sync.set_sensitive(False)
 
     global form_custom_mode
     form_custom_mode = builder.get_object("custom-mode")
-    form_custom_mode.set_label(voc["custom-mode"])
-    form_custom_mode.set_tooltip_text(voc["custom-mode-tooltip"])
-    form_custom_mode.connect("toggled", on_custom_mode_toggle)
+    if sway:
+        form_custom_mode.set_label(voc["custom-mode"])
+        form_custom_mode.set_tooltip_text(voc["custom-mode-tooltip"])
+        form_custom_mode.connect("toggled", on_custom_mode_toggle)
+    else:
+        form_custom_mode.set_sensitive(False)
 
     global form_view_scale
     form_view_scale = builder.get_object("view-scale")
@@ -779,8 +914,11 @@ def main():
 
     global form_scale_filter
     form_scale_filter = builder.get_object("scale-filter")
-    form_scale_filter.set_tooltip_text(voc["scale-filter-tooltip"])
-    form_scale_filter.connect("changed", on_scale_filter_changed)
+    if sway:
+        form_scale_filter.set_tooltip_text(voc["scale-filter-tooltip"])
+        form_scale_filter.connect("changed", on_scale_filter_changed)
+    else:
+        form_scale_filter.set_sensitive(False)
 
     global form_refresh
     form_refresh = builder.get_object("refresh")
@@ -805,7 +943,10 @@ def main():
     form_workspaces = builder.get_object("workspaces")
     form_workspaces.set_label(voc["workspaces"])
     form_workspaces.set_tooltip_text(voc["workspaces-tooltip"])
-    form_workspaces.connect("clicked", create_workspaces_window, window)
+    if sway:
+        form_workspaces.connect("clicked", create_workspaces_window)
+    elif hypr:
+        form_workspaces.connect("clicked", create_workspaces_window_hypr)
 
     global form_close
     form_close = builder.get_object("close")
@@ -816,7 +957,11 @@ def main():
     global form_apply
     form_apply = builder.get_object("apply")
     form_apply.set_label(voc["apply"])
-    form_apply.connect("clicked", on_apply_button)
+    if (sway and sway_config_dir) or (hypr and hypr_config_dir):
+        form_apply.connect("clicked", on_apply_button)
+    else:
+        form_apply.set_sensitive(False)
+        form_apply.set_tooltip_text("Config dir not found")
 
     global form_version
     form_version = builder.get_object("version")
@@ -843,9 +988,12 @@ def main():
         form_wrapper_box.pack_start(cb, False, False, 3)
 
     btn = Gtk.Button.new_with_label(voc["toggle"])
-    btn.set_tooltip_text(voc["toggle-tooltip"])
-    btn.connect("clicked", on_toggle_button)
-    form_wrapper_box.pack_start(btn, False, False, 3)
+    if sway:
+        btn.set_tooltip_text(voc["toggle-tooltip"])
+        btn.connect("clicked", on_toggle_button)
+        form_wrapper_box.pack_start(btn, False, False, 3)
+    else:
+        btn.destroy()
 
     if display_buttons:
         update_form_from_widget(display_buttons[0])
