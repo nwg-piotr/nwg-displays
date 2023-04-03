@@ -61,6 +61,7 @@ and the add inactive outputs, if any, from what we detect with .get_outputs()
 outputs = {}  # Active outputs, listed from the sway tree; stores name and all attributes.
 outputs_activity = {}  # Just a dictionary "name": is_active - from get_outputs()
 workspaces = {}  # "workspace_num": "display_name"
+default_workspaces_hypr = {}
 
 display_buttons = []
 selected_output_button = None
@@ -113,6 +114,7 @@ max_x = 0
 max_y = 0
 
 voc = {}
+
 
 def load_vocabulary():
     global voc
@@ -560,7 +562,7 @@ def handle_keyboard(window, event):
         window.close()
 
 
-def create_workspaces_window(btn, parent):
+def create_workspaces_window(btn):
     global sway_config_dir
     global workspaces
     workspaces = load_workspaces(os.path.join(sway_config_dir, "workspaces"))
@@ -610,9 +612,81 @@ def create_workspaces_window(btn, parent):
     dialog_win.show_all()
 
 
+def create_workspaces_window_hypr(btn):
+    global workspaces, default_workspaces_hypr
+    workspaces, default_workspaces_hypr = load_workspaces_hypr(
+        os.path.join(os.getenv("HOME"), ".config", "hypr", "workspaces.conf"))
+    eprint("WS->Mon:", workspaces)
+    eprint("Mon->def_WS:", default_workspaces_hypr)
+    global dialog_win
+    if dialog_win:
+        dialog_win.destroy()
+    dialog_win = Gtk.Window()
+    dialog_win.set_resizable(False)
+    dialog_win.set_modal(True)
+    dialog_win.connect("key-release-event", handle_keyboard)
+    grid = Gtk.Grid()
+    for prop in ["margin_start", "margin_end", "margin_top", "margin_bottom"]:
+        grid.set_property(prop, 10)
+    grid.set_column_spacing(12)
+    grid.set_row_spacing(6)
+    dialog_win.add(grid)
+    global outputs
+    last_row = 0
+    for i in range(10):
+        lbl = Gtk.Label()
+        lbl.set_text("wsbind={},".format(i + 1))
+        lbl.set_property("halign", Gtk.Align.END)
+        grid.attach(lbl, 0, i, 1, 1)
+        combo = Gtk.ComboBoxText()
+        for key in outputs:
+            combo.append(key, key)
+            if i + 1 in workspaces:
+                combo.set_active_id(workspaces[i + 1])
+            combo.connect("changed", on_ws_combo_changed, i + 1)
+        grid.attach(combo, 1, i, 1, 1)
+        last_row = i
+
+    for key in outputs:
+        lbl = Gtk.Label.new("workspace={},".format(key))
+        lbl.set_property("halign", Gtk.Align.END)
+        grid.attach(lbl, 0, last_row+1, 1, 1)
+
+        combo = Gtk.ComboBoxText()
+        for n in range(1,11):
+            combo.append(str(n), str(n))
+        if key in default_workspaces_hypr:
+            combo.set_active_id(str(default_workspaces_hypr[key]))
+        combo.connect("changed", on_default_ws2mon_changed, key)
+        grid.attach(combo, 1, last_row + 1, 1, 1)
+
+        last_row += 1
+
+
+    box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+    grid.attach(box, 0, last_row + 1, 2, 1)
+
+    btn_apply = Gtk.Button()
+    btn_apply.set_label(voc["apply"])
+    btn_apply.connect("clicked", on_workspaces_apply_btn_hypr, dialog_win)
+    box.pack_end(btn_apply, False, False, 0)
+
+    btn_close = Gtk.Button()
+    btn_close.set_label(voc["close"])
+    btn_close.connect("clicked", close_dialog, dialog_win)
+    box.pack_end(btn_close, False, False, 6)
+
+    dialog_win.show_all()
+
+
 def on_ws_combo_changed(combo, ws_num):
     global workspaces
     workspaces[ws_num] = combo.get_active_id()
+
+
+def on_default_ws2mon_changed(combo, monitor):
+    global default_workspaces_hypr
+    default_workspaces_hypr[monitor] = combo.get_active_id()
 
 
 def close_dialog(w, win):
@@ -628,6 +702,23 @@ def on_workspaces_apply_btn(w, win, old_workspaces):
     close_dialog(w, win)
 
 
+def on_workspaces_apply_btn_hypr(w, win):
+    global workspaces, default_workspaces_hypr
+    # save_workspaces(workspaces, os.path.join(sway_config_dir, "workspaces"))
+    text_file = open(os.path.join(os.getenv("HOME"), ".config/hypr/workspaces.conf"), "w")
+    for key in workspaces:
+        line = "wsbind={},{}".format(key, workspaces[key])
+        text_file.write(line + "\n")
+
+    for key in default_workspaces_hypr:
+        line = "workspace={},{}".format(key, default_workspaces_hypr[key])
+        text_file.write(line + "\n")
+
+    text_file.close()
+
+    close_dialog(w, win)
+
+
 def main():
     GLib.set_prgname('nwg-displays')
 
@@ -637,12 +728,20 @@ def main():
                         action="store_true",
                         help="use Generic output names")
 
-    parser.add_argument("-o",
-                        "--outputs_path",
-                        type=str,
-                        default="{}/outputs".format(sway_config_dir),
-                        help="path to save Outputs config to, default: {}".format(
-                            "{}/outputs".format(sway_config_dir)))
+    if sway:
+        parser.add_argument("-o",
+                            "--outputs_path",
+                            type=str,
+                            default="{}/outputs".format(sway_config_dir),
+                            help="path to save Outputs config to, default: {}".format(
+                                "{}/outputs".format(sway_config_dir)))
+    elif hypr:
+        parser.add_argument("-m",
+                            "--monitors_path",
+                            type=str,
+                            default="{}/.config/hypr/monitors.conf".format(os.getenv("HOME")),
+                            help="path to save the monitors.conf file to, default: {}".format(
+                                "{}/.config/hypr/monitors.conf".format(os.getenv("HOME"))))
 
     parser.add_argument("-n",
                         "--num_ws",
@@ -660,7 +759,10 @@ def main():
     load_vocabulary()
 
     global outputs_path
-    outputs_path = args.outputs_path
+    if sway:
+        outputs_path = args.outputs_path
+    elif hypr:
+        outputs_path = args.monitors_path
 
     global generic_names
     generic_names = args.generic_names
@@ -797,7 +899,6 @@ def main():
     else:
         form_scale_filter.set_sensitive(False)
 
-
     global form_refresh
     form_refresh = builder.get_object("refresh")
     adj = Gtk.Adjustment(lower=1, upper=1200, step_increment=1, page_increment=10, page_size=1)
@@ -821,7 +922,10 @@ def main():
     form_workspaces = builder.get_object("workspaces")
     form_workspaces.set_label(voc["workspaces"])
     form_workspaces.set_tooltip_text(voc["workspaces-tooltip"])
-    form_workspaces.connect("clicked", create_workspaces_window, window)
+    if sway:
+        form_workspaces.connect("clicked", create_workspaces_window)
+    elif hypr:
+        form_workspaces.connect("clicked", create_workspaces_window_hypr)
 
     global form_close
     form_close = builder.get_object("close")
@@ -859,9 +963,12 @@ def main():
         form_wrapper_box.pack_start(cb, False, False, 3)
 
     btn = Gtk.Button.new_with_label(voc["toggle"])
-    btn.set_tooltip_text(voc["toggle-tooltip"])
-    btn.connect("clicked", on_toggle_button)
-    form_wrapper_box.pack_start(btn, False, False, 3)
+    if sway:
+        btn.set_tooltip_text(voc["toggle-tooltip"])
+        btn.connect("clicked", on_toggle_button)
+        form_wrapper_box.pack_start(btn, False, False, 3)
+    else:
+        btn.destroy()
 
     if display_buttons:
         update_form_from_widget(display_buttons[0])

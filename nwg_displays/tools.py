@@ -170,7 +170,6 @@ def list_outputs_activity():
             if name and line.startswith("  Enabled"):
                 result[name] = line.split()[1] == "yes"
 
-
     return result
 
 
@@ -234,67 +233,89 @@ def apply_settings(display_buttons, outputs_activity, outputs_path, g_names=Fals
     cmds = []
     db_names = []
     # just active outputs have their buttons
-    for db in display_buttons:
-        name = db.name if not g_names else db.description
-        db_names.append(name)
-
-        lines.append('output "%s" {' % name)
-        cmd = 'output "{}"'.format(name)
-
-        custom_mode_str = "--custom" if db.custom_mode else ""
-        lines.append(
-            "    mode {} {}x{}@{}Hz".format(custom_mode_str, db.physical_width, db.physical_height, db.refresh))
-        cmd += " mode {} {}x{}@{}Hz".format(custom_mode_str, db.physical_width, db.physical_height, db.refresh)
-
-        lines.append("    pos {} {}".format(db.x, db.y))
-        cmd += " pos {} {}".format(db.x, db.y)
-
-        lines.append("    transform {}".format(db.transform))
-        cmd += " transform {}".format(db.transform)
-
-        lines.append("    scale {}".format(db.scale))
-        cmd += " scale {}".format(db.scale)
-
-        lines.append("    scale_filter {}".format(db.scale_filter))
-        cmd += " scale_filter {}".format(db.scale_filter)
-
-        a_s = "on" if db.adaptive_sync else "off"
-        lines.append("    adaptive_sync {}".format(a_s))
-        cmd += " adaptive_sync {}".format(a_s)
-
-        dpms = "on" if db.dpms else "off"
-        lines.append("    dpms {}".format(dpms))
-        cmd += " dpms {}".format(dpms)
-
-        lines.append("}")
-        cmds.append(cmd)
-
-    if not g_names:
-        for key in outputs_activity:
-            if key not in db_names:
-                lines.append('output "{}" disable'.format(key))
-                cmds.append('output "{}" disable'.format(key))
-    else:
-        for key in outputs_activity:
-            desc = inactive_output_description(key)
-            if desc not in db_names:
-                lines.append('output "{}" disable'.format(desc))
-                cmds.append('output "{}" disable'.format(desc))
-
-    print("[Saving]")
-    for line in lines:
-        print(line)
-
-    save_list_to_text_file(lines, outputs_path)
-
-    print("[Executing]")
-    for cmd in cmds:
-        print(cmd)
-
     if os.getenv("SWAYSOCK"):
+        for db in display_buttons:
+            name = db.name if not g_names else db.description
+            db_names.append(name)
+
+            lines.append('output "%s" {' % name)
+            cmd = 'output "{}"'.format(name)
+
+            custom_mode_str = "--custom" if db.custom_mode else ""
+            lines.append(
+                "    mode {} {}x{}@{}Hz".format(custom_mode_str, db.physical_width, db.physical_height, db.refresh))
+            cmd += " mode {} {}x{}@{}Hz".format(custom_mode_str, db.physical_width, db.physical_height, db.refresh)
+
+            lines.append("    pos {} {}".format(db.x, db.y))
+            cmd += " pos {} {}".format(db.x, db.y)
+
+            lines.append("    transform {}".format(db.transform))
+            cmd += " transform {}".format(db.transform)
+
+            lines.append("    scale {}".format(db.scale))
+            cmd += " scale {}".format(db.scale)
+
+            lines.append("    scale_filter {}".format(db.scale_filter))
+            cmd += " scale_filter {}".format(db.scale_filter)
+
+            a_s = "on" if db.adaptive_sync else "off"
+            lines.append("    adaptive_sync {}".format(a_s))
+            cmd += " adaptive_sync {}".format(a_s)
+
+            dpms = "on" if db.dpms else "off"
+            lines.append("    dpms {}".format(dpms))
+            cmd += " dpms {}".format(dpms)
+
+            lines.append("}")
+            cmds.append(cmd)
+
+        if not g_names:
+            for key in outputs_activity:
+                if key not in db_names:
+                    lines.append('output "{}" disable'.format(key))
+                    cmds.append('output "{}" disable'.format(key))
+        else:
+            for key in outputs_activity:
+                desc = inactive_output_description(key)
+                if desc not in db_names:
+                    lines.append('output "{}" disable'.format(desc))
+                    cmds.append('output "{}" disable'.format(desc))
+
+        print("[Saving]")
+        for line in lines:
+            print(line)
+
+        save_list_to_text_file(lines, outputs_path)
+
+        print("[Executing]")
+        for cmd in cmds:
+            print(cmd)
+
         i3 = Connection()
         for cmd in cmds:
             i3.command(cmd)
+
+    elif os.getenv("HYPRLAND_INSTANCE_SIGNATURE"):
+        transforms = {"normal": 0, "90": 1, "180": 2, "270": 3, "flipped": 4, "flipped-90": 5, "flipped-180": 6,
+                      "flipped-270": 7}
+        for db in display_buttons:
+            name = db.name
+            db_names.append(name)
+
+            lines.append(
+                "monitor={},{}x{}@{},{}x{},{}".format(name, db.physical_width, db.physical_height, db.refresh, db.x,
+                                                     db.y, db.scale))
+            if db.transform != "normal":
+                lines.append("monitor={},transform,{}".format(name, transforms[db.transform]))
+
+            if name in outputs_activity and not outputs_activity[name]:
+                lines.append("monitor={},disable".format(name))
+
+        print("[Saving]")
+        for line in lines:
+            print(line)
+
+        save_list_to_text_file(lines, outputs_path)
 
 
 def inactive_output_description(name):
@@ -357,6 +378,34 @@ def load_workspaces(path):
     except Exception as e:
         print(e)
         return result
+
+
+def load_workspaces_hypr(path):
+    wsbinds = {}
+    ws2mon = {}
+    try:
+        with open(path, 'r') as file:
+            data = file.read().splitlines()
+            for i in range(len(data)):
+                # Binding workspaces to a monitor, e.g.: wsbind=1,DP-1
+                if data[i].startswith("wsbind"):
+                    d = data[i].split("=")[1]
+                    num = int(d.split(",")[0].strip())
+                    mon = d.split(",")[1]
+                    wsbinds[num] = mon
+
+                elif data[i].startswith("workspace"):
+                    # Default workspace for a monitor, e.g.: workspace=DP-1,1
+                    d = data[i].split("=")[1]
+                    mon = d.split(",")[0].strip()
+                    num = int(d.split(",")[1].strip())
+                    ws2mon[mon] = num
+
+            return wsbinds, ws2mon
+
+    except Exception as e:
+        eprint(e)
+        return {}, {}
 
 
 def save_workspaces(data_dict, path):
