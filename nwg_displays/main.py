@@ -48,6 +48,11 @@ if not os.path.isdir(sway_config_dir):
     print("WARNING: Couldn't find sway config directory '{}'".format(sway_config_dir), file=sys.stderr)
     sway_config_dir = ""
 
+hypr_config_dir = os.path.join(os.getenv("HOME"), ".config/hypr/")
+if not os.path.isdir(hypr_config_dir):
+    print("WARNING: Couldn't find Hyprland config directory '{}'".format(hypr_config_dir), file=sys.stderr)
+    hypr_config_dir = ""
+
 config = {}
 outputs_path = ""
 generic_names = False
@@ -601,7 +606,11 @@ def create_workspaces_window(btn):
 
     btn_apply = Gtk.Button()
     btn_apply.set_label(voc["apply"])
-    btn_apply.connect("clicked", on_workspaces_apply_btn, dialog_win, old_workspaces)
+    if sway_config_dir:
+        btn_apply.connect("clicked", on_workspaces_apply_btn, dialog_win, old_workspaces)
+    else:
+        btn_apply.set_sensitive(False)
+        btn_apply.set_tooltip_text("Config dir not found")
     box.pack_end(btn_apply, False, False, 0)
 
     btn_close = Gtk.Button()
@@ -668,7 +677,11 @@ def create_workspaces_window_hypr(btn):
 
     btn_apply = Gtk.Button()
     btn_apply.set_label(voc["apply"])
-    btn_apply.connect("clicked", on_workspaces_apply_btn_hypr, dialog_win)
+    if hypr_config_dir:
+        btn_apply.connect("clicked", on_workspaces_apply_btn_hypr, dialog_win)
+    else:
+        btn_apply.set_sensitive(False)
+        btn_apply.set_tooltip_text("Config dir not found")
     box.pack_end(btn_apply, False, False, 0)
 
     btn_close = Gtk.Button()
@@ -739,7 +752,7 @@ def main():
         parser.add_argument("-m",
                             "--monitors_path",
                             type=str,
-                            default="{}/.config/hypr/monitors.conf".format(os.getenv("HOME")),
+                            default="{}/monitors.conf".format(hypr_config_dir),
                             help="path to save the monitors.conf file to, default: {}".format(
                                 "{}/.config/hypr/monitors.conf".format(os.getenv("HOME"))))
 
@@ -760,9 +773,17 @@ def main():
 
     global outputs_path
     if sway:
-        outputs_path = args.outputs_path
+        if os.path.isdir(sway_config_dir):
+            outputs_path = args.outputs_path
+        else:
+            eprint("sway config directory not found!")
+            outputs_path = ""
     elif hypr:
-        outputs_path = args.monitors_path
+        if os.path.isdir(hypr_config_dir):
+            outputs_path = args.monitors_path
+        else:
+            eprint("Hyprland config directory not found!")
+            outputs_path = ""
 
     global generic_names
     generic_names = args.generic_names
@@ -936,7 +957,11 @@ def main():
     global form_apply
     form_apply = builder.get_object("apply")
     form_apply.set_label(voc["apply"])
-    form_apply.connect("clicked", on_apply_button)
+    if (sway and sway_config_dir) or (hypr and hypr_config_dir):
+        form_apply.connect("clicked", on_apply_button)
+    else:
+        form_apply.set_sensitive(False)
+        form_apply.set_tooltip_text("Config dir not found")
 
     global form_version
     form_version = builder.get_object("version")
