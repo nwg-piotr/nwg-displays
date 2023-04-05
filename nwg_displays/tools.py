@@ -100,6 +100,7 @@ def list_outputs():
                 description = line.replace(name, "")[2:-4]
                 outputs_dict[name] = {"description": description,
                                       "active": False,
+                                      "focused": False,
                                       "modes": [],
                                       "scale_filter": None,  # unavailable via wlr-randr nor hyprctl
                                       "dpms": None,  # unavailable via wlr-randr nor hyprctl
