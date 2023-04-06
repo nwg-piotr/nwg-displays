@@ -41,7 +41,7 @@
             </child>
             <child>
               <!-- n-columns=8 n-rows=6 -->
-              <object class="GtkGrid">
+              <object class="GtkGrid" id="grid">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="margin-start">10</property>

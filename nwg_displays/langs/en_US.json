@@ -9,6 +9,7 @@
   "dpms-tooltip": "Enables or disables output via DPMS. \nTo turn an output off (ie. blank the screen \nbut keep workspaces as-is), one can set DPMS to off.",
   "modes": "Modes",
   "modes-tooltip": "Displays a list of available \noutput modes to choose from.",
+  "none": "None",
   "position-x": "Position X",
   "refresh": "Refresh",
   "scale": "Scale",

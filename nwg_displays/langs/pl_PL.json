@@ -9,6 +9,7 @@
   "dpms-tooltip": "Włącza lub wyłącza wyjście przez DPMS.\nAby wyłączyć wyjście (tj. wygasić ekran, ale zachować\nobszary robocze bez zmian), można wyłączyć DPMS.",
   "modes": "Tryby",
   "modes-tooltip": "Wyświetla do wyboru listę dostępnych trybów.",
+  "none": "Brak",
   "position-x": "Pozycja X",
   "refresh": "Odśwież.",
   "scale": "Skala",
