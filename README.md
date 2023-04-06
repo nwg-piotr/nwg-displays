@@ -14,7 +14,7 @@ Output management utility for sway Wayland compositor, inspired by wdisplays and
 - apply settings;
 - save outputs configuration to a text file;
 - save workspace -> output assignments to a text file;
-- support sway only.
+- support sway and Hyprland only.
 
 ![2022-03-12-110614_screenshot](https://user-images.githubusercontent.com/20579136/158013748-5b27f742-0e6a-4d82-a5ac-06368b4df008.png)
 
@@ -34,6 +34,8 @@ options:
                         number of Workspaces in use, default: 8
   -v, --version         display version information
 ```
+
+### sway
 
 The configuration saved to a file may be easily used in the sway config:
 
@@ -67,6 +69,24 @@ include ~/.config/sway/workspaces
 Use `--generic_names` if your output names happen to be different on every restart, e.g. when you use Thunderbolt outputs.
 
 Use `--num_ws` if you use workspaces in a number other than 8.
+
+### Hyprland
+
+[Monitors](https://wiki.hyprland.org/Configuring/Monitors):
+
+Instead of configuring as described in Wiki, insert this line:
+
+```text
+source = ~/.config/hypr/monitors.conf
+```
+
+[Default workspace](http://wiki.hyprland.org/Configuring/Monitors/#default-workspace) and [Binding workspaces to a monitor](https://wiki.hyprland.org/Configuring/Monitors/#binding-workspaces-to-a-monitor):
+
+Insert:
+
+```text
+source = ~/.config/hypr/workspaces.conf
+```
 
 ## Settings
 
