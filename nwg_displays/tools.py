@@ -83,34 +83,25 @@ def list_outputs():
                                                                            item.ipc_data["serial"])
                 outputs_dict[item.name]["focused"] = item.ipc_data["focused"]
 
+                outputs_dict[item.name]["mirror"] = ""  # We only use it on Hyprland
                 outputs_dict[item.name]["monitor"] = None
 
     elif os.getenv("HYPRLAND_INSTANCE_SIGNATURE"):
         eprint("Running on Hyprland")
-        # This will be tricky. The `hyprctl monitors` command returns just a part of the output attributes that we need.
+        # This will be tricky. The `hyprctl monitors` command returns just a part of the output attributes we need.
         # The `wlr-randr` command returns almost everything, but not "focused". We need to use both commands. :/
-        output = hyprctl("j/monitors")
-        d = json.loads(output)
-        transforms = ["normal", "90", "180", "270", "flipped", "flipped-90", "flipped-180", "flipped-270"]
-        for item in d:
-            outputs_dict[item["name"]] = {"x": item["x"],
-                                          "y": item["y"],
-                                          "physical-width": item["width"],
-                                          "physical-height": item["height"],
-                                          "logical-width": int(item["width"] / item["scale"]),
-                                          "logical-height": int(item["height"] / item["scale"]),
-                                          "active": None,  # we'll get it from wlr-randr
-                                          "dpms": None,  # unobtanium in both methods
-                                          "transform": transforms[item["transform"]],  # we'll get it from wlr-randr
-                                          "scale": item["scale"],
-                                          "scale_filter": None,  # unavailable in both methods
-                                          "adaptive_sync_status": None,  # we'll get it from wlr-randr
-                                          "refresh": None,  # we could get it here, but rounded up
-                                          "description": "{} {} {}".format(item["make"], item["model"], item["serial"]),
-                                          "modes": [],  # we'll get it from wlr-randr
-                                          "focused": item["focused"] == "yes",
-                                          "monitor": None
-                                          }
+
+        # 1. Mirroring is impossible to check in any way. We need to parse back the monitors.conf file, and it sucks.
+        mirrors = {}
+        monitors_file = os.path.join(os.getenv("HOME"), ".config/hypr/monitors.conf")
+        if os.path.isfile(monitors_file):
+            lines = load_text_file(monitors_file).splitlines()
+            for line in lines:
+                if "mirror" in line:
+                    settings = line.split("=")[1].split(",")
+                    mirrors[settings[0].strip()] = settings[-1].strip()
+
+        # 2. Read all the available values from wlr-randr
         if not is_command("wlr-randr"):
             eprint("wlr-randr package required, but not found, terminating.")
             sys.exit(1)
@@ -119,10 +110,25 @@ def list_outputs():
         for line in lines:
             if not line.startswith(" "):
                 name = line.split()[0]
-            if name and line.startswith("  Enabled"):
+                description = line.replace(name, "")[2:-4]
+                outputs_dict[name] = {"description": description,
+                                      "active": False,
+                                      "focused": False,
+                                      "modes": [],
+                                      "scale_filter": None,  # unavailable via wlr-randr nor hyprctl
+                                      "dpms": None,  # unavailable via wlr-randr nor hyprctl
+                                      "mirror": "",
+                                      "monitor": None}  # we'll assign a Gdk monitor here, later
+
+            if name in mirrors:
+                outputs_dict[name]["mirror"] = mirrors[name]
+
+            if "Position" in line:
+                x_y = line.split()[1].split(',')
+                outputs_dict[name]["x"] = int(x_y[0])
+                outputs_dict[name]["y"] = int(x_y[1])
+            if line.startswith("  Enabled"):
                 outputs_dict[name]["active"] = line.split()[1] == "yes"
-            if name and line.startswith("  Adaptive Sync:"):
-                outputs_dict[name]["adaptive_sync_status"] = line.split()[1]
             if line.startswith("    "):
                 parts = line.split()
                 mode = {"width": int(parts[0].split("x")[0]), "height": int(parts[0].split("x")[1]),
@@ -131,7 +137,25 @@ def list_outputs():
                 modes.append(mode)
                 outputs_dict[name]["modes"] = modes
                 if "current" in line:
+                    w_h = line.split()[0].split('x')
+                    outputs_dict[name]["physical-width"] = int(w_h[0])
+                    outputs_dict[name]["physical-height"] = int(w_h[1])
                     outputs_dict[name]["refresh"] = float(parts[2])
+            if name and line.startswith("  Adaptive Sync:"):
+                outputs_dict[name]["adaptive_sync_status"] = line.split()[1]
+            if "Transform:" in line:
+                outputs_dict[name]["transform"] = line.split()[1]
+            if "Scale" in line:
+                s = float(line.split()[1])
+                outputs_dict[name]["scale"] = s
+                outputs_dict[name]["logical-width"] = outputs_dict[name]["physical-width"] / s
+                outputs_dict[name]["logical-height"] = outputs_dict[name]["physical-height"] / s
+
+        # 3. Read missing values from hyprctl
+        output = hyprctl("j/monitors")
+        monitors = json.loads(output)
+        for m in monitors:
+            outputs_dict[m["name"]]["focused"] = m["focused"] == "yes"
 
     else:
         eprint("This program only supports sway and Hyprland, and we seem to be elsewhere, terminating.")
@@ -302,9 +326,14 @@ def apply_settings(display_buttons, outputs_activity, outputs_path, g_names=Fals
             name = db.name
             db_names.append(name)
 
-            lines.append(
-                "monitor={},{}x{}@{},{}x{},{}".format(name, db.physical_width, db.physical_height, db.refresh, db.x,
-                                                     db.y, db.scale))
+            if not db.mirror:
+                lines.append(
+                    "monitor={},{}x{}@{},{}x{},{}".format(name, db.physical_width, db.physical_height, db.refresh, db.x,
+                                                          db.y, db.scale))
+            else:
+                lines.append(
+                    "monitor={},{}x{}@{},{}x{},{},mirror,{}".format(name, db.physical_width, db.physical_height,
+                                                                    db.refresh, db.x, db.y, db.scale, db.mirror))
             if db.transform != "normal":
                 lines.append("monitor={},transform,{}".format(name, transforms[db.transform]))
 
@@ -365,6 +394,16 @@ def save_list_to_text_file(data, file_path):
     for line in data:
         text_file.write(line + "\n")
     text_file.close()
+
+
+def load_text_file(path):
+    try:
+        with open(path, 'r') as file:
+            data = file.read()
+            return data
+    except Exception as e:
+        print(e)
+        return None
 
 
 def load_workspaces(path):

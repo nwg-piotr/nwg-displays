@@ -92,6 +92,7 @@ form_workspaces = None
 form_close = None
 form_apply = None
 form_version = None
+form_mirror = None
 
 dialog_win = None
 
@@ -281,6 +282,14 @@ def update_form_from_widget(widget):
     form_scale.set_value(widget.scale)
     form_scale_filter.set_active_id(widget.scale_filter)
     form_refresh.set_value(widget.refresh)
+    if form_mirror:
+        form_mirror.remove_all()
+        form_mirror.append("", voc["none"])
+        for key in outputs:
+            if key != widget.name:
+                form_mirror.append(key, key)
+        form_mirror.set_active_id(widget.mirror)
+        form_mirror.show_all()
 
     global on_mode_changed_silent
     on_mode_changed_silent = True
@@ -306,8 +315,7 @@ def update_form_from_widget(widget):
 
 class DisplayButton(Gtk.Button):
     def __init__(self, name, description, x, y, physical_width, physical_height, transform, scale, scale_filter,
-                 refresh, modes, active,
-                 dpms, adaptive_sync_status, custom_mode_status, focused, monitor):
+                 refresh, modes, active, dpms, adaptive_sync_status, custom_mode_status, focused, monitor, mirror=""):
         super().__init__()
         # Output properties
         self.name = name
@@ -330,6 +338,7 @@ class DisplayButton(Gtk.Button):
         self.adaptive_sync = adaptive_sync_status == "enabled"  # converts "enabled | disabled" to bool
         self.custom_mode = custom_mode_status
         self.focused = focused
+        self.mirror = mirror
 
         # Button properties
         self.selected = False
@@ -481,6 +490,11 @@ def on_mode_changed(widget):
         update_form_from_widget(selected_output_button)
 
 
+def on_mirror_selected(widget):
+    if selected_output_button and widget.get_active_id() is not None:
+        selected_output_button.mirror = widget.get_active_id()
+
+
 def on_apply_button(widget):
     global outputs_activity
     apply_settings(display_buttons, outputs_activity, outputs_path, g_names=generic_names)
@@ -520,7 +534,7 @@ def create_display_buttons():
                           round(item["physical-height"]),
                           item["transform"], item["scale"], item["scale_filter"], item["refresh"], item["modes"],
                           item["active"], item["dpms"], item["adaptive_sync_status"], custom_mode, item["focused"],
-                          item["monitor"])
+                          item["monitor"], mirror=item["mirror"])
 
         display_buttons.append(b)
 
@@ -994,6 +1008,18 @@ def main():
         form_wrapper_box.pack_start(btn, False, False, 3)
     else:
         btn.destroy()
+
+    if hypr:
+        grid = builder.get_object("grid")
+        lbl = Gtk.Label.new("Mirror:")
+        lbl.set_property("halign", Gtk.Align.END)
+        grid.attach(lbl, 6, 4, 1, 1)
+
+        global form_mirror
+        form_mirror = Gtk.ComboBoxText()
+        form_mirror.connect("changed", on_mirror_selected)
+        grid.attach(form_mirror, 7, 4, 1, 1)
+
 
     if display_buttons:
         update_form_from_widget(display_buttons[0])
