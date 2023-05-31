@@ -419,6 +419,7 @@ def load_workspaces(path):
         return result
 
 
+# This is only guaranteed to work with the file saved by nwg-displays in version >= 0.3.3
 def load_workspaces_hypr(path):
     wsbinds = {}
     ws2mon = {}
@@ -426,14 +427,19 @@ def load_workspaces_hypr(path):
         with open(path, 'r') as file:
             data = file.read().splitlines()
             for i in range(len(data)):
-                # Binding workspaces to a monitor, e.g.: wsbind=1,DP-1
-                if data[i].startswith("wsbind"):
-                    d = data[i].split("=")[1]
-                    num = int(d.split(",")[0].strip())
-                    mon = d.split(",")[1]
-                    wsbinds[num] = mon
+                # Binding workspaces to a monitor, e.g.: workspace=1, monitor:DP-1
+                if "monitor:" in data[i]:
+                    num = None
+                    parts = data[i].split(",")
+                    try:
+                        num = int(parts[0].split("=")[1])
+                    except:
+                        pass
+                    mon = parts[1].split(":")[1]
+                    if num:
+                        wsbinds[num] = mon
 
-                elif data[i].startswith("workspace"):
+                else:
                     # Default workspace for a monitor, e.g.: workspace=DP-1,1
                     d = data[i].split("=")[1]
                     mon = d.split(",")[0].strip()

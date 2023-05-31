@@ -658,7 +658,7 @@ def create_workspaces_window_hypr(btn):
     last_row = 0
     for i in range(10):
         lbl = Gtk.Label()
-        lbl.set_text("wsbind={},".format(i + 1))
+        lbl.set_text("workspace={},".format(i + 1))
         lbl.set_property("halign", Gtk.Align.END)
         grid.attach(lbl, 0, i, 1, 1)
         combo = Gtk.ComboBoxText()
@@ -734,7 +734,7 @@ def on_workspaces_apply_btn_hypr(w, win):
     # save_workspaces(workspaces, os.path.join(sway_config_dir, "workspaces"))
     text_file = open(os.path.join(os.getenv("HOME"), ".config/hypr/workspaces.conf"), "w")
     for key in workspaces:
-        line = "wsbind={},{}".format(key, workspaces[key])
+        line = "workspace={},monitor:{}".format(key, workspaces[key])
         text_file.write(line + "\n")
 
     for key in default_workspaces_hypr:
