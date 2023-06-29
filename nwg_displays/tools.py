@@ -141,8 +141,10 @@ def list_outputs():
                     outputs_dict[name]["physical-width"] = int(w_h[0])
                     outputs_dict[name]["physical-height"] = int(w_h[1])
                     outputs_dict[name]["refresh"] = float(parts[2])
-            if name and line.startswith("  Adaptive Sync:"):
-                outputs_dict[name]["adaptive_sync_status"] = line.split()[1]
+            # This won't work on Slackware. Let's grab the value from hyprctl -j monitors instead.
+            # See: https://github.com/nwg-piotr/nwg-displays/issues/21
+            # if name and line.startswith("  Adaptive Sync:"):
+            #     outputs_dict[name]["adaptive_sync_status"] = line.split()[1]
             if "Transform:" in line:
                 outputs_dict[name]["transform"] = line.split()[1]
             if "Scale" in line:
@@ -156,6 +158,7 @@ def list_outputs():
         monitors = json.loads(output)
         for m in monitors:
             outputs_dict[m["name"]]["focused"] = m["focused"] == "yes"
+            outputs_dict[m["name"]]["adaptive_sync_status"] = "enabled" if m["vrr"] else "disabled"
 
     else:
         eprint("This program only supports sway and Hyprland, and we seem to be elsewhere, terminating.")
