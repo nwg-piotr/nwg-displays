@@ -97,9 +97,10 @@ def list_outputs():
         if os.path.isfile(monitors_file):
             lines = load_text_file(monitors_file).splitlines()
             for line in lines:
-                if "mirror" in line:
-                    settings = line.split("=")[1].split(",")
-                    mirrors[settings[0].strip()] = settings[-1].strip()
+                if line and not line.startswith("#"):  # skip comments
+                    if "mirror" in line:
+                        settings = line.split("=")[1].split(",")
+                        mirrors[settings[0].strip()] = settings[-1].strip()
 
         # 2. Read all the available values from wlr-randr
         if not is_command("wlr-randr"):
