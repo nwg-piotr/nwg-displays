@@ -120,7 +120,8 @@ def list_outputs():
                                       "dpms": None,  # unavailable via wlr-randr nor hyprctl
                                       "mirror": "",
                                       "monitor": None,  # we'll assign a Gdk monitor here later
-                                      # Prevent from crashing in case we couldn't get it w/ wlr-randr nor hyprctl
+                                      # Prevent from crashing in case we couldn't get it w/ wlr-randr nor hyprctl.
+                                      # On Hyprland we make no use of it anyway, as there's no way to turn it on/off.
                                       "adaptive_sync_status": False
                                       }
 
