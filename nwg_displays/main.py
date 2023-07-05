@@ -44,12 +44,12 @@ config_dir = os.path.join(get_config_home(), "nwg-displays")
 old_config_dir = os.path.join(get_config_home(), "nwg-outputs")
 
 sway_config_dir = os.path.join(get_config_home(), "sway")
-if not os.path.isdir(sway_config_dir):
+if sway and not os.path.isdir(sway_config_dir):
     print("WARNING: Couldn't find sway config directory '{}'".format(sway_config_dir), file=sys.stderr)
     sway_config_dir = ""
 
 hypr_config_dir = os.path.join(os.getenv("HOME"), ".config/hypr/")
-if not os.path.isdir(hypr_config_dir):
+if hypr and not os.path.isdir(hypr_config_dir):
     print("WARNING: Couldn't find Hyprland config directory '{}'".format(hypr_config_dir), file=sys.stderr)
     hypr_config_dir = ""
 
