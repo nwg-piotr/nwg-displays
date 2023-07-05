@@ -119,7 +119,10 @@ def list_outputs():
                                       "scale_filter": None,  # unavailable via wlr-randr nor hyprctl
                                       "dpms": None,  # unavailable via wlr-randr nor hyprctl
                                       "mirror": "",
-                                      "monitor": None}  # we'll assign a Gdk monitor here, later
+                                      "monitor": None,  # we'll assign a Gdk monitor here later
+                                      # Prevent from crashing in case we couldn't get it w/ wlr-randr nor hyprctl
+                                      "adaptive_sync_status": False
+                                      }
 
             if name in mirrors:
                 outputs_dict[name]["mirror"] = mirrors[name]
@@ -142,10 +145,11 @@ def list_outputs():
                     outputs_dict[name]["physical-width"] = int(w_h[0])
                     outputs_dict[name]["physical-height"] = int(w_h[1])
                     outputs_dict[name]["refresh"] = float(parts[2])
-            # This won't work on Slackware. Let's grab the value from hyprctl -j monitors instead.
-            # See: https://github.com/nwg-piotr/nwg-displays/issues/21
-            # if name and line.startswith("  Adaptive Sync:"):
-            #     outputs_dict[name]["adaptive_sync_status"] = line.split()[1]
+
+            # This may or may not work. We'll try to read the value again from hyprctl -j monitors.
+            if name and line.startswith("  Adaptive Sync:"):
+                outputs_dict[name]["adaptive_sync_status"] = line.split()[1]
+
             if "Transform:" in line:
                 outputs_dict[name]["transform"] = line.split()[1]
             if "Scale" in line:
@@ -154,11 +158,13 @@ def list_outputs():
                 outputs_dict[name]["logical-width"] = outputs_dict[name]["physical-width"] / s
                 outputs_dict[name]["logical-height"] = outputs_dict[name]["physical-height"] / s
 
-        # 3. Read missing values from hyprctl
+        # 3. Read missing/possibly missing values from hyprctl
         output = hyprctl("j/monitors")
         monitors = json.loads(output)
         for m in monitors:
+            # wlr-rand does not return this value
             outputs_dict[m["name"]]["focused"] = m["focused"] == "yes"
+            # This may be missing from wlr-rand output, see https://github.com/nwg-piotr/nwg-displays/issues/21
             outputs_dict[m["name"]]["adaptive_sync_status"] = "enabled" if m["vrr"] else "disabled"
 
     else:
