@@ -55,7 +55,6 @@ if hypr and not os.path.isdir(hypr_config_dir):
 
 config = {}
 outputs_path = ""
-generic_names = False
 num_ws = 0
 
 """
@@ -78,6 +77,7 @@ form_dpms = None
 form_adaptive_sync = None
 form_custom_mode = None
 form_view_scale = None
+form_use_desc = None
 form_x = None
 form_y = None
 form_width = None
@@ -281,6 +281,7 @@ def update_form_from_widget(widget):
     form_adaptive_sync.set_active(widget.adaptive_sync)
     form_custom_mode.set_active(widget.custom_mode)
     form_view_scale.set_value(config["view-scale"])  # not really from the widget, but from the global value
+    form_use_desc.set_active(config["use-desc"])
     form_x.set_value(widget.x)
     form_y.set_value(widget.y)
     form_width.set_value(widget.physical_width)
@@ -424,6 +425,10 @@ def on_dpms_toggled(widget):
         selected_output_button.dpms = widget.get_active()
 
 
+def on_use_desc_toggled(widget):
+    config["use-desc"] = widget.get_active()
+
+
 def on_adaptive_sync_toggled(widget):
     if selected_output_button:
         selected_output_button.adaptive_sync = widget.get_active()
@@ -503,7 +508,7 @@ def on_mirror_selected(widget):
 
 def on_apply_button(widget):
     global outputs_activity
-    apply_settings(display_buttons, outputs_activity, outputs_path, g_names=generic_names)
+    apply_settings(display_buttons, outputs_activity, outputs_path, use_desc=config["use-desc"])
     # save config file
     save_json(config, os.path.join(config_dir, "config"))
 
@@ -590,7 +595,7 @@ def handle_keyboard(window, event):
 def create_workspaces_window(btn):
     global sway_config_dir
     global workspaces
-    workspaces = load_workspaces(os.path.join(sway_config_dir, "workspaces"))
+    workspaces = load_workspaces(os.path.join(sway_config_dir, "workspaces"), use_desc=config["use-desc"])
     old_workspaces = workspaces.copy()
     global dialog_win
     if dialog_win:
@@ -614,7 +619,11 @@ def create_workspaces_window(btn):
         grid.attach(lbl, 0, i, 1, 1)
         combo = Gtk.ComboBoxText()
         for key in outputs:
-            combo.append(key, key)
+            if not config["use-desc"]:
+                combo.append(key, key)
+            else:
+                desc = "{}".format(outputs[key]["description"])
+                combo.append(desc, desc)
             if i + 1 in workspaces:
                 combo.set_active_id(workspaces[i + 1])
             combo.connect("changed", on_ws_combo_changed, i + 1)
@@ -728,7 +737,7 @@ def close_dialog(w, win):
 def on_workspaces_apply_btn(w, win, old_workspaces):
     global workspaces
     if workspaces != old_workspaces:
-        save_workspaces(workspaces, os.path.join(sway_config_dir, "workspaces"))
+        save_workspaces(workspaces, os.path.join(sway_config_dir, "workspaces"), use_desc=config["use-desc"])
         notify("Workspaces assignment", "Restart sway for changes to take effect")
 
     close_dialog(w, win)
@@ -762,10 +771,6 @@ def main():
     GLib.set_prgname('nwg-displays')
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-g",
-                        "--generic_names",
-                        action="store_true",
-                        help="use Generic output names")
 
     if sway:
         parser.add_argument("-o",
@@ -810,9 +815,6 @@ def main():
         else:
             eprint("Hyprland config directory not found!")
             outputs_path = ""
-
-    global generic_names
-    generic_names = args.generic_names
 
     global num_ws
     num_ws = args.num_ws
@@ -956,6 +958,12 @@ def main():
     form_modes = builder.get_object("modes")
     form_modes.set_tooltip_text(voc["modes-tooltip"])
     form_modes.connect("changed", on_mode_changed)
+
+    global form_use_desc
+    form_use_desc = builder.get_object("use-desc")
+    form_use_desc.set_label("{}".format(voc["use-desc"]))
+    form_use_desc.set_tooltip_text("{}".format(voc["use-desc-tooltip"]))
+    form_use_desc.connect("toggled", on_use_desc_toggled)
 
     global form_transform
     form_transform = builder.get_object("transform")

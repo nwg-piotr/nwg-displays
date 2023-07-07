@@ -20,6 +20,8 @@
   "toggle-tooltip": "Włącza/wyłącza wyjścia.",
   "transform": "Transformacja",
   "transform-tooltip": "Ustawia wartość dla transformacji tła.",
+  "use-desc": "Użyj opisu",
+  "use-desc-tooltip": "Używaj opisu monitora zamiast nazwy wyjścia",
   "view-scale-tooltip": "Powiększenie podglądu wyjść",
   "workspaces": "Obszary robocze",
   "workspaces-tooltip": "Otwiera dialog przyporządkowania\nobszarów roboczych do wyjść.",
