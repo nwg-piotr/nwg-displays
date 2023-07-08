@@ -56,6 +56,7 @@ if hypr and not os.path.isdir(hypr_config_dir):
 config = {}
 outputs_path = ""
 num_ws = 0
+mon_names = []
 
 """
 i3.get_outputs() does not return some output attributes, especially when connected via hdmi.
@@ -412,6 +413,8 @@ def on_view_scale_changed(*args):
         b.rescale_transform()
         fixed.move(b, b.x * config["view-scale"], b.y * config["view-scale"])
 
+    save_json(config, os.path.join(config_dir, "config"))
+
 
 def on_transform_changed(*args):
     if selected_output_button:
@@ -427,6 +430,7 @@ def on_dpms_toggled(widget):
 
 def on_use_desc_toggled(widget):
     config["use-desc"] = widget.get_active()
+    save_json(config, os.path.join(config_dir, "config"))
 
 
 def on_adaptive_sync_toggled(widget):
@@ -678,24 +682,36 @@ def create_workspaces_window_hypr(btn):
         grid.attach(lbl, 0, i, 1, 1)
         combo = Gtk.ComboBoxText()
         for key in outputs:
-            combo.append(key, key)
+            if not config["use-desc"]:
+                combo.append(key, key)
+            else:
+                desc = "{}".format(outputs[key]["description"])
+                combo.append(desc, desc)
             if i + 1 in workspaces:
                 combo.set_active_id(workspaces[i + 1])
             combo.connect("changed", on_ws_combo_changed, i + 1)
+
         grid.attach(combo, 1, i, 1, 1)
         last_row = i
 
+    global mon_names
+    mon_names = []
     for key in outputs:
-        lbl = Gtk.Label.new("workspace={},".format(key))
+        if not config["use-desc"]:
+            mon_names.append(key)
+        else:
+            mon_names.append(outputs[key]["description"])
+    for name in mon_names:
+        lbl = Gtk.Label.new("workspace={},".format(name))
         lbl.set_property("halign", Gtk.Align.END)
         grid.attach(lbl, 0, last_row + 1, 1, 1)
 
         combo = Gtk.ComboBoxText()
         for n in range(1, 11):
             combo.append(str(n), str(n))
-        if key in default_workspaces_hypr:
-            combo.set_active_id(str(default_workspaces_hypr[key]))
-        combo.connect("changed", on_default_ws2mon_changed, key)
+        if name in default_workspaces_hypr:
+            combo.set_active_id(str(default_workspaces_hypr[name]))
+        combo.connect("changed", on_default_ws2mon_changed, name)
         grid.attach(combo, 1, last_row + 1, 1, 1)
 
         last_row += 1
@@ -744,7 +760,7 @@ def on_workspaces_apply_btn(w, win, old_workspaces):
 
 
 def on_workspaces_apply_btn_hypr(w, win):
-    global workspaces, default_workspaces_hypr
+    global workspaces, default_workspaces_hypr, mon_names
     # save_workspaces(workspaces, os.path.join(sway_config_dir, "workspaces"))
     text_file = open(os.path.join(os.getenv("HOME"), ".config/hypr/workspaces.conf"), "w")
 
@@ -759,8 +775,9 @@ def on_workspaces_apply_btn_hypr(w, win):
         text_file.write(line + "\n")
 
     for key in default_workspaces_hypr:
-        line = "workspace={},{}".format(key, default_workspaces_hypr[key])
-        text_file.write(line + "\n")
+        if key in mon_names:
+            line = "workspace={},{}".format(key, default_workspaces_hypr[key])
+            text_file.write(line + "\n")
 
     text_file.close()
 
