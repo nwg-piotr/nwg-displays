@@ -808,7 +808,7 @@ def main():
                         "--num_ws",
                         type=int,
                         default=8,
-                        help="number of Workspaces in use, default: 8")
+                        help="number of sway Workspaces in use, default: 8")
 
     parser.add_argument("-v",
                         "--version",
