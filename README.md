@@ -91,7 +91,7 @@ source = ~/.config/hypr/workspaces.conf
 ## Settings
 
 The runtime configuration file is placed in your config directory, like `~/.config/nwg-displays/config`. 
-It's a simple `jsnon` file:
+It's a simple `json` file:
 
 ```json
 {
