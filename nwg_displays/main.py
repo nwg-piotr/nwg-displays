@@ -771,7 +771,7 @@ def on_workspaces_apply_btn_hypr(w, win):
     text_file.write(line + "\n")
 
     for key in workspaces:
-        line = "workspace={},monitor:{}".format(key, workspaces[key])
+        line = "workspace=desc:{},monitor:desc:{}".format(key, workspaces[key])
         text_file.write(line + "\n")
 
     for key in default_workspaces_hypr:

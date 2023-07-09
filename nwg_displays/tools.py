@@ -457,7 +457,7 @@ def load_workspaces_hypr(path):
                             num = int(parts[0].split("=")[1])
                         except:
                             pass
-                        mon = parts[1].split(":")[1]
+                        mon = parts[1].split("monitor:desc:")[1]
                         if num:
                             wsbinds[num] = mon
 
