@@ -657,7 +657,7 @@ def create_workspaces_window(btn):
 def create_workspaces_window_hypr(btn):
     global workspaces, default_workspaces_hypr
     workspaces, default_workspaces_hypr = load_workspaces_hypr(
-        os.path.join(os.getenv("HOME"), ".config", "hypr", "workspaces.conf"))
+        os.path.join(os.getenv("HOME"), ".config", "hypr", "workspaces.conf"), use_desc=config["use-desc"])
     eprint("WS->Mon:", workspaces)
     eprint("Mon->def_WS:", default_workspaces_hypr)
     global dialog_win
@@ -771,12 +771,15 @@ def on_workspaces_apply_btn_hypr(w, win):
     text_file.write(line + "\n")
 
     for key in workspaces:
-        line = "workspace=desc:{},monitor:desc:{}".format(key, workspaces[key])
+        line = "workspace={},monitor:desc:{}".format(key, workspaces[key])
         text_file.write(line + "\n")
 
     for key in default_workspaces_hypr:
         if key in mon_names:
-            line = "workspace={},{}".format(key, default_workspaces_hypr[key])
+            if not config["use-desc"]:
+                line = "workspace={},{}".format(key, default_workspaces_hypr[key])
+            else:
+                line = "workspace=monitor:desc:{},{}".format(key, default_workspaces_hypr[key])
             text_file.write(line + "\n")
 
     text_file.close()

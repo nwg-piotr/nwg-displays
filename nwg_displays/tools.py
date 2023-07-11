@@ -441,7 +441,7 @@ def load_workspaces(path, use_desc=False):
 
 
 # This is only guaranteed to work with the file saved by nwg-displays in version >= 0.3.3
-def load_workspaces_hypr(path):
+def load_workspaces_hypr(path, use_desc=False):
     wsbinds = {}
     ws2mon = {}
     try:
@@ -463,7 +463,10 @@ def load_workspaces_hypr(path):
 
                     else:
                         # Default workspace for a monitor, e.g.: workspace=DP-1,1
-                        d = data[i].split("=")[1]
+                        if not use_desc:
+                            d = data[i].split("=")[1]
+                        else:
+                            d = data[i].split("=desc:")[1]
                         mon = d.split(",")[0].strip()
                         num = int(d.split(",")[1].strip())
                         ws2mon[mon] = num
