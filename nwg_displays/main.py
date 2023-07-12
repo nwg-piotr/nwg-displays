@@ -657,7 +657,7 @@ def create_workspaces_window(btn):
 def create_workspaces_window_hypr(btn):
     global workspaces, default_workspaces_hypr
     workspaces, default_workspaces_hypr = load_workspaces_hypr(
-        os.path.join(os.getenv("HOME"), ".config", "hypr", "workspaces.conf"), use_desc=config["use-desc"])
+        os.path.join(os.getenv("HOME"), ".config", "hypr", "workspaces.conf"))
     eprint("WS->Mon:", workspaces)
     eprint("Mon->def_WS:", default_workspaces_hypr)
     global dialog_win
@@ -677,7 +677,10 @@ def create_workspaces_window_hypr(btn):
     last_row = 0
     for i in range(10):
         lbl = Gtk.Label()
-        lbl.set_text("workspace={},".format(i + 1))
+        if config["use-desc"]:
+            lbl.set_markup("Workspace rule: <b>workspace={},monitor:desc:</b>".format(i + 1))
+        else:
+            lbl.set_markup("Workspace rule: <b>workspace={},monitor:</b>".format(i + 1))
         lbl.set_property("halign", Gtk.Align.END)
         grid.attach(lbl, 0, i, 1, 1)
         combo = Gtk.ComboBoxText()
@@ -702,11 +705,13 @@ def create_workspaces_window_hypr(btn):
         else:
             mon_names.append(outputs[key]["description"])
     for name in mon_names:
-        lbl = Gtk.Label.new("workspace={},".format(name))
+        lbl = Gtk.Label()
+        lbl.set_markup("Default workspace for <b>{}</b>:".format(name))
         lbl.set_property("halign", Gtk.Align.END)
         grid.attach(lbl, 0, last_row + 1, 1, 1)
 
         combo = Gtk.ComboBoxText()
+        combo.set_property("halign", Gtk.Align.START)
         for n in range(1, 11):
             combo.append(str(n), str(n))
         if name in default_workspaces_hypr:
@@ -761,7 +766,6 @@ def on_workspaces_apply_btn(w, win, old_workspaces):
 
 def on_workspaces_apply_btn_hypr(w, win):
     global workspaces, default_workspaces_hypr, mon_names
-    # save_workspaces(workspaces, os.path.join(sway_config_dir, "workspaces"))
     text_file = open(os.path.join(os.getenv("HOME"), ".config/hypr/workspaces.conf"), "w")
 
     now = datetime.datetime.now()
@@ -771,16 +775,15 @@ def on_workspaces_apply_btn_hypr(w, win):
     text_file.write(line + "\n")
 
     for key in workspaces:
-        line = "workspace={},monitor:desc:{}".format(key, workspaces[key])
-        text_file.write(line + "\n")
+        if not config["use-desc"]:
+            line = "workspace={},monitor:{}".format(key, workspaces[key])
+        else:
+            line = "workspace={},monitor:desc:{}".format(key, workspaces[key])
 
-    for key in default_workspaces_hypr:
-        if key in mon_names:
-            if not config["use-desc"]:
-                line = "workspace={},{}".format(key, default_workspaces_hypr[key])
-            else:
-                line = "workspace=monitor:desc:{},{}".format(key, default_workspaces_hypr[key])
-            text_file.write(line + "\n")
+        if default_workspaces_hypr[workspaces[key]] == str(key):
+            line += ",default:true"
+
+        text_file.write(line + "\n")
 
     text_file.close()
 

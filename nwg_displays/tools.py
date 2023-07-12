@@ -441,40 +441,36 @@ def load_workspaces(path, use_desc=False):
 
 
 # This is only guaranteed to work with the file saved by nwg-displays in version >= 0.3.3
-def load_workspaces_hypr(path, use_desc=False):
+def load_workspaces_hypr(path):
     wsbinds = {}
     ws2mon = {}
     try:
         with open(path, 'r') as file:
             data = file.read().splitlines()
-            for i in range(len(data)):
-                if data[i] and not data[i].startswith("#"):  # skip comments
-                    # Binding workspaces to a monitor, e.g.: workspace=1, monitor:DP-1
-                    if "monitor:" in data[i]:
-                        num = None
-                        parts = data[i].split(",")
-                        try:
-                            num = int(parts[0].split("=")[1])
-                        except:
-                            pass
-                        mon = parts[1].split("monitor:desc:")[1]
-                        if num:
-                            wsbinds[num] = mon
 
-                    else:
-                        # Default workspace for a monitor, e.g.: workspace=DP-1,1
-                        if not use_desc:
-                            d = data[i].split("=")[1]
-                        else:
-                            d = data[i].split("=desc:")[1]
-                        mon = d.split(",")[0].strip()
-                        num = int(d.split(",")[1].strip())
-                        ws2mon[mon] = num
+            for i in range(len(data)):
+                line = data[i]
+                if line and not line.startswith("#"):  # skip comments
+                    # Binding workspaces to a monitor, e.g.:
+                    # 'workspace=1,monitor:desc:AOC 2475WR F17H4QA000449' or
+                    # 'workspace=1,monitor:HDMI-A-1'
+                    ws_num = None
+                    parts = line.split(",")
+                    try:
+                        ws_num = int(parts[0].split("=")[1])
+                    except:
+                        pass
+                    mon = parts[1].split(":")[-1]
+                    if ws_num:
+                        wsbinds[ws_num] = mon
+
+                    if line.endswith("default:true"):
+                        ws2mon[mon] = ws_num
 
             return wsbinds, ws2mon
 
     except Exception as e:
-        eprint(e)
+        eprint("Error parsing workspaces.conf file: {}".format(e))
         return {}, {}
 
 
