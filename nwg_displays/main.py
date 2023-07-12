@@ -713,7 +713,8 @@ def create_workspaces_window_hypr(btn):
         combo = Gtk.ComboBoxText()
         combo.set_property("halign", Gtk.Align.START)
         for n in range(1, 11):
-            combo.append(str(n), str(n))
+            if workspaces[n] == name:
+                combo.append(str(n), str(n))
         if name in default_workspaces_hypr:
             combo.set_active_id(str(default_workspaces_hypr[name]))
         combo.connect("changed", on_default_ws2mon_changed, name)
@@ -748,7 +749,7 @@ def on_ws_combo_changed(combo, ws_num):
 
 def on_default_ws2mon_changed(combo, monitor):
     global default_workspaces_hypr
-    default_workspaces_hypr[monitor] = combo.get_active_id()
+    default_workspaces_hypr[monitor] = int(combo.get_active_id())
 
 
 def close_dialog(w, win):
@@ -765,7 +766,7 @@ def on_workspaces_apply_btn(w, win, old_workspaces):
 
 
 def on_workspaces_apply_btn_hypr(w, win):
-    global workspaces, default_workspaces_hypr, mon_names
+    global workspaces, default_workspaces_hypr
     text_file = open(os.path.join(os.getenv("HOME"), ".config/hypr/workspaces.conf"), "w")
 
     now = datetime.datetime.now()
@@ -774,13 +775,18 @@ def on_workspaces_apply_btn_hypr(w, win):
         datetime.datetime.strftime(now, '%H:%M:%S'))
     text_file.write(line + "\n")
 
-    for key in workspaces:
-        if not config["use-desc"]:
-            line = "workspace={},monitor:{}".format(key, workspaces[key])
-        else:
-            line = "workspace={},monitor:desc:{}".format(key, workspaces[key])
+    print(default_workspaces_hypr.values())
 
-        if default_workspaces_hypr[workspaces[key]] == str(key):
+    for ws in workspaces:
+        mon = workspaces[ws]
+        if not config["use-desc"]:
+            line = "workspace={},monitor:{}".format(ws, mon)
+        else:
+            line = "workspace={},monitor:desc:{}".format(ws, mon)
+
+        def_ws = default_workspaces_hypr[mon]
+        print(ws, mon, def_ws)
+        if ws in default_workspaces_hypr.values():
             line += ",default:true"
 
         text_file.write(line + "\n")
