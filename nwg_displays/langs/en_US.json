@@ -20,6 +20,8 @@
   "toggle-tooltip": "Enables/disables outputs.",
   "transform": "Transform",
   "transform-tooltip": "Sets the background transform to the given value.",
+  "use-desc": "Use description",
+  "use-desc-tooltip": "Use monitor description instead of output name",
   "view-scale-tooltip": "Outputs preview scale",
   "workspaces": "Workspaces",
   "workspaces-tooltip": "Opens Workspace -> Output assignment popup.",

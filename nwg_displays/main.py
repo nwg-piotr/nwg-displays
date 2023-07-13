@@ -55,7 +55,6 @@ if hypr and not os.path.isdir(hypr_config_dir):
 
 config = {}
 outputs_path = ""
-generic_names = False
 num_ws = 0
 
 """
@@ -66,7 +65,6 @@ and the add inactive outputs, if any, from what we detect with .get_outputs()
 outputs = {}  # Active outputs, listed from the sway tree; stores name and all attributes.
 outputs_activity = {}  # Just a dictionary "name": is_active - from get_outputs()
 workspaces = {}  # "workspace_num": "display_name"
-default_workspaces_hypr = {}
 
 display_buttons = []
 selected_output_button = None
@@ -78,6 +76,7 @@ form_dpms = None
 form_adaptive_sync = None
 form_custom_mode = None
 form_view_scale = None
+form_use_desc = None
 form_x = None
 form_y = None
 form_width = None
@@ -281,6 +280,7 @@ def update_form_from_widget(widget):
     form_adaptive_sync.set_active(widget.adaptive_sync)
     form_custom_mode.set_active(widget.custom_mode)
     form_view_scale.set_value(config["view-scale"])  # not really from the widget, but from the global value
+    form_use_desc.set_active(config["use-desc"])
     form_x.set_value(widget.x)
     form_y.set_value(widget.y)
     form_width.set_value(widget.physical_width)
@@ -411,6 +411,8 @@ def on_view_scale_changed(*args):
         b.rescale_transform()
         fixed.move(b, b.x * config["view-scale"], b.y * config["view-scale"])
 
+    save_json(config, os.path.join(config_dir, "config"))
+
 
 def on_transform_changed(*args):
     if selected_output_button:
@@ -422,6 +424,11 @@ def on_transform_changed(*args):
 def on_dpms_toggled(widget):
     if selected_output_button:
         selected_output_button.dpms = widget.get_active()
+
+
+def on_use_desc_toggled(widget):
+    config["use-desc"] = widget.get_active()
+    save_json(config, os.path.join(config_dir, "config"))
 
 
 def on_adaptive_sync_toggled(widget):
@@ -503,7 +510,7 @@ def on_mirror_selected(widget):
 
 def on_apply_button(widget):
     global outputs_activity
-    apply_settings(display_buttons, outputs_activity, outputs_path, g_names=generic_names)
+    apply_settings(display_buttons, outputs_activity, outputs_path, use_desc=config["use-desc"])
     # save config file
     save_json(config, os.path.join(config_dir, "config"))
 
@@ -590,7 +597,7 @@ def handle_keyboard(window, event):
 def create_workspaces_window(btn):
     global sway_config_dir
     global workspaces
-    workspaces = load_workspaces(os.path.join(sway_config_dir, "workspaces"))
+    workspaces = load_workspaces(os.path.join(sway_config_dir, "workspaces"), use_desc=config["use-desc"])
     old_workspaces = workspaces.copy()
     global dialog_win
     if dialog_win:
@@ -614,7 +621,11 @@ def create_workspaces_window(btn):
         grid.attach(lbl, 0, i, 1, 1)
         combo = Gtk.ComboBoxText()
         for key in outputs:
-            combo.append(key, key)
+            if not config["use-desc"]:
+                combo.append(key, key)
+            else:
+                desc = "{}".format(outputs[key]["description"])
+                combo.append(desc, desc)
             if i + 1 in workspaces:
                 combo.set_active_id(workspaces[i + 1])
             combo.connect("changed", on_ws_combo_changed, i + 1)
@@ -642,11 +653,11 @@ def create_workspaces_window(btn):
 
 
 def create_workspaces_window_hypr(btn):
-    global workspaces, default_workspaces_hypr
-    workspaces, default_workspaces_hypr = load_workspaces_hypr(
-        os.path.join(os.getenv("HOME"), ".config", "hypr", "workspaces.conf"))
+    global workspaces
+    workspaces = load_workspaces_hypr(
+        os.path.join(os.getenv("HOME"), ".config", "hypr", "workspaces.conf"), num_ws=num_ws)
     eprint("WS->Mon:", workspaces)
-    eprint("Mon->def_WS:", default_workspaces_hypr)
+    old_workspaces = workspaces.copy()
     global dialog_win
     if dialog_win:
         dialog_win.destroy()
@@ -662,32 +673,26 @@ def create_workspaces_window_hypr(btn):
     dialog_win.add(grid)
     global outputs
     last_row = 0
-    for i in range(10):
+    for i in range(num_ws):
         lbl = Gtk.Label()
-        lbl.set_text("workspace={},".format(i + 1))
+        if config["use-desc"]:
+            lbl.set_markup("Workspace rule: <b>workspace={},monitor:desc:</b>".format(i + 1))
+        else:
+            lbl.set_markup("Workspace rule: <b>workspace={},monitor:</b>".format(i + 1))
         lbl.set_property("halign", Gtk.Align.END)
         grid.attach(lbl, 0, i, 1, 1)
         combo = Gtk.ComboBoxText()
         for key in outputs:
-            combo.append(key, key)
+            if not config["use-desc"]:
+                combo.append(key, key)
+            else:
+                desc = "{}".format(outputs[key]["description"])
+                combo.append(desc, desc)
             if i + 1 in workspaces:
                 combo.set_active_id(workspaces[i + 1])
             combo.connect("changed", on_ws_combo_changed, i + 1)
+
         grid.attach(combo, 1, i, 1, 1)
-        last_row = i
-
-    for key in outputs:
-        lbl = Gtk.Label.new("workspace={},".format(key))
-        lbl.set_property("halign", Gtk.Align.END)
-        grid.attach(lbl, 0, last_row + 1, 1, 1)
-
-        combo = Gtk.ComboBoxText()
-        for n in range(1, 11):
-            combo.append(str(n), str(n))
-        if key in default_workspaces_hypr:
-            combo.set_active_id(str(default_workspaces_hypr[key]))
-        combo.connect("changed", on_default_ws2mon_changed, key)
-        grid.attach(combo, 1, last_row + 1, 1, 1)
 
         last_row += 1
 
@@ -697,7 +702,7 @@ def create_workspaces_window_hypr(btn):
     btn_apply = Gtk.Button()
     btn_apply.set_label(voc["apply"])
     if hypr_config_dir:
-        btn_apply.connect("clicked", on_workspaces_apply_btn_hypr, dialog_win)
+        btn_apply.connect("clicked", on_workspaces_apply_btn_hypr, dialog_win, old_workspaces)
     else:
         btn_apply.set_sensitive(False)
         btn_apply.set_tooltip_text("Config dir not found")
@@ -716,11 +721,6 @@ def on_ws_combo_changed(combo, ws_num):
     workspaces[ws_num] = combo.get_active_id()
 
 
-def on_default_ws2mon_changed(combo, monitor):
-    global default_workspaces_hypr
-    default_workspaces_hypr[monitor] = combo.get_active_id()
-
-
 def close_dialog(w, win):
     win.close()
 
@@ -728,32 +728,39 @@ def close_dialog(w, win):
 def on_workspaces_apply_btn(w, win, old_workspaces):
     global workspaces
     if workspaces != old_workspaces:
-        save_workspaces(workspaces, os.path.join(sway_config_dir, "workspaces"))
+        save_workspaces(workspaces, os.path.join(sway_config_dir, "workspaces"), use_desc=config["use-desc"])
         notify("Workspaces assignment", "Restart sway for changes to take effect")
 
     close_dialog(w, win)
 
 
-def on_workspaces_apply_btn_hypr(w, win):
-    global workspaces, default_workspaces_hypr
-    # save_workspaces(workspaces, os.path.join(sway_config_dir, "workspaces"))
-    text_file = open(os.path.join(os.getenv("HOME"), ".config/hypr/workspaces.conf"), "w")
+def on_workspaces_apply_btn_hypr(w, win, old_workspaces):
+    global workspaces
+    if workspaces != old_workspaces:
+        text_file = open(os.path.join(os.getenv("HOME"), ".config/hypr/workspaces.conf"), "w")
 
-    now = datetime.datetime.now()
-    line = "# Generated by nwg-displays on {} at {}. Do not edit manually.\n".format(
-        datetime.datetime.strftime(now, '%Y-%m-%d'),
-        datetime.datetime.strftime(now, '%H:%M:%S'))
-    text_file.write(line + "\n")
-
-    for key in workspaces:
-        line = "workspace={},monitor:{}".format(key, workspaces[key])
+        now = datetime.datetime.now()
+        line = "# Generated by nwg-displays on {} at {}. Do not edit manually.\n".format(
+            datetime.datetime.strftime(now, '%Y-%m-%d'),
+            datetime.datetime.strftime(now, '%H:%M:%S'))
         text_file.write(line + "\n")
 
-    for key in default_workspaces_hypr:
-        line = "workspace={},{}".format(key, default_workspaces_hypr[key])
-        text_file.write(line + "\n")
+        monitors_with_default_workspace = []
+        for ws in workspaces:
+            mon = workspaces[ws]
+            if not config["use-desc"]:
+                line = "workspace={},monitor:{}".format(ws, mon)
+            else:
+                line = "workspace={},monitor:desc:{}".format(ws, mon)
 
-    text_file.close()
+            if mon not in monitors_with_default_workspace:
+                line += ",default:true"
+                monitors_with_default_workspace.append(mon)
+
+            text_file.write(line + "\n")
+
+        text_file.close()
+        notify("Workspaces assignment", "Restart Hyprland for changes to take effect")
 
     close_dialog(w, win)
 
@@ -762,10 +769,6 @@ def main():
     GLib.set_prgname('nwg-displays')
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-g",
-                        "--generic_names",
-                        action="store_true",
-                        help="use Generic output names")
 
     if sway:
         parser.add_argument("-o",
@@ -774,6 +777,13 @@ def main():
                             default="{}/outputs".format(sway_config_dir),
                             help="path to save Outputs config to, default: {}".format(
                                 "{}/outputs".format(sway_config_dir)))
+
+        parser.add_argument("-n",
+                            "--num_ws",
+                            type=int,
+                            default=8,
+                            help="number of Workspaces in use, default: 8")
+
     elif hypr:
         parser.add_argument("-m",
                             "--monitors_path",
@@ -782,11 +792,11 @@ def main():
                             help="path to save the monitors.conf file to, default: {}".format(
                                 "{}/.config/hypr/monitors.conf".format(os.getenv("HOME"))))
 
-    parser.add_argument("-n",
-                        "--num_ws",
-                        type=int,
-                        default=8,
-                        help="number of Workspaces in use, default: 8")
+        parser.add_argument("-n",
+                            "--num_ws",
+                            type=int,
+                            default=10,
+                            help="number of Workspaces in use, default: 10")
 
     parser.add_argument("-v",
                         "--version",
@@ -810,9 +820,6 @@ def main():
         else:
             eprint("Hyprland config directory not found!")
             outputs_path = ""
-
-    global generic_names
-    generic_names = args.generic_names
 
     global num_ws
     num_ws = args.num_ws
@@ -956,6 +963,12 @@ def main():
     form_modes = builder.get_object("modes")
     form_modes.set_tooltip_text(voc["modes-tooltip"])
     form_modes.connect("changed", on_mode_changed)
+
+    global form_use_desc
+    form_use_desc = builder.get_object("use-desc")
+    form_use_desc.set_label("{}".format(voc["use-desc"]))
+    form_use_desc.set_tooltip_text("{}".format(voc["use-desc-tooltip"]))
+    form_use_desc.connect("toggled", on_use_desc_toggled)
 
     global form_transform
     form_transform = builder.get_object("transform")
