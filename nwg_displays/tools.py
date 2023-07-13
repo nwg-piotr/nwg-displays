@@ -440,17 +440,18 @@ def load_workspaces(path, use_desc=False):
         return result
 
 
-# This is only guaranteed to work with the file saved by nwg-displays in version >= 0.3.3
-def load_workspaces_hypr(path):
-    wsbinds = {}
-    ws2mon = {}
+# We will read all the meaningful lines if -n argument not given or >= number of lines.
+def load_workspaces_hypr(path, num_ws=0):
+    ws_binds = {}
+    meaningful_lines_read = 0
     try:
         with open(path, 'r') as file:
             data = file.read().splitlines()
-
-            for i in range(len(data)):
+            r = len(data)
+            for i in range(r):
                 line = data[i]
                 if line and not line.startswith("#"):  # skip comments
+                    meaningful_lines_read += 1
                     # Binding workspaces to a monitor, e.g.:
                     # 'workspace=1,monitor:desc:AOC 2475WR F17H4QA000449' or
                     # 'workspace=1,monitor:HDMI-A-1'
@@ -462,12 +463,13 @@ def load_workspaces_hypr(path):
                         pass
                     mon = parts[1].split(":")[-1]
                     if ws_num:
-                        wsbinds[ws_num] = mon
+                        ws_binds[ws_num] = mon
 
-                    if line.endswith("default:true"):
-                        ws2mon[mon] = ws_num
+                    if num_ws > 0:
+                        if meaningful_lines_read == num_ws:
+                            break
 
-            return wsbinds, ws2mon
+            return ws_binds
 
     except Exception as e:
         eprint("Error parsing workspaces.conf file: {}".format(e))

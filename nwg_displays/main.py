@@ -56,7 +56,6 @@ if hypr and not os.path.isdir(hypr_config_dir):
 config = {}
 outputs_path = ""
 num_ws = 0
-mon_names = []
 
 """
 i3.get_outputs() does not return some output attributes, especially when connected via hdmi.
@@ -66,7 +65,6 @@ and the add inactive outputs, if any, from what we detect with .get_outputs()
 outputs = {}  # Active outputs, listed from the sway tree; stores name and all attributes.
 outputs_activity = {}  # Just a dictionary "name": is_active - from get_outputs()
 workspaces = {}  # "workspace_num": "display_name"
-default_workspaces_hypr = {}
 
 display_buttons = []
 selected_output_button = None
@@ -655,11 +653,10 @@ def create_workspaces_window(btn):
 
 
 def create_workspaces_window_hypr(btn):
-    global workspaces, default_workspaces_hypr
-    workspaces, default_workspaces_hypr = load_workspaces_hypr(
-        os.path.join(os.getenv("HOME"), ".config", "hypr", "workspaces.conf"))
+    global workspaces
+    workspaces = load_workspaces_hypr(
+        os.path.join(os.getenv("HOME"), ".config", "hypr", "workspaces.conf"), num_ws=num_ws)
     eprint("WS->Mon:", workspaces)
-    eprint("Mon->def_WS:", default_workspaces_hypr)
     global dialog_win
     if dialog_win:
         dialog_win.destroy()
@@ -675,7 +672,7 @@ def create_workspaces_window_hypr(btn):
     dialog_win.add(grid)
     global outputs
     last_row = 0
-    for i in range(10):
+    for i in range(num_ws):
         lbl = Gtk.Label()
         if config["use-desc"]:
             lbl.set_markup("Workspace rule: <b>workspace={},monitor:desc:</b>".format(i + 1))
@@ -695,30 +692,6 @@ def create_workspaces_window_hypr(btn):
             combo.connect("changed", on_ws_combo_changed, i + 1)
 
         grid.attach(combo, 1, i, 1, 1)
-        last_row = i
-
-    global mon_names
-    mon_names = []
-    for key in outputs:
-        if not config["use-desc"]:
-            mon_names.append(key)
-        else:
-            mon_names.append(outputs[key]["description"])
-    for name in mon_names:
-        lbl = Gtk.Label()
-        lbl.set_markup("Default workspace for <b>{}</b>:".format(name))
-        lbl.set_property("halign", Gtk.Align.END)
-        grid.attach(lbl, 0, last_row + 1, 1, 1)
-
-        combo = Gtk.ComboBoxText()
-        combo.set_property("halign", Gtk.Align.START)
-        for n in range(1, 11):
-            if workspaces[n] == name:
-                combo.append(str(n), str(n))
-        if name in default_workspaces_hypr:
-            combo.set_active_id(str(default_workspaces_hypr[name]))
-        combo.connect("changed", on_default_ws2mon_changed, name)
-        grid.attach(combo, 1, last_row + 1, 1, 1)
 
         last_row += 1
 
@@ -747,11 +720,6 @@ def on_ws_combo_changed(combo, ws_num):
     workspaces[ws_num] = combo.get_active_id()
 
 
-def on_default_ws2mon_changed(combo, monitor):
-    global default_workspaces_hypr
-    default_workspaces_hypr[monitor] = int(combo.get_active_id())
-
-
 def close_dialog(w, win):
     win.close()
 
@@ -766,7 +734,7 @@ def on_workspaces_apply_btn(w, win, old_workspaces):
 
 
 def on_workspaces_apply_btn_hypr(w, win):
-    global workspaces, default_workspaces_hypr
+    global workspaces
     text_file = open(os.path.join(os.getenv("HOME"), ".config/hypr/workspaces.conf"), "w")
 
     now = datetime.datetime.now()
@@ -775,8 +743,7 @@ def on_workspaces_apply_btn_hypr(w, win):
         datetime.datetime.strftime(now, '%H:%M:%S'))
     text_file.write(line + "\n")
 
-    print(default_workspaces_hypr.values())
-
+    monitors_with_default_workspace = []
     for ws in workspaces:
         mon = workspaces[ws]
         if not config["use-desc"]:
@@ -784,10 +751,9 @@ def on_workspaces_apply_btn_hypr(w, win):
         else:
             line = "workspace={},monitor:desc:{}".format(ws, mon)
 
-        def_ws = default_workspaces_hypr[mon]
-        print(ws, mon, def_ws)
-        if ws in default_workspaces_hypr.values():
+        if mon not in monitors_with_default_workspace:
             line += ",default:true"
+            monitors_with_default_workspace.append(mon)
 
         text_file.write(line + "\n")
 
@@ -808,6 +774,13 @@ def main():
                             default="{}/outputs".format(sway_config_dir),
                             help="path to save Outputs config to, default: {}".format(
                                 "{}/outputs".format(sway_config_dir)))
+
+        parser.add_argument("-n",
+                            "--num_ws",
+                            type=int,
+                            default=8,
+                            help="number of Workspaces in use, default: 8")
+
     elif hypr:
         parser.add_argument("-m",
                             "--monitors_path",
@@ -816,11 +789,11 @@ def main():
                             help="path to save the monitors.conf file to, default: {}".format(
                                 "{}/.config/hypr/monitors.conf".format(os.getenv("HOME"))))
 
-    parser.add_argument("-n",
-                        "--num_ws",
-                        type=int,
-                        default=8,
-                        help="number of sway Workspaces in use, default: 8")
+        parser.add_argument("-n",
+                            "--num_ws",
+                            type=int,
+                            default=10,
+                            help="number of Workspaces in use, default: 10")
 
     parser.add_argument("-v",
                         "--version",
