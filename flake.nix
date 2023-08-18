@@ -32,6 +32,7 @@
               ];
 
               propagatedBuildInputs = with pkgs; [
+                wlr-randr
                 pango
                 gtk-layer-shell
                 gdk-pixbuf
