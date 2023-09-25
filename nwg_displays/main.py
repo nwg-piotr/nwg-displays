@@ -827,6 +827,7 @@ def apply_settings(display_buttons, outputs_activity, outputs_path, use_desc=Fal
         for line in lines:
             print(line)
 
+        backup = load_text_file(outputs_path).splitlines()
         save_list_to_text_file(lines, outputs_path)
 
         print("[Executing]")
@@ -836,6 +837,8 @@ def apply_settings(display_buttons, outputs_activity, outputs_path, use_desc=Fal
         i3 = Connection()
         for cmd in cmds:
             i3.command(cmd)
+
+        create_confirm_win(backup, outputs_path)
 
     elif os.getenv("HYPRLAND_INSTANCE_SIGNATURE"):
         transforms = {"normal": 0, "90": 1, "180": 2, "270": 3, "flipped": 4, "flipped-90": 5, "flipped-180": 6,
@@ -868,7 +871,6 @@ def apply_settings(display_buttons, outputs_activity, outputs_path, use_desc=Fal
 
 
 def create_confirm_win(backup, path):
-    print(backup)
     global confirm_win
     if confirm_win:
         confirm_win.destroy()
@@ -884,7 +886,9 @@ def create_confirm_win(backup, path):
     lbl = Gtk.Label.new("Keep current settings?")
     grid.attach(lbl, 0, 0, 2, 1)
     btn_restore = Gtk.Button.new_with_label("Restore")
+
     btn_restore.connect("clicked", restore_old_settings, confirm_win, backup, path)
+
     grid.attach(btn_restore, 0, 1, 1, 1)
     btn_keep = Gtk.Button.new_with_label("Keep")
     btn_keep.connect("clicked", keep_current_settings, confirm_win)
@@ -906,9 +910,36 @@ def restore_old_settings(btn, win, backup, path):
     print("restore_old_settings")
     if src_tag > 0:
         GLib.Source.remove(src_tag)
-    save_list_to_text_file(backup, path)
-    confirm_win.close()
-    create_display_buttons()
+
+    if os.getenv("SWAYSOCK"):
+        save_list_to_text_file(backup, path)
+
+        # Parse backup file back to commands and execute them
+        single_line = ""
+        # omit comments & empty lines
+        for line in backup:
+            if not line.startswith("#") and line:
+                single_line += line
+        # remove "{"
+        single_line = single_line.replace("{", "")
+        # convert multiple spaces into single
+        single_line = ' '.join(single_line.split())
+        cmds = single_line.split("}")
+        # execute line by line
+        i3 = Connection()
+        for cmd in cmds:
+            if cmd:
+                i3.command(cmd)
+
+        confirm_win.close()
+        create_display_buttons()
+
+    elif os.getenv("HYPRLAND_INSTANCE_SIGNATURE"):
+        save_list_to_text_file(backup, path)
+        confirm_win.close()
+        # Don't execute any command here, just save the file and wait for Hyprland to notice and apply the change.
+        # Let's give it some time to do it before refreshing UI.
+        GLib.timeout_add(2000, create_display_buttons)
 
 
 def main():
