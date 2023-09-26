@@ -886,14 +886,14 @@ def create_confirm_win(backup, path):
     grid.set_column_homogeneous(True)
     grid.set_property("margin", 12)
     confirm_win.add(grid)
-    lbl = Gtk.Label.new("Keep current settings?")
+    lbl = Gtk.Label.new("{}?".format(voc["keep-current-settings"]))
     grid.attach(lbl, 0, 0, 2, 1)
-    btn_restore = Gtk.Button.new_with_label("Restore")
+    btn_restore = Gtk.Button.new_with_label(voc["restore"])
 
     btn_restore.connect("clicked", restore_old_settings, confirm_win, backup, path)
 
     grid.attach(btn_restore, 0, 1, 1, 1)
-    btn_keep = Gtk.Button.new_with_label("Keep")
+    btn_keep = Gtk.Button.new_with_label(voc["keep"])
     btn_keep.connect("clicked", keep_current_settings, confirm_win)
     grid.attach(btn_keep, 1, 1, 1, 1)
 

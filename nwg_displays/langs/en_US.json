@@ -8,7 +8,7 @@
   "custom-mode-tooltip": "Adds '--custom' argument to set a mode \nnot listed in the list of available modes.\nUse this ONLY  if you know what you're doing.",
   "dpms-tooltip": "Enables or disables output via DPMS. \nTo turn an output off (ie. blank the screen \nbut keep workspaces as-is), one can set DPMS to off.",
   "keep": "Keep",
-  "keep-current-settings": "Keep current settings?",
+  "keep-current-settings": "Keep current settings",
   "modes": "Modes",
   "modes-tooltip": "Displays a list of available \noutput modes to choose from.",
   "none": "None",

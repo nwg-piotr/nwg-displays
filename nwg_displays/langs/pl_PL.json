@@ -8,7 +8,7 @@
   "custom-mode-tooltip": "Dodaje argument '--custom', by ustawić tryb \nnie występujący na liście dostępnych trybów.\nUżywaj TYLKO gdy dobrze wiesz co robisz.",
   "dpms-tooltip": "Włącza lub wyłącza wyjście przez DPMS.\nAby wyłączyć wyjście (tj. wygasić ekran, ale zachować\nobszary robocze bez zmian), można wyłączyć DPMS.",
   "keep": "Zachowaj",
-  "keep-current-settings": "Zachować bieżące ustawienia?",
+  "keep-current-settings": "Zachować bieżące ustawienia",
   "modes": "Tryby",
   "modes-tooltip": "Wyświetla do wyboru listę dostępnych trybów.",
   "none": "Brak",
