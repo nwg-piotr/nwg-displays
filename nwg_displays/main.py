@@ -277,7 +277,10 @@ def on_motion_notify_event(widget, event):
 
 def update_form_from_widget(widget):
     form_name.set_text(widget.name)
-    form_description.set_text(widget.description)
+    if len(widget.description) > 48:
+        form_description.set_text(f"{widget.description[:47]}(…)")
+    else:
+        form_description.set_text(widget.description)
     form_dpms.set_active(widget.dpms)
     form_adaptive_sync.set_active(widget.adaptive_sync)
     form_custom_mode.set_active(widget.custom_mode)
