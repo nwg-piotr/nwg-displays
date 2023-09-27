@@ -16,6 +16,7 @@ Thank you, Kurt Jacobson!
 import argparse
 import os.path
 import sys
+import time
 
 import gi
 
@@ -96,6 +97,7 @@ form_mirror = None
 dialog_win = None
 confirm_win = None
 src_tag = 0
+counter = 0
 
 """
 We need to rebuild the modes GtkComboBoxText on each DisplayButton click. Unfortunately appending an item fires the
@@ -888,29 +890,44 @@ def create_confirm_win(backup, path):
     confirm_win.add(grid)
     lbl = Gtk.Label.new("{}?".format(voc["keep-current-settings"]))
     grid.attach(lbl, 0, 0, 2, 1)
+
+    cnt_lbl = Gtk.Label.new("10")
+    grid.attach(cnt_lbl, 0, 1, 2, 1)
     btn_restore = Gtk.Button.new_with_label(voc["restore"])
 
-    btn_restore.connect("clicked", restore_old_settings, confirm_win, backup, path)
+    btn_restore.connect("clicked", restore_old_settings, backup, path)
 
-    grid.attach(btn_restore, 0, 1, 1, 1)
+    grid.attach(btn_restore, 0, 2, 1, 1)
     btn_keep = Gtk.Button.new_with_label(voc["keep"])
-    btn_keep.connect("clicked", keep_current_settings, confirm_win)
-    grid.attach(btn_keep, 1, 1, 1, 1)
+    btn_keep.connect("clicked", keep_current_settings)
+    grid.attach(btn_keep, 1, 2, 1, 1)
 
     confirm_win.show_all()
 
+    global counter
+    counter = 10
     global src_tag
-    src_tag = GLib.timeout_add_seconds(10, restore_old_settings, None, None, backup, path)
+    src_tag = GLib.timeout_add_seconds(1, count_down, cnt_lbl, backup, path)
 
 
-def keep_current_settings(btn, win):
+def count_down(label, backup, path):
+    global counter
+    if counter > 0:
+        counter -= 1
+        label.set_text(str(counter))
+        return True
+
+    restore_old_settings(None, backup, path)
+
+
+def keep_current_settings(btn):
     if src_tag > 0:
         GLib.Source.remove(src_tag)
-    win.close()
+    confirm_win.close()
 
 
-def restore_old_settings(btn, win, backup, path):
-    print("restore_old_settings")
+def restore_old_settings(btn, backup, path):
+    print("Restoring old settings...")
     if src_tag > 0:
         GLib.Source.remove(src_tag)
 
