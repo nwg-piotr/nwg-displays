@@ -11,7 +11,7 @@
       systems = ["x86_64-linux"];
       imports = [];
 
-      perSystem = { config, inputs', pkgs, system, ... }: 
+      perSystem = { config, inputs', pkgs, system, ... }:
         {
           packages = rec {
             default = nwg-displays;
@@ -37,9 +37,9 @@
                 gtk-layer-shell
                 gdk-pixbuf
                 atk
-                python310Packages.i3ipc
-                python310Packages.pygobject3
-                python310Packages.gst-python
+                python3Packages.i3ipc
+                python3Packages.pygobject3
+                python3Packages.gst-python
               ];
 
               dontWrapGApps = true;
