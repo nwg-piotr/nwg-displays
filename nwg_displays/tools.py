@@ -263,9 +263,6 @@ def is_rotated(transform):
     return "90" in transform or "270" in transform
 
 
-
-
-
 def inactive_output_description(name):
     if os.getenv("SWAYSOCK"):
         i3 = Connection()

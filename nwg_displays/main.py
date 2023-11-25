@@ -16,7 +16,6 @@ Thank you, Kurt Jacobson!
 import argparse
 import os.path
 import sys
-import time
 
 import gi
 
@@ -880,6 +879,12 @@ def create_confirm_win(backup, path):
     if confirm_win:
         confirm_win.destroy()
     confirm_win = Gtk.Window()
+    confirm_win.set_property("name", "popup")
+
+    GtkLayerShell.init_for_window(confirm_win)
+    GtkLayerShell.set_layer(confirm_win, GtkLayerShell.Layer.OVERLAY)
+    GtkLayerShell.set_keyboard_interactivity(confirm_win, True)
+
     confirm_win.set_resizable(False)
     confirm_win.set_modal(True)
     grid = Gtk.Grid()
@@ -1245,6 +1250,13 @@ def main():
     if display_buttons:
         update_form_from_widget(display_buttons[0])
         display_buttons[0].select()
+
+    screen = Gdk.Screen.get_default()
+    provider = Gtk.CssProvider()
+    style_context = Gtk.StyleContext()
+    style_context.add_provider_for_screen(screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+    css = b""" #popup { border-radius: 6px; border: solid 1px; border-color: #f00 } """
+    provider.load_from_data(css)
 
     window.show_all()
 
