@@ -862,7 +862,8 @@ def apply_settings(display_buttons, outputs_activity, outputs_path, use_desc=Fal
             if db.transform != "normal":
                 lines.append("monitor={},transform,{}".format(name, transforms[db.transform]))
 
-            if name in outputs_activity and not outputs_activity[name]:
+            # avoid looking up the hardware name
+            if db.name in outputs_activity and not outputs_activity[db.name]:
                 lines.append("monitor={},disable".format(name))
 
         print("[Saving]")
