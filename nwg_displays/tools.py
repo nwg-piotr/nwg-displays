@@ -112,6 +112,10 @@ def list_outputs():
             if not line.startswith(" "):
                 name = line.split()[0]
                 description = line.replace(name, "")[2:-4]
+                # It may happen that the description contains the adapter translations in parens, e.g.:
+                # LG Electronics LG ULTRAGEAR 1231234F (DP-2 via HDMI)"
+                description = description.split(" (")[0]
+                # Just grab the pure description, e.g. "LG Electronics LG ULTRAGEAR 1231234F"
                 outputs_dict[name] = {"description": description,
                                       "active": False,
                                       "focused": False,
