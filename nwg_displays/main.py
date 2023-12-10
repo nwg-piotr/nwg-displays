@@ -831,7 +831,13 @@ def apply_settings(display_buttons, outputs_activity, outputs_path, use_desc=Fal
         for line in lines:
             print(line)
 
-        backup = load_text_file(outputs_path).splitlines()
+        # Check if the outputs file exists
+        if os.path.isfile(outputs_path):
+            # Load a backup to restore settings if needed
+            backup = load_text_file(outputs_path).splitlines()
+        else:
+            backup = []
+
         save_list_to_text_file(lines, outputs_path)
 
         print("[Executing]")
