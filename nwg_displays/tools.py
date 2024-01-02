@@ -379,7 +379,7 @@ def load_workspaces_hypr(path, num_ws=0):
 
     except Exception as e:
         eprint("Error parsing workspaces.conf file: {}".format(e))
-        return {}, {}
+        return {}
 
 
 def save_workspaces(data_dict, path, use_desc=False):
