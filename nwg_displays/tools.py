@@ -117,7 +117,14 @@ def list_outputs():
                 description = description.split(" (")[0]
                 # Just grab the pure description, e.g. "LG Electronics LG ULTRAGEAR 1231234F"
                 outputs_dict[name] = {"description": description,
-                                      "active": False,
+                                      "x": 0,
+                                      "y": 0,
+                                      "physical-width": 0,
+                                      "physical-height": 0,
+                                      "transform": "normal",
+                                      "scale": 1.0,
+                                      "refresh": 0,
+                                      "active": True,
                                       "focused": False,
                                       "modes": [],
                                       "scale_filter": None,  # unavailable via wlr-randr nor hyprctl
@@ -140,11 +147,12 @@ def list_outputs():
                 outputs_dict[name]["active"] = line.split()[1] == "yes"
             if line.startswith("    "):
                 parts = line.split()
-                mode = {"width": int(parts[0].split("x")[0]), "height": int(parts[0].split("x")[1]),
-                        "refresh": float(parts[2]) * 1000}
-                modes = outputs_dict[name]["modes"]
-                modes.append(mode)
-                outputs_dict[name]["modes"] = modes
+                if len(parts) > 2:
+                    mode = {"width": int(parts[0].split("x")[0]), "height": int(parts[0].split("x")[1]),
+                            "refresh": float(parts[2]) * 1000}
+                    modes = outputs_dict[name]["modes"]
+                    modes.append(mode)
+                    outputs_dict[name]["modes"] = modes
                 if "current" in line:
                     w_h = line.split()[0].split('x')
                     outputs_dict[name]["physical-width"] = int(w_h[0])
@@ -166,11 +174,22 @@ def list_outputs():
         # 3. Read missing/possibly missing values from hyprctl
         output = hyprctl("j/monitors")
         monitors = json.loads(output)
+        transforms = {0: "normal", 1: "90", 2: "180", 3: "270", 4: "flipped", 5: "flipped-90", 6: "flipped-180",
+                      7: "flipped-270"}
         for m in monitors:
             # wlr-rand does not return this value
             outputs_dict[m["name"]]["focused"] = m["focused"] == "yes"
             # This may be missing from wlr-rand output, see https://github.com/nwg-piotr/nwg-displays/issues/21
             outputs_dict[m["name"]]["adaptive_sync_status"] = "enabled" if m["vrr"] else "disabled"
+
+            outputs_dict[m["name"]]["x"] = m["x"]
+            outputs_dict[m["name"]]["y"] = m["y"]
+            outputs_dict[m["name"]]["refresh"] = m["refreshRate"]
+            outputs_dict[m["name"]]["physical-width"] = m["width"] / m["scale"]
+            outputs_dict[m["name"]]["physical-height"] = m["height"] / m["scale"]
+            outputs_dict[m["name"]]["transform"] = transforms[m["transform"]]
+            outputs_dict[m["name"]]["transform"] = transforms[m["transform"]]
+            outputs_dict[m["name"]]["scale"] = m["scale"]
 
     else:
         eprint("This program only supports sway and Hyprland, and we seem to be elsewhere, terminating.")
