@@ -95,7 +95,6 @@ def list_outputs():
         for mon in monitors_all:
             name = mon["name"]
             outputs_dict[name] = {"active": True} if name in active else {"active": False}
-        print(outputs_dict)
 
         eprint("Running on Hyprland")
         # This will be tricky. The `hyprctl monitors` command returns just a part of the output attributes we need.
@@ -121,34 +120,15 @@ def list_outputs():
         for line in lines:
             if not line.startswith(" "):
                 name = line.split()[0]
-                description = line.replace(name, "")[2:-4]
-                # It may happen that the description contains the adapter translations in parens, e.g.:
-                # LG Electronics LG ULTRAGEAR 1231234F (DP-2 via HDMI)"
-                description = description.split(" (")[0]
-                # Just grab the pure description, e.g. "LG Electronics LG ULTRAGEAR 1231234F"
-                outputs_dict[name]["description"] = description
 
                 outputs_dict[name]["modes"] = []
                 outputs_dict[name]["scale_filter"] = None
                 outputs_dict[name]["dpms"] = None
                 outputs_dict[name]["mirror"] = ""
                 outputs_dict[name]["monitor"] = None
-                outputs_dict[name]["focused"] = False
-                # outputs_dict[name] = {"description": description,
-                #                       "modes": [],
-                #                       "scale_filter": None,  # unavailable via wlr-randr nor hyprctl
-                #                       "dpms": None,  # unavailable via wlr-randr nor hyprctl
-                #                       "mirror": "",
-                #                       "monitor": None,  # we'll assign a Gdk monitor here later
-                #                       }
 
             if name in mirrors:
                 outputs_dict[name]["mirror"] = mirrors[name]
-
-            if "Position" in line:
-                x_y = line.split()[1].split(',')
-                outputs_dict[name]["x"] = int(x_y[0])
-                outputs_dict[name]["y"] = int(x_y[1])
 
             if line.startswith("    "):
                 parts = line.split()
@@ -158,31 +138,17 @@ def list_outputs():
                     modes = outputs_dict[name]["modes"]
                     modes.append(mode)
                     outputs_dict[name]["modes"] = modes
-                if "current" in line:
-                    w_h = line.split()[0].split('x')
-                    outputs_dict[name]["physical-width"] = int(w_h[0])
-                    outputs_dict[name]["physical-height"] = int(w_h[1])
-                    outputs_dict[name]["refresh"] = float(parts[2])
 
             # This may or may not work. We'll try to read the value again from hyprctl -j monitors.
             if name and line.startswith("  Adaptive Sync:"):
                 outputs_dict[name]["adaptive_sync_status"] = line.split()[1]
 
-            if "Transform:" in line:
-                outputs_dict[name]["transform"] = line.split()[1]
-            if "Scale" in line:
-                s = float(line.split()[1])
-                outputs_dict[name]["scale"] = s
-                outputs_dict[name]["logical-width"] = outputs_dict[name]["physical-width"] / s
-                outputs_dict[name]["logical-height"] = outputs_dict[name]["physical-height"] / s
-
         # 3. Read missing/possibly missing values from hyprctl
-        output = hyprctl("j/monitors")
+        output = hyprctl("j/monitors all")
         monitors = json.loads(output)
         transforms = {0: "normal", 1: "90", 2: "180", 3: "270", 4: "flipped", 5: "flipped-90", 6: "flipped-180",
                       7: "flipped-270"}
         for m in monitors:
-            print(">>>", m)
             # wlr-rand does not return this value
             outputs_dict[m["name"]]["focused"] = m["focused"]
             # This may be missing from wlr-rand output, see https://github.com/nwg-piotr/nwg-displays/issues/21
@@ -192,6 +158,8 @@ def list_outputs():
             outputs_dict[m["name"]]["x"] = int(m["x"])
             outputs_dict[m["name"]]["y"] = int(m["y"])
             outputs_dict[m["name"]]["refresh"] = m["refreshRate"]
+            outputs_dict[m["name"]]["logical-width"] = m["width"]
+            outputs_dict[m["name"]]["logical-height"] = m["height"]
             outputs_dict[m["name"]]["physical-width"] = m["width"] / m["scale"]
             outputs_dict[m["name"]]["physical-height"] = m["height"] / m["scale"]
             outputs_dict[m["name"]]["transform"] = transforms[m["transform"]]
