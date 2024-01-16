@@ -52,9 +52,8 @@ def is_command(cmd):
 
 
 def list_outputs():
-    outputs_dict = {}
-
     if os.getenv("SWAYSOCK"):
+        outputs_dict = {}
         eprint("Running on sway")
         i3 = Connection()
         tree = i3.get_tree()
@@ -87,6 +86,17 @@ def list_outputs():
                 outputs_dict[item.name]["monitor"] = None
 
     elif os.getenv("HYPRLAND_INSTANCE_SIGNATURE"):
+        monitors_all = json.loads(hyprctl("j/monitors all"))
+        monitors = json.loads(hyprctl("j/monitors"))
+        active = []
+        for item in monitors:
+            active.append(item["name"])
+        outputs_dict = {}
+        for mon in monitors_all:
+            name = mon["name"]
+            outputs_dict[name] = {"active": True} if name in active else {"active": False}
+        print(outputs_dict)
+
         eprint("Running on Hyprland")
         # This will be tricky. The `hyprctl monitors` command returns just a part of the output attributes we need.
         # The `wlr-randr` command returns almost everything, but not "focused". We need to use both commands. :/
@@ -116,25 +126,21 @@ def list_outputs():
                 # LG Electronics LG ULTRAGEAR 1231234F (DP-2 via HDMI)"
                 description = description.split(" (")[0]
                 # Just grab the pure description, e.g. "LG Electronics LG ULTRAGEAR 1231234F"
-                outputs_dict[name] = {"description": description,
-                                      "x": 0,
-                                      "y": 0,
-                                      "physical-width": 0,
-                                      "physical-height": 0,
-                                      "transform": "normal",
-                                      "scale": 1.0,
-                                      "refresh": 0,
-                                      "active": True,
-                                      "focused": False,
-                                      "modes": [],
-                                      "scale_filter": None,  # unavailable via wlr-randr nor hyprctl
-                                      "dpms": None,  # unavailable via wlr-randr nor hyprctl
-                                      "mirror": "",
-                                      "monitor": None,  # we'll assign a Gdk monitor here later
-                                      # Prevent from crashing in case we couldn't get it w/ wlr-randr nor hyprctl.
-                                      # On Hyprland we make no use of it anyway, as there's no way to turn it on/off.
-                                      "adaptive_sync_status": False
-                                      }
+                outputs_dict[name]["description"] = description
+
+                outputs_dict[name]["modes"] = []
+                outputs_dict[name]["scale_filter"] = None
+                outputs_dict[name]["dpms"] = None
+                outputs_dict[name]["mirror"] = ""
+                outputs_dict[name]["monitor"] = None
+                outputs_dict[name]["focused"] = False
+                # outputs_dict[name] = {"description": description,
+                #                       "modes": [],
+                #                       "scale_filter": None,  # unavailable via wlr-randr nor hyprctl
+                #                       "dpms": None,  # unavailable via wlr-randr nor hyprctl
+                #                       "mirror": "",
+                #                       "monitor": None,  # we'll assign a Gdk monitor here later
+                #                       }
 
             if name in mirrors:
                 outputs_dict[name]["mirror"] = mirrors[name]
@@ -143,8 +149,7 @@ def list_outputs():
                 x_y = line.split()[1].split(',')
                 outputs_dict[name]["x"] = int(x_y[0])
                 outputs_dict[name]["y"] = int(x_y[1])
-            if line.startswith("  Enabled"):
-                outputs_dict[name]["active"] = line.split()[1] == "yes"
+
             if line.startswith("    "):
                 parts = line.split()
                 if len(parts) > 2:
@@ -177,19 +182,21 @@ def list_outputs():
         transforms = {0: "normal", 1: "90", 2: "180", 3: "270", 4: "flipped", 5: "flipped-90", 6: "flipped-180",
                       7: "flipped-270"}
         for m in monitors:
+            print(">>>", m)
             # wlr-rand does not return this value
-            outputs_dict[m["name"]]["focused"] = m["focused"] == "yes"
+            outputs_dict[m["name"]]["focused"] = m["focused"]
             # This may be missing from wlr-rand output, see https://github.com/nwg-piotr/nwg-displays/issues/21
             outputs_dict[m["name"]]["adaptive_sync_status"] = "enabled" if m["vrr"] else "disabled"
 
-            outputs_dict[m["name"]]["x"] = m["x"]
-            outputs_dict[m["name"]]["y"] = m["y"]
+            outputs_dict[m["name"]]["description"] = f'{m["make"]} {m["model"]} {m["serial"]}'
+            outputs_dict[m["name"]]["x"] = int(m["x"])
+            outputs_dict[m["name"]]["y"] = int(m["y"])
             outputs_dict[m["name"]]["refresh"] = m["refreshRate"]
             outputs_dict[m["name"]]["physical-width"] = m["width"] / m["scale"]
             outputs_dict[m["name"]]["physical-height"] = m["height"] / m["scale"]
             outputs_dict[m["name"]]["transform"] = transforms[m["transform"]]
-            outputs_dict[m["name"]]["transform"] = transforms[m["transform"]]
             outputs_dict[m["name"]]["scale"] = m["scale"]
+            outputs_dict[m["name"]]["focused"] = m["focused"]
 
     else:
         eprint("This program only supports sway and Hyprland, and we seem to be elsewhere, terminating.")
@@ -220,13 +227,15 @@ def list_outputs_activity():
             result[o.name] = o.active
 
     elif os.getenv("HYPRLAND_INSTANCE_SIGNATURE"):
-        lines = subprocess.check_output("wlr-randr", shell=True).decode("utf-8").strip().splitlines()
-        name = ""
-        for line in lines:
-            if not line.startswith(" "):
-                name = line.split()[0]
-            if name and line.startswith("  Enabled"):
-                result[name] = line.split()[1] == "yes"
+        monitors_all = json.loads(hyprctl("j/monitors all"))
+        monitors = json.loads(hyprctl("j/monitors"))
+        active = []
+        for item in monitors:
+            active.append(item["name"])
+
+        for mon in monitors_all:
+            name = mon["name"]
+            result[name] = True if name in active else False
 
     return result
 
