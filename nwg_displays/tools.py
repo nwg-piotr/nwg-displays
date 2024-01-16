@@ -98,7 +98,7 @@ def list_outputs():
 
         eprint("Running on Hyprland")
         # This will be tricky. The `hyprctl monitors` command returns just a part of the output attributes we need.
-        # The `wlr-randr` command returns almost everything, but not "focused". We need to use both commands. :/
+        # We need `wlr-randr` command to get modes, current mode and focused status. We need to use both commands. :/
 
         # 1. Mirroring is impossible to check in any way. We need to parse back the monitors.conf file, and it sucks.
         mirrors = {}
@@ -122,7 +122,7 @@ def list_outputs():
                 name = line.split()[0]
 
                 outputs_dict[name]["modes"] = []
-                outputs_dict[name]["scale_filter"] = None
+                outputs_dict[name]["scale_filter"] = None  # This value does not exist in Hyprland
                 outputs_dict[name]["dpms"] = None
                 outputs_dict[name]["mirror"] = ""
                 outputs_dict[name]["monitor"] = None

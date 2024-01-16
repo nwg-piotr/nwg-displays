@@ -890,7 +890,7 @@ def create_confirm_win(backup, path):
 
     GtkLayerShell.init_for_window(confirm_win)
     GtkLayerShell.set_layer(confirm_win, GtkLayerShell.Layer.OVERLAY)
-    GtkLayerShell.set_keyboard_interactivity(confirm_win, True)
+    # GtkLayerShell.set_keyboard_mode(confirm_win, GtkLayerShell.KeyboardMode.ON_DEMAND)
 
     confirm_win.set_resizable(False)
     confirm_win.set_modal(True)
