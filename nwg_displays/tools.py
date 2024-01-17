@@ -139,6 +139,14 @@ def list_outputs():
                     modes.append(mode)
                     outputs_dict[name]["modes"] = modes
 
+                    # We need to detect current mode here, as values from hyprctl are not exactly the same,
+                    # and we'll be unable to preselect current mode in modes combo
+                    if "current" in line:
+                        w_h = line.split()[0].split('x')
+                        outputs_dict[name]["physical-width"] = int(w_h[0])
+                        outputs_dict[name]["physical-height"] = int(w_h[1])
+                        outputs_dict[name]["refresh"] = float(parts[2])
+
             # This may or may not work. We'll try to read the value again from hyprctl -j monitors.
             if name and line.startswith("  Adaptive Sync:"):
                 outputs_dict[name]["adaptive_sync_status"] = line.split()[1]
@@ -157,11 +165,11 @@ def list_outputs():
             outputs_dict[m["name"]]["description"] = f'{m["make"]} {m["model"]} {m["serial"]}'
             outputs_dict[m["name"]]["x"] = int(m["x"])
             outputs_dict[m["name"]]["y"] = int(m["y"])
-            outputs_dict[m["name"]]["refresh"] = m["refreshRate"]
+            # outputs_dict[m["name"]]["refresh"] = m["refreshRate"]
             outputs_dict[m["name"]]["logical-width"] = m["width"]
             outputs_dict[m["name"]]["logical-height"] = m["height"]
-            outputs_dict[m["name"]]["physical-width"] = m["width"] / m["scale"]
-            outputs_dict[m["name"]]["physical-height"] = m["height"] / m["scale"]
+            # outputs_dict[m["name"]]["physical-width"] = m["width"] / m["scale"]
+            # outputs_dict[m["name"]]["physical-height"] = m["height"] / m["scale"]
             outputs_dict[m["name"]]["transform"] = transforms[m["transform"]]
             outputs_dict[m["name"]]["scale"] = m["scale"]
             outputs_dict[m["name"]]["focused"] = m["focused"]
