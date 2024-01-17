@@ -430,6 +430,9 @@ def on_transform_changed(*args):
 def on_dpms_toggled(widget):
     if selected_output_button:
         selected_output_button.dpms = widget.get_active()
+    if hypr:
+        cmd = "on" if widget.get_active() else "off"
+        hyprctl(f"dispatch dpms {cmd} {selected_output_button.name}")
 
 
 def on_use_desc_toggled(widget):
@@ -1093,11 +1096,13 @@ def main():
 
     global form_dpms
     form_dpms = builder.get_object("dpms")
-    if sway:
-        form_dpms.set_tooltip_text(voc["dpms-tooltip"])
-        form_dpms.connect("toggled", on_dpms_toggled)
-    else:
-        form_dpms.set_sensitive(False)
+    form_dpms.set_tooltip_text(voc["dpms-tooltip"])
+    form_dpms.connect("toggled", on_dpms_toggled)
+    # if sway:
+    #     form_dpms.set_tooltip_text(voc["dpms-tooltip"])
+    #     form_dpms.connect("toggled", on_dpms_toggled)
+    # else:
+    #     form_dpms.set_sensitive(False)
 
     global form_adaptive_sync
     form_adaptive_sync = builder.get_object("adaptive-sync")

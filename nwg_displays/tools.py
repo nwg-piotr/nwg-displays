@@ -165,6 +165,7 @@ def list_outputs():
             outputs_dict[m["name"]]["transform"] = transforms[m["transform"]]
             outputs_dict[m["name"]]["scale"] = m["scale"]
             outputs_dict[m["name"]]["focused"] = m["focused"]
+            outputs_dict[m["name"]]["dpms"] = m["dpmsStatus"]
 
     else:
         eprint("This program only supports sway and Hyprland, and we seem to be elsewhere, terminating.")
