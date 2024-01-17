@@ -430,9 +430,6 @@ def on_transform_changed(*args):
 def on_dpms_toggled(widget):
     if selected_output_button:
         selected_output_button.dpms = widget.get_active()
-    if hypr:
-        cmd = "on" if widget.get_active() else "off"
-        hyprctl(f"dispatch dpms {cmd} {selected_output_button.name}")
 
 
 def on_use_desc_toggled(widget):
@@ -874,6 +871,9 @@ def apply_settings(display_buttons, outputs_activity, outputs_path, use_desc=Fal
             # avoid looking up the hardware name
             if db.name in outputs_activity and not outputs_activity[db.name]:
                 lines.append("monitor={},disable".format(name))
+
+            cmd = "on" if db.dpms else "off"
+            hyprctl(f"dispatch dpms {cmd} {db.name}")
 
         print("[Saving]")
         for line in lines:
