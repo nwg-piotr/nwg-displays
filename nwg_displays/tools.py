@@ -157,9 +157,7 @@ def list_outputs():
         transforms = {0: "normal", 1: "90", 2: "180", 3: "270", 4: "flipped", 5: "flipped-90", 6: "flipped-180",
                       7: "flipped-270"}
         for m in monitors:
-            # wlr-rand does not return this value
             outputs_dict[m["name"]]["focused"] = m["focused"]
-            # This may be missing from wlr-rand output, see https://github.com/nwg-piotr/nwg-displays/issues/21
             outputs_dict[m["name"]]["adaptive_sync_status"] = "enabled" if m["vrr"] else "disabled"
 
             outputs_dict[m["name"]]["description"] = f'{m["make"]} {m["model"]} {m["serial"]}'
