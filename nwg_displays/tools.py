@@ -174,6 +174,8 @@ def list_outputs():
             outputs_dict[m["name"]]["scale"] = m["scale"]
             outputs_dict[m["name"]]["focused"] = m["focused"]
             outputs_dict[m["name"]]["dpms"] = m["dpmsStatus"]
+            # to identify Gdk.Monitor
+            outputs_dict[m["name"]]["model"] = m["model"]
 
     else:
         eprint("This program only supports sway and Hyprland, and we seem to be elsewhere, terminating.")
@@ -184,9 +186,10 @@ def list_outputs():
     for i in range(display.get_n_monitors()):
         monitor = display.get_monitor(i)
         geometry = monitor.get_geometry()
-
+        # This will fail for 2 displays of the same model and coordinates, but we have no better way
         for key in outputs_dict:
-            if int(outputs_dict[key]["x"]) == geometry.x and int(outputs_dict[key]["y"]) == geometry.y:
+            if (int(outputs_dict[key]["x"]) == geometry.x and int(outputs_dict[key]["y"]) == geometry.y
+                    and outputs_dict[key]["model"] == monitor.get_model()):
                 outputs_dict[key]["monitor"] = monitor
                 break
 
