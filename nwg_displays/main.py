@@ -872,6 +872,9 @@ def apply_settings(display_buttons, outputs_activity, outputs_path, use_desc=Fal
             if db.name in outputs_activity and not outputs_activity[db.name]:
                 lines.append("monitor={},disable".format(name))
 
+            cmd = "on" if db.dpms else "off"
+            hyprctl(f"dispatch dpms {cmd} {db.name}")
+
         print("[Saving]")
         for line in lines:
             print(line)
@@ -890,7 +893,7 @@ def create_confirm_win(backup, path):
 
     GtkLayerShell.init_for_window(confirm_win)
     GtkLayerShell.set_layer(confirm_win, GtkLayerShell.Layer.OVERLAY)
-    GtkLayerShell.set_keyboard_interactivity(confirm_win, True)
+    # GtkLayerShell.set_keyboard_mode(confirm_win, GtkLayerShell.KeyboardMode.ON_DEMAND)
 
     confirm_win.set_resizable(False)
     confirm_win.set_modal(True)
@@ -1093,11 +1096,13 @@ def main():
 
     global form_dpms
     form_dpms = builder.get_object("dpms")
-    if sway:
-        form_dpms.set_tooltip_text(voc["dpms-tooltip"])
-        form_dpms.connect("toggled", on_dpms_toggled)
-    else:
-        form_dpms.set_sensitive(False)
+    form_dpms.set_tooltip_text(voc["dpms-tooltip"])
+    form_dpms.connect("toggled", on_dpms_toggled)
+    # if sway:
+    #     form_dpms.set_tooltip_text(voc["dpms-tooltip"])
+    #     form_dpms.connect("toggled", on_dpms_toggled)
+    # else:
+    #     form_dpms.set_sensitive(False)
 
     global form_adaptive_sync
     form_adaptive_sync = builder.get_object("adaptive-sync")
