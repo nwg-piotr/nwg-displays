@@ -186,12 +186,19 @@ def list_outputs():
     for i in range(display.get_n_monitors()):
         monitor = display.get_monitor(i)
         geometry = monitor.get_geometry()
-        # This will fail for 2 displays of the same model and coordinates, but we have no better way
-        for key in outputs_dict:
-            if (int(outputs_dict[key]["x"]) == geometry.x and int(outputs_dict[key]["y"]) == geometry.y
-                    and outputs_dict[key]["model"] == monitor.get_model()):
-                outputs_dict[key]["monitor"] = monitor
-                break
+        if os.getenv("HYPRLAND_INSTANCE_SIGNATURE"):
+            # This will fail for 2 displays of the same model and coordinates, but we have no better way
+            for key in outputs_dict:
+                if (int(outputs_dict[key]["x"]) == geometry.x and int(outputs_dict[key]["y"]) == geometry.y
+                        and outputs_dict[key]["model"] == monitor.get_model()):
+                    outputs_dict[key]["monitor"] = monitor
+                    break
+        else:
+            # we don't know the model value on sway :/
+            for key in outputs_dict:
+                if int(outputs_dict[key]["x"]) == geometry.x and int(outputs_dict[key]["y"]) == geometry.y:
+                    outputs_dict[key]["monitor"] = monitor
+                    break
 
     for key in outputs_dict:
         eprint(key, outputs_dict[key])
