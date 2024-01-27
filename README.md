@@ -4,9 +4,7 @@
 This application is a part of the [nwg-shell](https://nwg-piotr.github.io/nwg-shell) project.
 
 **Nwg-displays** is an output management utility for [sway](https://github.com/swaywm/sway) and [Hyprland](https://github.com/hyprwm/Hyprland) 
-Wayland compositor, inspired by wdisplays and wlay.
-
-**nwg-displays is expected to:**
+Wayland compositor, inspired by wdisplays and wlay. The program is expected to:
 
 - provide an intuitive GUI to manage multiple displays;
 - apply settings;
