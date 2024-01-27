@@ -16,7 +16,7 @@ Wayland compositor, inspired by wdisplays and wlay. The program is expected to:
 
 ## Installation
 
-Istall from your linux distribution repository if possible.
+Install from your linux distribution repository if possible.
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/nwg-displays.svg)](https://repology.org/project/nwg-displays/versions)
 
