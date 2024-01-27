@@ -6,8 +6,6 @@ This application is a part of the [nwg-shell](https://nwg-piotr.github.io/nwg-sh
 **Nwg-displays** is an output management utility for [sway](https://github.com/swaywm/sway) and [Hyprland](https://github.com/hyprwm/Hyprland) 
 Wayland compositor, inspired by wdisplays and wlay.
 
-[![Packaging status](https://repology.org/badge/vertical-allrepos/nwg-displays.svg)](https://repology.org/project/nwg-displays/versions)
-
 **nwg-displays is expected to:**
 
 - provide an intuitive GUI to manage multiple displays;
@@ -16,22 +14,28 @@ Wayland compositor, inspired by wdisplays and wlay.
 - save workspace -> output assignments to a text file;
 - support sway and Hyprland only.
 
-![2022-03-12-110614_screenshot](https://user-images.githubusercontent.com/20579136/158013748-5b27f742-0e6a-4d82-a5ac-06368b4df008.png)
+<img src="https://user-images.githubusercontent.com/20579136/158013748-5b27f742-0e6a-4d82-a5ac-06368b4df008.png" width=640, alt="screenshot"><br>
 
+## Installation
+
+Istall from your linux distribution repository if possible.
+
+[![Packaging status](https://repology.org/badge/vertical-allrepos/nwg-displays.svg)](https://repology.org/project/nwg-displays/versions)
+
+Otherwise, clone this repository and run the `install.sh` script.
 
 ## Usage
 
 ```text
-$ nwg-displays -h
-usage: nwg-displays [-h] [-g] [-o OUTPUTS_PATH] [-n NUM_WS] [-v]
+$  nwg-displays -h
+usage: nwg-displays [-h] [-m MONITORS_PATH] [-n NUM_WS] [-v]
 
 options:
   -h, --help            show this help message and exit
-  -g, --generic_names   use Generic output names
-  -o OUTPUTS_PATH, --outputs_path OUTPUTS_PATH
-                        path to save Outputs config to, default: /home/piotr/.config/sway/outputs
+  -m MONITORS_PATH, --monitors_path MONITORS_PATH
+                        path to save the monitors.conf file to, default: ~/.config/hypr/monitors.conf
   -n NUM_WS, --num_ws NUM_WS
-                        number of Workspaces in use, default: 8
+                        number of Workspaces in use, default: 10
   -v, --version         display version information
 ```
 
