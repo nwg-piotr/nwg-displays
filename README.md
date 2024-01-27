@@ -1,10 +1,10 @@
-# nwg-displays
+<img src="https://github.com/nwg-piotr/nwg-displays/assets/20579136/b7c31822-8846-44be-8028-af3f3af4acd8" width="90" style="margin-right:10px" align=left alt="nwg-shell logo">
+<H1>nwg-displays</H1><br>
 
 This application is a part of the [nwg-shell](https://nwg-piotr.github.io/nwg-shell) project.
 
-**Contributing:** please read the [general contributing rules for the nwg-shell project](https://nwg-piotr.github.io/nwg-shell/contribution).
-
-Output management utility for sway Wayland compositor, inspired by wdisplays and wlay.
+**Nwg-displays** is an output management utility for [sway](https://github.com/swaywm/sway) and [Hyprland](https://github.com/hyprwm/Hyprland) 
+Wayland compositor, inspired by wdisplays and wlay.
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/nwg-displays.svg)](https://repology.org/project/nwg-displays/versions)
 
