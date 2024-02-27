@@ -1156,7 +1156,7 @@ def main():
     global form_scale
     form_scale = builder.get_object("scale")
     adj = Gtk.Adjustment(lower=0.1, upper=10, step_increment=0.1, page_increment=10, page_size=1)
-    form_scale.configure(adj, 0.1, 2)
+    form_scale.configure(adj, 0.1, 6)
     form_scale.connect("value-changed", on_scale_changed)
 
     global form_scale_filter
