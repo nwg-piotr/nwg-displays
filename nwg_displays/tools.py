@@ -102,7 +102,8 @@ def list_outputs():
 
         # 1. Mirroring is impossible to check in any way. We need to parse back the monitors.conf file, and it sucks.
         mirrors = {}
-        monitors_file = os.path.join(os.getenv("HOME"), ".config/hypr/monitors.conf")
+        hypr_config_dir = os.path.join(get_config_home(), "hypr")
+        monitors_file = os.path.join(hypr_config_dir, "monitors.conf")
         if os.path.isfile(monitors_file):
             lines = load_text_file(monitors_file).splitlines()
             for line in lines:
