@@ -46,7 +46,7 @@ old_config_dir = os.path.join(get_config_home(), "nwg-outputs")
 sway_config_dir = os.path.join(get_config_home(), "sway")
 if sway and not os.path.isdir(sway_config_dir):
     print("WARNING: Couldn't find sway config directory '{}'".format(sway_config_dir), file=sys.stderr)
-    sway_config_dir = ""
+    sys.exit(1)
 
 hypr_config_dir = os.path.join(get_config_home(), "hypr")
 if hypr and not os.path.isdir(hypr_config_dir):
@@ -54,8 +54,15 @@ if hypr and not os.path.isdir(hypr_config_dir):
     sys.exit(1)
 
 # Create empty files if not found
-for name in ["monitors.conf", "workspaces.conf"]:
-    create_empty_file(os.path.join(hypr_config_dir, name))
+if sway:
+    for name in ["outputs", "workspaces"]:
+        create_empty_file(os.path.join(sway_config_dir, name))
+elif hypr:
+    for name in ["monitors.conf", "workspaces.conf"]:
+        create_empty_file(os.path.join(hypr_config_dir, name))
+else:
+    eprint("Neither sway nor Hyprland detected, terminating")
+    sys.exit(1)
 
 config = {}
 outputs_path = ""
