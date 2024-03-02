@@ -4,7 +4,7 @@
 Output management utility for sway Wayland compositor, inspired by wdisplays and wlay
 Project: https://github.com/nwg-piotr/nwg-displays
 Author's email: nwg.piotr@gmail.com
-Copyright (c) 2022 Piotr Miller
+Copyright (c) 2022-2024 Piotr Miller & Contributors
 License: MIT
 Depends on: 'python-i3ipc' 'gtk-layer-shell'
 
