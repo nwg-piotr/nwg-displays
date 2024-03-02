@@ -79,7 +79,6 @@ Use `--num_ws` if you use workspaces in a number other than 8.
 Instead of configuring as described in Wiki, insert this line:
 
 ```text
-exec = touch ~/.config/hypr/monitors.conf
 source = ~/.config/hypr/monitors.conf
 ```
 
@@ -88,7 +87,6 @@ source = ~/.config/hypr/monitors.conf
 Insert:
 
 ```text
-exec = touch ~/.config/hypr/workspaces.conf
 source = ~/.config/hypr/workspaces.conf
 ```
 

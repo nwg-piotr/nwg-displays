@@ -331,6 +331,12 @@ def save_list_to_text_file(data, file_path):
     text_file.close()
 
 
+def create_empty_file(file_path):
+    if not os.path.isfile(file_path):
+        with open(file_path, "w") as file:
+            pass
+
+
 def load_text_file(path):
     try:
         with open(path, 'r') as file:
