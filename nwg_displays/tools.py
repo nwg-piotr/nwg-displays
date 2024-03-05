@@ -161,7 +161,7 @@ def list_outputs():
             outputs_dict[m["name"]]["focused"] = m["focused"]
             outputs_dict[m["name"]]["adaptive_sync_status"] = "enabled" if m["vrr"] else "disabled"
 
-            outputs_dict[m["name"]]["description"] = f'{m["make"]} {m["model"]} {m["serial"]}'
+            outputs_dict[m["name"]]["description"] = f'{m["description"]}'
             outputs_dict[m["name"]]["x"] = int(m["x"])
             outputs_dict[m["name"]]["y"] = int(m["y"])
             # outputs_dict[m["name"]]["refresh"] = m["refreshRate"]
