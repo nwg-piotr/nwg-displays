@@ -83,6 +83,7 @@ def list_outputs():
                 outputs_dict[item.name]["focused"] = item.ipc_data["focused"]
 
                 outputs_dict[item.name]["mirror"] = ""  # We only use it on Hyprland
+                outputs_dict[item.name]["ten_bit"] = False  # We have no way to check it on sway
                 outputs_dict[item.name]["monitor"] = None
 
     elif os.getenv("HYPRLAND_INSTANCE_SIGNATURE"):
@@ -151,6 +152,8 @@ def list_outputs():
                 except ValueError as e:
                     eprint(e)
                 outputs_dict[m["name"]]["modes"].append(mode)
+
+            outputs_dict[m["name"]]["ten_bit"] = True if m["currentFormat"] in ["XRGB2101010", "XBGR2101010"] else False
 
             # to identify Gdk.Monitor
             outputs_dict[m["name"]]["model"] = m["model"]

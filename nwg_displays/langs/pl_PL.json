@@ -1,4 +1,6 @@
 {
+  "10-bit-support": "Obsługa 10 bitów",
+  "10-bit-support-tooltip": "Włącza obsługę 10-bitowej głębi koloru.",
   "active": "Aktywne",
   "adaptive-sync": "Synchr. adaptacyjna",
   "adaptive-sync-tooltip": "Włącza lub wyłącza synchronizację adaptacyjną \n(często określaną jako 'zmienna częstotliwość odświeżania', \nlub według producentów FreeSync/G-Sync).",
