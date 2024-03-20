@@ -103,6 +103,7 @@ form_close = None
 form_apply = None
 form_version = None
 form_mirror = None
+form_ten_bit = None
 
 dialog_win = None
 confirm_win = None
@@ -305,6 +306,8 @@ def update_form_from_widget(widget):
     form_scale.set_value(widget.scale)
     form_scale_filter.set_active_id(widget.scale_filter)
     form_refresh.set_value(widget.refresh)
+    if form_ten_bit:
+        form_ten_bit.set_active(widget.ten_bit)
     if form_mirror:
         form_mirror.remove_all()
         form_mirror.append("", voc["none"])
@@ -338,7 +341,8 @@ def update_form_from_widget(widget):
 
 class DisplayButton(Gtk.Button):
     def __init__(self, name, description, x, y, physical_width, physical_height, transform, scale, scale_filter,
-                 refresh, modes, active, dpms, adaptive_sync_status, custom_mode_status, focused, monitor, mirror=""):
+                 refresh, modes, active, dpms, adaptive_sync_status, ten_bit, custom_mode_status, focused, monitor,
+                 mirror=""):
         super().__init__()
         # Output properties
         self.name = name
@@ -362,6 +366,7 @@ class DisplayButton(Gtk.Button):
         self.custom_mode = custom_mode_status
         self.focused = focused
         self.mirror = mirror
+        self.ten_bit = ten_bit
 
         # Button properties
         self.selected = False
@@ -436,6 +441,11 @@ def on_transform_changed(*args):
         transform = form_transform.get_active_id()
         selected_output_button.transform = transform
         selected_output_button.rescale_transform()
+
+
+def on_ten_bit_toggled(check_btn):
+    if selected_output_button:
+        selected_output_button.ten_bit = check_btn.get_active()
 
 
 def on_dpms_toggled(widget):
@@ -563,8 +573,8 @@ def create_display_buttons():
         b = DisplayButton(key, item["description"], item["x"], item["y"], round(item["physical-width"]),
                           round(item["physical-height"]),
                           item["transform"], item["scale"], item["scale_filter"], item["refresh"], item["modes"],
-                          item["active"], item["dpms"], item["adaptive_sync_status"], custom_mode, item["focused"],
-                          item["monitor"], mirror=item["mirror"])
+                          item["active"], item["dpms"], item["adaptive_sync_status"], item["ten_bit"], custom_mode,
+                          item["focused"], item["monitor"], mirror=item["mirror"])
 
         display_buttons.append(b)
 
@@ -869,14 +879,13 @@ def apply_settings(display_buttons, outputs_activity, outputs_path, use_desc=Fal
             name = db.name if not use_desc else "desc:{}".format(db.description)
             db_names.append(name)
 
-            if not db.mirror:
-                lines.append(
-                    "monitor={},{}x{}@{},{}x{},{}".format(name, db.physical_width, db.physical_height, db.refresh, db.x,
-                                                          db.y, db.scale))
-            else:
-                lines.append(
-                    "monitor={},{}x{}@{},{}x{},{},mirror,{}".format(name, db.physical_width, db.physical_height,
-                                                                    db.refresh, db.x, db.y, db.scale, db.mirror))
+            line = "monitor={},{}x{}@{},{}x{},{}".format(name, db.physical_width, db.physical_height, db.refresh, db.x, db.y, db.scale)
+            if db.mirror:
+                line += ",mirror,{}".format(db.mirror)
+            if db.ten_bit:
+                line += ",bitdepth,10"
+
+            lines.append(line)
             if db.transform != "normal":
                 lines.append("monitor={},transform,{}".format(name, transforms[db.transform]))
 
@@ -1264,6 +1273,13 @@ def main():
 
     if hypr:
         grid = builder.get_object("grid")
+
+        global form_ten_bit
+        form_ten_bit = Gtk.CheckButton.new_with_label(voc["10-bit-support"])
+        form_ten_bit.set_tooltip_text(voc["10-bit-support-tooltip"])
+        form_ten_bit.connect("toggled", on_ten_bit_toggled)
+        grid.attach(form_ten_bit, 5, 4, 1, 1)
+
         lbl = Gtk.Label.new("Mirror:")
         lbl.set_property("halign", Gtk.Align.END)
         grid.attach(lbl, 6, 4, 1, 1)

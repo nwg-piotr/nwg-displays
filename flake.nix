@@ -7,7 +7,7 @@
 
   outputs = inputs@{ self, flake-parts, nixpkgs, ...  }:
     flake-parts.lib.mkFlake {inherit inputs;} {
-      # TODO: This probably works on more linux architechtures but I haven't tested them
+      # TODO: This probably works on more linux architectures but I haven't tested them
       systems = ["x86_64-linux"];
       imports = [];
 
@@ -32,7 +32,6 @@
               ];
 
               propagatedBuildInputs = with pkgs; [
-                wlr-randr
                 pango
                 gtk-layer-shell
                 gdk-pixbuf

@@ -83,6 +83,7 @@ def list_outputs():
                 outputs_dict[item.name]["focused"] = item.ipc_data["focused"]
 
                 outputs_dict[item.name]["mirror"] = ""  # We only use it on Hyprland
+                outputs_dict[item.name]["ten_bit"] = False  # We have no way to check it on sway
                 outputs_dict[item.name]["monitor"] = None
 
     elif os.getenv("HYPRLAND_INSTANCE_SIGNATURE"):
@@ -97,8 +98,6 @@ def list_outputs():
             outputs_dict[name] = {"active": True} if name in active else {"active": False}
 
         eprint("Running on Hyprland")
-        # This will be tricky. The `hyprctl monitors` command returns just a part of the output attributes we need.
-        # We need `wlr-randr` command to get modes, current mode and focused status. We need to use both commands. :/
 
         # 1. Mirroring is impossible to check in any way. We need to parse back the monitors.conf file, and it sucks.
         mirrors = {}
@@ -112,67 +111,50 @@ def list_outputs():
                         settings = line.split("=")[1].split(",")
                         mirrors[settings[0].strip()] = settings[-1].strip()
 
-        # 2. Read all the available values from wlr-randr
-        if not is_command("wlr-randr"):
-            eprint("wlr-randr package required, but not found, terminating.")
-            sys.exit(1)
-        lines = subprocess.check_output("wlr-randr", shell=True).decode("utf-8").strip().splitlines()
-        name = ""
-        for line in lines:
-            if not line.startswith(" "):
-                name = line.split()[0]
-
-                outputs_dict[name]["modes"] = []
-                outputs_dict[name]["scale_filter"] = None  # This value does not exist in Hyprland
-                outputs_dict[name]["dpms"] = None
-                outputs_dict[name]["mirror"] = ""
-                outputs_dict[name]["monitor"] = None
-
-            if name in mirrors:
-                outputs_dict[name]["mirror"] = mirrors[name]
-
-            if line.startswith("    "):
-                parts = line.split()
-                if len(parts) > 2:
-                    mode = {"width": int(parts[0].split("x")[0]), "height": int(parts[0].split("x")[1]),
-                            "refresh": float(parts[2]) * 1000}
-                    modes = outputs_dict[name]["modes"]
-                    modes.append(mode)
-                    outputs_dict[name]["modes"] = modes
-
-                    # We need to detect current mode here, as values from hyprctl are not exactly the same,
-                    # and we'll be unable to preselect current mode in modes combo
-                    if "current" in line:
-                        w_h = line.split()[0].split('x')
-                        outputs_dict[name]["physical-width"] = int(w_h[0])
-                        outputs_dict[name]["physical-height"] = int(w_h[1])
-                        outputs_dict[name]["refresh"] = float(parts[2])
-
-            # This may or may not work. We'll try to read the value again from hyprctl -j monitors.
-            if name and line.startswith("  Adaptive Sync:"):
-                outputs_dict[name]["adaptive_sync_status"] = line.split()[1]
-
-        # 3. Read missing/possibly missing values from hyprctl
+        # 2. This won't work w/ Hyprland <= 0.36.0
         output = hyprctl("j/monitors all")
         monitors = json.loads(output)
         transforms = {0: "normal", 1: "90", 2: "180", 3: "270", 4: "flipped", 5: "flipped-90", 6: "flipped-180",
                       7: "flipped-270"}
         for m in monitors:
+            outputs_dict[m["name"]]["mirror"] = mirrors[name] if name in mirrors else ""
+
+            outputs_dict[m["name"]]["scale_filter"] = None
+            outputs_dict[m["name"]]["modes"] = []
             outputs_dict[m["name"]]["focused"] = m["focused"]
             outputs_dict[m["name"]]["adaptive_sync_status"] = "enabled" if m["vrr"] else "disabled"
 
             outputs_dict[m["name"]]["description"] = f'{m["description"]}'
             outputs_dict[m["name"]]["x"] = int(m["x"])
             outputs_dict[m["name"]]["y"] = int(m["y"])
-            # outputs_dict[m["name"]]["refresh"] = m["refreshRate"]
+
+            outputs_dict[m["name"]]["refresh"] = round(m["refreshRate"], 2)
+
             outputs_dict[m["name"]]["logical-width"] = m["width"]
             outputs_dict[m["name"]]["logical-height"] = m["height"]
-            # outputs_dict[m["name"]]["physical-width"] = m["width"] / m["scale"]
-            # outputs_dict[m["name"]]["physical-height"] = m["height"] / m["scale"]
+
+            outputs_dict[m["name"]]["physical-width"] = m["width"] / m["scale"]
+            outputs_dict[m["name"]]["physical-height"] = m["height"] / m["scale"]
+
             outputs_dict[m["name"]]["transform"] = transforms[m["transform"]]
             outputs_dict[m["name"]]["scale"] = m["scale"]
             outputs_dict[m["name"]]["focused"] = m["focused"]
             outputs_dict[m["name"]]["dpms"] = m["dpmsStatus"]
+
+            outputs_dict[name]["modes"] = []
+
+            for item in m["availableModes"]:
+                line = item[:-2]  # split "Hz"
+                w_h, r = line.split("@")
+                w, h = w_h.split("x")
+                try:
+                    mode = {"width": int(w), "height": int(h), "refresh": float(r) * 1000}
+                except ValueError as e:
+                    eprint(e)
+                outputs_dict[m["name"]]["modes"].append(mode)
+
+            outputs_dict[m["name"]]["ten_bit"] = True if m["currentFormat"] in ["XRGB2101010", "XBGR2101010"] else False
+
             # to identify Gdk.Monitor
             outputs_dict[m["name"]]["model"] = m["model"]
 
