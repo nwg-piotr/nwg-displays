@@ -158,6 +158,8 @@ def list_outputs():
             # to identify Gdk.Monitor
             outputs_dict[m["name"]]["model"] = m["model"]
 
+            outputs_dict[m["name"]]["monitor"] = None
+
     else:
         eprint("This program only supports sway and Hyprland, and we seem to be elsewhere, terminating.")
         sys.exit(1)
