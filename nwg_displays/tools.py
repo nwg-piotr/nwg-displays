@@ -169,24 +169,19 @@ def list_outputs():
         eprint("This program only supports sway and Hyprland, and we seem to be elsewhere, terminating.")
         sys.exit(1)
 
-    # assign Gdk monitors
+    # We used to assign Gdk.Monitor to output on the basis of x and y coordinates, but it no longer works,
+    # starting from gtk3-1:3.24.42: all monitors have x=0, y=0. This is most likely a bug, but from now on
+    # we must rely on gdk monitors order.
+    monitors = []
     display = Gdk.Display.get_default()
     for i in range(display.get_n_monitors()):
         monitor = display.get_monitor(i)
-        geometry = monitor.get_geometry()
-        if os.getenv("HYPRLAND_INSTANCE_SIGNATURE"):
-            # This will fail for 2 displays of the same model and coordinates, but we have no better way
-            for key in outputs_dict:
-                if (int(outputs_dict[key]["x"]) == geometry.x and int(outputs_dict[key]["y"]) == geometry.y
-                        and outputs_dict[key]["model"] == monitor.get_model()):
-                    outputs_dict[key]["monitor"] = monitor
-                    break
-        else:
-            # we don't know the model value on sway :/
-            for key in outputs_dict:
-                if int(outputs_dict[key]["x"]) == geometry.x and int(outputs_dict[key]["y"]) == geometry.y:
-                    outputs_dict[key]["monitor"] = monitor
-                    break
+        monitors.append(monitor)
+
+    idx = 0
+    for key in outputs_dict:
+        outputs_dict[key]["monitor"] = monitors[idx]
+        idx += 1
 
     for key in outputs_dict:
         eprint(key, outputs_dict[key])
