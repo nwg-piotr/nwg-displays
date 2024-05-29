@@ -180,7 +180,10 @@ def list_outputs():
 
     idx = 0
     for key in outputs_dict:
-        outputs_dict[key]["monitor"] = monitors[idx]
+        try:
+            outputs_dict[key]["monitor"] = monitors[idx]
+        except IndexError:
+            print(f"Couldn't assign a Gdk.Monitor to {outputs_dict[key]}")
         idx += 1
 
     for key in outputs_dict:
