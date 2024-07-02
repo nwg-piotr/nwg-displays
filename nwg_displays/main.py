@@ -621,10 +621,10 @@ def handle_keyboard(window, event):
         window.close()
 
 
-def create_workspaces_window(btn):
+def create_workspaces_window_sway(btn):
     global sway_config_dir
     global workspaces
-    workspaces = load_workspaces(os.path.join(sway_config_dir, "workspaces"), use_desc=config["use-desc"])
+    workspaces = load_workspaces_sway(os.path.join(sway_config_dir, "workspaces"), use_desc=config["use-desc"])
     old_workspaces = workspaces.copy()
     global dialog_win
     if dialog_win:
@@ -665,7 +665,7 @@ def create_workspaces_window(btn):
     btn_apply = Gtk.Button()
     btn_apply.set_label(voc["apply"])
     if sway_config_dir:
-        btn_apply.connect("clicked", on_workspaces_apply_btn, dialog_win, old_workspaces)
+        btn_apply.connect("clicked", on_workspaces_apply_btn_sway, dialog_win, old_workspaces)
     else:
         btn_apply.set_sensitive(False)
         btn_apply.set_tooltip_text("Config dir not found")
@@ -752,7 +752,7 @@ def close_dialog(w, win):
     win.close()
 
 
-def on_workspaces_apply_btn(w, win, old_workspaces):
+def on_workspaces_apply_btn_sway(w, win, old_workspaces):
     global workspaces
     if workspaces != old_workspaces:
         save_workspaces(workspaces, os.path.join(sway_config_dir, "workspaces"), use_desc=config["use-desc"])
@@ -1220,7 +1220,7 @@ def main():
     form_workspaces.set_label(voc["workspaces"])
     form_workspaces.set_tooltip_text(voc["workspaces-tooltip"])
     if sway:
-        form_workspaces.connect("clicked", create_workspaces_window)
+        form_workspaces.connect("clicked", create_workspaces_window_sway)
     elif hypr:
         form_workspaces.connect("clicked", create_workspaces_window_hypr)
 
