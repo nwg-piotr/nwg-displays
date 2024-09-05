@@ -929,7 +929,10 @@ def create_confirm_win(backup, path):
     lbl = Gtk.Label.new("{}?".format(voc["keep-current-settings"]))
     grid.attach(lbl, 0, 0, 2, 1)
 
-    cnt_lbl = Gtk.Label.new("10")
+    global counter
+    counter = config["confirm-timeout"]
+
+    cnt_lbl = Gtk.Label.new(str(counter))
     grid.attach(cnt_lbl, 0, 1, 2, 1)
     btn_restore = Gtk.Button.new_with_label(voc["restore"])
 
@@ -942,8 +945,6 @@ def create_confirm_win(backup, path):
 
     confirm_win.show_all()
 
-    global counter
-    counter = 10
     global src_tag
     src_tag = GLib.timeout_add_seconds(1, count_down, cnt_lbl, backup, path)
 

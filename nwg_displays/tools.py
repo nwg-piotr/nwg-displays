@@ -284,7 +284,8 @@ def config_keys_missing(config, config_file):
                 "snap-threshold": 10,
                 "indicator-timeout": 500,
                 "custom-mode": [],
-                "use-desc": False, }
+                "use-desc": False,
+                "confirm-timeout": 10, }
     for key in defaults:
         if key not in config:
             config[key] = defaults[key]
