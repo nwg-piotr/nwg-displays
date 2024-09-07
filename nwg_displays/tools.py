@@ -135,11 +135,11 @@ def list_outputs():
 
             outputs_dict[m["name"]]["refresh"] = round(m["refreshRate"], 2)
 
-            outputs_dict[m["name"]]["logical-width"] = m["width"]
-            outputs_dict[m["name"]]["logical-height"] = m["height"]
+            outputs_dict[m["name"]]["logical-width"] = m["width"] / m["scale"]
+            outputs_dict[m["name"]]["logical-height"] = m["height"] / m["scale"]
 
-            outputs_dict[m["name"]]["physical-width"] = m["width"] / m["scale"]
-            outputs_dict[m["name"]]["physical-height"] = m["height"] / m["scale"]
+            outputs_dict[m["name"]]["physical-width"] = m["width"]
+            outputs_dict[m["name"]]["physical-height"] = m["height"]
 
             outputs_dict[m["name"]]["transform"] = transforms[m["transform"]]
             outputs_dict[m["name"]]["scale"] = m["scale"]
