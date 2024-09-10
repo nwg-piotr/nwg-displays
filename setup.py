@@ -9,7 +9,7 @@ def read(f_name):
 
 setup(
     name='nwg-displays',
-    version='0.3.20',
+    version='0.3.21',
     description='nwg-shell output configuration utility',
     packages=find_packages(),
     include_package_data=True,
