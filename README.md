@@ -92,6 +92,14 @@ source = ~/.config/hypr/workspaces.conf
 
 Do not set `disable_autoreload true` in Hyprland settings, or you'll have to reload Hyprland manually after applying chages.
 
+#### Hyprland & Nix
+
+Insert:
+
+```text
+monitor = [ (builtins.readFile ~/.config/hypr/workspaces.conf) ];
+```
+
 ## Settings
 
 The runtime configuration file is placed in your config directory, like `~/.config/nwg-displays/config`. 
