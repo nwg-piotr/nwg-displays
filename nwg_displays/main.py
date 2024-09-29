@@ -876,7 +876,7 @@ def apply_settings(display_buttons, outputs_activity, outputs_path, use_desc=Fal
         transforms = {"normal": 0, "90": 1, "180": 2, "270": 3, "flipped": 4, "flipped-90": 5, "flipped-180": 6,
                       "flipped-270": 7}
         for db in display_buttons:
-            name = db.name if not use_desc else "desc:{}".format(db.description)
+            name = db.name if not use_desc else "desc:{}".format(db.description.replace("#", "##"))
             db_names.append(name)
 
             line = "monitor={},{}x{}@{},{}x{},{}".format(name, db.physical_width, db.physical_height, db.refresh, db.x, db.y, db.scale)
