@@ -22,6 +22,18 @@ Install from your linux distribution repository if possible.
 
 Otherwise, clone this repository and run the `install.sh` script.
 
+### Dependencies
+
+- gtk-layer-shell
+- gtk3
+- python
+- python-gobject
+- python-i3ipc
+- python-build (make)
+- python-installer (make)
+- python-setuptools (make)
+- python-wheel (make)
+
 ## Usage
 
 ```text
