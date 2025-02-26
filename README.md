@@ -115,7 +115,7 @@ monitor = [ (builtins.readFile ~/.config/hypr/workspaces.conf) ];
 ## Settings
 
 The runtime configuration file is placed in your config directory, like `~/.config/nwg-displays/config`. 
-It's a simple `json` file:
+It's a simple JSON file:
 
 ```json
 {
@@ -126,5 +126,5 @@ It's a simple `json` file:
 ```
 
 - `view-scale` does not need to be changed manually. The GUI takes care of that.
-- `snap-threshold` specifies the flush margin of widgets representing displays. I added this value just in case, as I have no hi DPI display to test the stuff on.
+- `snap-threshold` specifies the flush margin of widgets representing displays. I added this value just in case, as I have no high-DPI display to test the stuff on.
 - `indicator-timeout` determines how long (in milliseconds) the overlay identifying screens should be visible. Set 0 to turn overlays off.
