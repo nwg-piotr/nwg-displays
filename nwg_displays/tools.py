@@ -335,7 +335,7 @@ def load_text_file(path):
         return None
 
 
-def load_workspaces(path, use_desc=False):
+def load_workspaces_sway(path, use_desc=False):
     result = {}
     try:
         with open(path, 'r') as file:
