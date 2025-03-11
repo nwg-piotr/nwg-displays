@@ -872,41 +872,6 @@ def apply_settings(display_buttons, outputs_activity, outputs_path, use_desc=Fal
 
         create_confirm_win(backup, outputs_path)
 
-
-    elif os.getenv("HYPRLAND_INSTANCE_SIGNATURE") and os.getenv("NIX_PATH"):
-        transforms = {"normal": 0, "90": 1, "180": 2, "270": 3, "flipped": 4, "flipped-90": 5, "flipped-180": 6,
-                      "flipped-270": 7}
-        for db in display_buttons:
-            name = db.name if not use_desc else "desc:{}".format(db.description)
-            db_names.append(name)
-
-            line = "\"{},{}x{}@{},{}x{},{}\"".format(name, db.physical_width, db.physical_height, db.refresh, db.x, db.y, db.scale)
-            if db.mirror:
-                line += ",mirror,{}".format(db.mirror)
-            if db.ten_bit:
-                line += ",bitdepth,10"
-
-            lines.append(line)
-            if db.transform != "normal":
-                lines.append("\"{},transform,{}\"".format(name, transforms[db.transform]))
-
-            # avoid looking up the hardware name
-            if db.name in outputs_activity and not outputs_activity[db.name]:
-                lines.append("\"{},disable\"".format(name))
-
-            cmd = "on" if db.dpms else "off"
-            hyprctl(f"dispatch dpms {cmd} {db.name}")
-
-        print("[Saving]")
-        for line in lines:
-            print(line)
-
-        backup = []
-        if os.path.isfile(outputs_path):
-            backup = load_text_file(outputs_path).splitlines()
-        save_list_to_text_file(lines, outputs_path)
-        create_confirm_win(backup, outputs_path)
-
     elif os.getenv("HYPRLAND_INSTANCE_SIGNATURE"):
         transforms = {"normal": 0, "90": 1, "180": 2, "270": 3, "flipped": 4, "flipped-90": 5, "flipped-180": 6,
                       "flipped-270": 7}
