@@ -764,7 +764,7 @@ def on_workspaces_apply_btn(w, win, old_workspaces):
 def on_workspaces_apply_btn_hypr(w, win, old_workspaces):
     global workspaces
     if workspaces != old_workspaces:
-        workspace_conf_file = os.path.join(hypr_config_dir, "workspaces.conf")
+        workspace_conf_file = workspaces_path
         text_file = open(workspace_conf_file, "w")
 
         now = datetime.datetime.now()
@@ -1027,6 +1027,13 @@ def main():
                             help="path to save the monitors.conf file to, default: {}".format(
                                 "{}/monitors.conf".format(hypr_config_dir)))
 
+        parser.add_argument("-w",
+                            "--workspaces_path",
+                            type=str,
+                            default="{}/workspaces.conf".format(hypr_config_dir),
+                            help="path to save the workspaces.conf file to, default: {}".format(
+                                "{}/workspaces.conf".format(hypr_config_dir)))
+
         parser.add_argument("-n",
                             "--num_ws",
                             type=int,
@@ -1043,6 +1050,7 @@ def main():
     load_vocabulary()
 
     global outputs_path
+    global workspaces_path
     if sway:
         if os.path.isdir(sway_config_dir):
             outputs_path = args.outputs_path
@@ -1052,9 +1060,11 @@ def main():
     elif hypr:
         if os.path.isdir(hypr_config_dir):
             outputs_path = args.monitors_path
+            workspaces_path = args.workspaces_path
         else:
             eprint("Hyprland config directory not found!")
             outputs_path = ""
+            workspaces_path = ""
 
     global num_ws
     num_ws = args.num_ws
