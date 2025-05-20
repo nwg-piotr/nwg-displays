@@ -35,7 +35,7 @@ except ValueError:
 from gi.repository import Gtk, GLib, GtkLayerShell
 
 from nwg_displays.tools import *
-
+from nwg_displays.profiles import ProfileManager
 from nwg_displays.__about__ import __version__
 
 dir_name = os.path.dirname(__file__)
@@ -1132,279 +1132,6 @@ def restore_old_settings(btn, backup, path):
         GLib.timeout_add(2000, create_display_buttons)
 
 
-btn_save_profile = None
-current_profile = None
-profiles_dir = None
-
-
-def on_new_profile_button_clicked(widget):
-    """Create a new profile with the current display configuration"""
-    global profiles_dir, current_profile, btn_save_profile
-
-    # Ensure profiles directory exists
-    if not profiles_dir:
-        profiles_dir = os.path.join(config_dir, "profiles")
-
-    if not os.path.isdir(profiles_dir):
-        os.makedirs(profiles_dir, exist_ok=True)
-
-    # Create a dialog to get the profile name
-    dialog = Gtk.Dialog(
-        title=voc.get("new-profile", "New Profile"),
-        parent=widget.get_toplevel(),
-        flags=Gtk.DialogFlags.MODAL,
-    )
-
-    dialog.add_button(voc.get("cancel", "Cancel"), Gtk.ResponseType.CANCEL)
-    dialog.add_button(voc.get("create", "Create"), Gtk.ResponseType.OK)
-
-    content_area = dialog.get_content_area()
-    content_area.set_property("margin", 10)
-
-    grid = Gtk.Grid()
-    grid.set_column_spacing(10)
-    grid.set_row_spacing(10)
-    content_area.add(grid)
-
-    name_label = Gtk.Label(label=voc.get("profile-name", "Profile Name:"))
-    grid.attach(name_label, 0, 0, 1, 1)
-
-    name_entry = Gtk.Entry()
-    grid.attach(name_entry, 1, 0, 1, 1)
-
-    dialog.show_all()
-    response = dialog.run()
-
-    if response == Gtk.ResponseType.OK:
-        profile_name = name_entry.get_text().strip()
-        if profile_name:
-            # Save profile
-            profile_path = os.path.join(profiles_dir, f"{profile_name}.json")
-            save_profile(profile_path)
-            current_profile = profile_name
-            btn_save_profile.set_sensitive(True)
-            notify(
-                voc.get("profile-created", "Profile Created"),
-                voc.get(
-                    "profile-created-message",
-                    f"Profile '{profile_name}' has been created",
-                ),
-            )
-
-    dialog.destroy()
-
-
-def on_select_profile_button_clicked(widget):
-    """Select an existing profile to load"""
-    global profiles_dir, current_profile, btn_save_profile
-
-    # Ensure profiles directory exists
-    if not profiles_dir:
-        profiles_dir = os.path.join(config_dir, "profiles")
-
-    if not os.path.isdir(profiles_dir):
-        os.makedirs(profiles_dir, exist_ok=True)
-        notify(
-            voc.get("no-profiles", "No Profiles"),
-            voc.get("no-profiles-message", "No profiles found. Create one first."),
-        )
-        return
-
-    # Get list of profile files
-    profile_files = [f for f in os.listdir(profiles_dir) if f.endswith(".json")]
-
-    if not profile_files:
-        notify(
-            voc.get("no-profiles", "No Profiles"),
-            voc.get("no-profiles-message", "No profiles found. Create one first."),
-        )
-        return
-
-    # Create dialog to select profile
-    dialog = Gtk.Dialog(
-        title=voc.get("select-profile", "Select Profile"),
-        parent=widget.get_toplevel(),
-        flags=Gtk.DialogFlags.MODAL,
-    )
-
-    dialog.add_button(voc.get("cancel", "Cancel"), Gtk.ResponseType.CANCEL)
-    dialog.add_button(voc.get("load", "Load"), Gtk.ResponseType.OK)
-    dialog.add_button(voc.get("delete", "Delete"), Gtk.ResponseType.REJECT)
-
-    content_area = dialog.get_content_area()
-    content_area.set_property("margin", 10)
-
-    profile_combo = Gtk.ComboBoxText()
-    for file in profile_files:
-        name = file.replace(".json", "")
-        profile_combo.append(name, name)
-
-    if current_profile and current_profile in [
-        f.replace(".json", "") for f in profile_files
-    ]:
-        profile_combo.set_active_id(current_profile)
-    else:
-        profile_combo.set_active(0)
-
-    content_area.add(profile_combo)
-    dialog.show_all()
-
-    response = dialog.run()
-
-    if response == Gtk.ResponseType.OK:
-        selected_profile = profile_combo.get_active_id()
-        if selected_profile:
-            profile_path = os.path.join(profiles_dir, f"{selected_profile}.json")
-            load_profile(profile_path)
-            current_profile = selected_profile
-            btn_save_profile.set_sensitive(True)
-    elif response == Gtk.ResponseType.REJECT:
-        selected_profile = profile_combo.get_active_id()
-        if selected_profile:
-            # Confirm deletion
-            confirm_dialog = Gtk.MessageDialog(
-                parent=dialog,
-                flags=Gtk.DialogFlags.MODAL,
-                type=Gtk.MessageType.QUESTION,
-                buttons=Gtk.ButtonsType.YES_NO,
-                message_format=voc.get(
-                    "confirm-delete", f"Delete profile '{selected_profile}'?"
-                ),
-            )
-
-            confirm_response = confirm_dialog.run()
-            if confirm_response == Gtk.ResponseType.YES:
-                profile_path = os.path.join(profiles_dir, f"{selected_profile}.json")
-                try:
-                    os.remove(profile_path)
-                    notify(
-                        voc.get("profile-deleted", "Profile Deleted"),
-                        voc.get(
-                            "profile-deleted-message",
-                            f"Profile '{selected_profile}' has been deleted",
-                        ),
-                    )
-
-                    # If current profile was deleted, reset it
-                    if current_profile == selected_profile:
-                        current_profile = None
-                        btn_save_profile.set_sensitive(False)
-                except OSError as e:
-                    notify(
-                        voc.get("error", "Error"),
-                        voc.get(
-                            "delete-error-message", f"Could not delete profile: {e}"
-                        ),
-                    )
-
-            confirm_dialog.destroy()
-
-    dialog.destroy()
-
-
-def on_save_profile_button_clicked(widget):
-    """Save current settings to the selected profile"""
-    global profiles_dir, current_profile
-
-    if not current_profile:
-        return
-
-    profile_path = os.path.join(profiles_dir, f"{current_profile}.json")
-    save_profile(profile_path)
-    notify(
-        voc.get("profile-saved", "Profile Saved"),
-        voc.get(
-            "profile-saved-message", f"Profile '{current_profile}' has been updated"
-        ),
-    )
-
-
-def save_profile(profile_path):
-    """Save the current display configuration to a profile file"""
-    profile_data = {"displays": [], "config": config}
-
-    for db in display_buttons:
-        display = {
-            "name": db.name,
-            "description": db.description,
-            "x": db.x,
-            "y": db.y,
-            "physical_width": db.physical_width,
-            "physical_height": db.physical_height,
-            "transform": db.transform,
-            "scale": db.scale,
-            "scale_filter": db.scale_filter,
-            "refresh": db.refresh,
-            "dpms": db.dpms,
-            "adaptive_sync": db.adaptive_sync,
-            "custom_mode": db.custom_mode,
-            "mirror": db.mirror,
-            "ten_bit": db.ten_bit,
-            "active": db.active,
-        }
-        profile_data["displays"].append(display)
-
-    save_json(profile_data, profile_path)
-
-
-def load_profile(profile_path):
-    """Load display configuration from a profile file"""
-    global config
-
-    profile_data = load_json(profile_path)
-    if not profile_data:
-        notify(
-            voc.get("error", "Error"),
-            voc.get("load-error-message", "Could not load profile"),
-        )
-        return
-
-    # Update config
-    if "config" in profile_data:
-        for key, value in profile_data["config"].items():
-            config[key] = value
-
-        global snap_threshold_scaled
-        snap_threshold_scaled = round(
-            config["snap-threshold"] * config["view-scale"] * 10
-        )
-
-        form_view_scale.set_value(config["view-scale"])
-        form_use_desc.set_active(config["use-desc"])
-
-    if "displays" in profile_data:
-        # Match profile displays with current displays
-        for db in display_buttons:
-            for display in profile_data["displays"]:
-                if db.name == display["name"]:
-                    # Update display settings
-                    db.x = display["x"]
-                    db.y = display["y"]
-                    db.physical_width = display["physical_width"]
-                    db.physical_height = display["physical_height"]
-                    db.transform = display["transform"]
-                    db.scale = display["scale"]
-                    db.scale_filter = display["scale_filter"]
-                    db.refresh = display["refresh"]
-                    db.dpms = display["dpms"]
-                    db.adaptive_sync = display["adaptive_sync"]
-                    db.custom_mode = display["custom_mode"]
-                    db.mirror = display["mirror"]
-                    db.ten_bit = display["ten_bit"]
-                    db.active = display["active"]
-
-                    # Update button position and size
-                    fixed.move(
-                        db, db.x * config["view-scale"], db.y * config["view-scale"]
-                    )
-                    db.rescale_transform()
-                    break
-
-    # If a display is selected, update form
-    if selected_output_button:
-        update_form_from_widget(selected_output_button)
-
-
 def main():
     GLib.set_prgname("nwg-displays")
 
@@ -1497,6 +1224,9 @@ def main():
         config = load_json(config_file)
 
     eprint("Settings: {}".format(config))
+
+    # Initialize the profile manager
+    profile_manager = ProfileManager(config_dir, config, voc)
 
     global snap_threshold_scaled
     snap_threshold_scaled = config["snap-threshold"]
@@ -1718,26 +1448,33 @@ def main():
     btn_new_profile.set_tooltip_text(
         voc.get("new-profile-tooltip", "Create a new profile")
     )
-    btn_new_profile.connect("clicked", on_new_profile_button_clicked)
+    btn_new_profile.connect("clicked", profile_manager.create_profile)
     profile_box.pack_start(btn_new_profile, False, False, 0)
 
     btn_select_profile = Gtk.Button.new_with_label(voc.get("select", "Select"))
     btn_select_profile.set_tooltip_text(
         voc.get("select-profile-tooltip", "Select a profile")
     )
-    btn_select_profile.connect("clicked", on_select_profile_button_clicked)
+    btn_select_profile.connect("clicked", profile_manager.select_profile)
     profile_box.pack_start(btn_select_profile, False, False, 0)
 
-    global btn_save_profile
     btn_save_profile = Gtk.Button.new_with_label(voc.get("save", "Save"))
     btn_save_profile.set_tooltip_text(
         voc.get("save-profile-tooltip", "Save to current profile")
     )
-    btn_save_profile.connect("clicked", on_save_profile_button_clicked)
+    btn_save_profile.connect("clicked", profile_manager.save_profile)
     btn_save_profile.set_sensitive(
         False
     )  # Initially disabled until a profile is selected
     profile_box.pack_start(btn_save_profile, False, False, 0)
+
+    # Register the save button with the profile manager
+    profile_manager.set_save_button(btn_save_profile)
+
+    # Also pass display_buttons and other required data to profile manager
+    profile_manager.set_display_buttons(display_buttons)
+    profile_manager.set_fixed(fixed)
+    profile_manager.set_update_callback(update_form_from_widget)
 
     if display_buttons:
         update_form_from_widget(display_buttons[0])
