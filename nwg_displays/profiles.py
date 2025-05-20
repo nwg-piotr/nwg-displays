@@ -23,6 +23,7 @@ class ProfileManager:
         self.display_buttons = None
         self.fixed = None
         self.update_callback = None
+        self.profile_label = None
 
         # Ensure profiles directory exists
         if not os.path.isdir(self.profiles_dir):
@@ -43,6 +44,26 @@ class ProfileManager:
     def set_update_callback(self, callback):
         """Store reference to form update callback"""
         self.update_callback = callback
+
+    def set_profile_label(self, label):
+        """Store reference to the profile label"""
+        self.profile_label = label
+
+    def _update_profile_label(self):
+        """Update profile label text with current profile name"""
+        if self.profile_label:
+            if self.current_profile:
+                self.profile_label.set_text(
+                    self.voc.get("current-profile", "Profile")
+                    + ": "
+                    + self.current_profile
+                )
+            else:
+                self.profile_label.set_text(
+                    self.voc.get("current-profile", "Profile")
+                    + ": "
+                    + self.voc.get("none", "None")
+                )
 
     def create_profile(self, widget):
         """Create a new profile with the current display configuration"""
@@ -89,6 +110,8 @@ class ProfileManager:
                 self.current_profile = profile_name
                 if self.btn_save_profile:
                     self.btn_save_profile.set_sensitive(True)
+                # Update the profile label
+                self._update_profile_label()
                 notify(
                     self.voc.get("profile-created", "Profile Created"),
                     self.voc.get(
@@ -130,21 +153,28 @@ class ProfileManager:
             flags=Gtk.DialogFlags.MODAL,
         )
 
+        # Set the Load button as the default response when Enter is pressed
+        dialog.set_default_response(Gtk.ResponseType.OK)
+
         # Set spacing between action buttons
         action_area = dialog.get_action_area()
         action_area.set_property("spacing", 10)
         action_area.set_property("margin", 10)
 
         # Use the helper method to add padded buttons
-        self._add_button_with_padding(
+        cancel_btn = self._add_button_with_padding(
             dialog, self.voc.get("cancel", "Cancel"), Gtk.ResponseType.CANCEL
         )
-        self._add_button_with_padding(
+        load_btn = self._add_button_with_padding(
             dialog, self.voc.get("load", "Load"), Gtk.ResponseType.OK
         )
-        self._add_button_with_padding(
+        delete_btn = self._add_button_with_padding(
             dialog, self.voc.get("delete", "Delete"), Gtk.ResponseType.REJECT
         )
+
+        # Set the Load button as the default widget to visually indicate it's the default action
+        load_btn.set_can_default(True)
+        load_btn.grab_default()
 
         content_area = dialog.get_content_area()
         content_area.set_property("margin", 15)  # Increase content margin too
@@ -176,6 +206,8 @@ class ProfileManager:
                 self.current_profile = selected_profile
                 if self.btn_save_profile:
                     self.btn_save_profile.set_sensitive(True)
+                # Update the profile label
+                self._update_profile_label()
         elif response == Gtk.ResponseType.REJECT:
             selected_profile = profile_combo.get_active_id()
             if selected_profile:
@@ -210,6 +242,8 @@ class ProfileManager:
                             self.current_profile = None
                             if self.btn_save_profile:
                                 self.btn_save_profile.set_sensitive(False)
+                            # Update the profile label
+                            self._update_profile_label()
                     except OSError as e:
                         notify(
                             self.voc.get("error", "Error"),
@@ -292,17 +326,26 @@ class ProfileManager:
                 self.config[key] = value
 
         if "displays" in profile_data:
-            # Match profile displays with current displays
+            # First apply transforms to ensure correct dimensions before positioning
             for db in self.display_buttons:
                 for display in profile_data["displays"]:
                     if db.name == display["name"]:
-                        # Update display settings
-                        db.x = display["x"]
-                        db.y = display["y"]
+                        # Update transform first so the sizing is correct
+                        db.transform = display["transform"]
                         db.physical_width = display["physical_width"]
                         db.physical_height = display["physical_height"]
-                        db.transform = display["transform"]
                         db.scale = display["scale"]
+                        # Update the button's size according to the new transform
+                        db.rescale_transform()
+                        break
+
+            # Now update positions and other settings
+            for db in self.display_buttons:
+                for display in profile_data["displays"]:
+                    if db.name == display["name"]:
+                        # Update all other display settings
+                        db.x = display["x"]
+                        db.y = display["y"]
                         db.scale_filter = display["scale_filter"]
                         db.refresh = display["refresh"]
                         db.dpms = display["dpms"]
@@ -312,13 +355,12 @@ class ProfileManager:
                         db.ten_bit = display["ten_bit"]
                         db.active = display["active"]
 
-                        # Update button position and size
+                        # Update button position with the correct dimensions
                         self.fixed.move(
                             db,
                             db.x * self.config["view-scale"],
                             db.y * self.config["view-scale"],
                         )
-                        db.rescale_transform()
                         break
 
         # Update the form if a display is selected

@@ -1444,6 +1444,15 @@ def main():
     profile_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
     form_wrapper_box.pack_start(profile_box, False, False, 0)
 
+    # Add label for current profile name
+    profile_label = Gtk.Label()
+    profile_label.set_text(
+        voc.get("current-profile", "Profile") + ": " + voc.get("none", "None")
+    )
+    profile_label.set_property("margin-end", 10)
+    profile_label.set_property("margin-start", 5)
+    profile_box.pack_start(profile_label, False, False, 0)
+
     btn_new_profile = Gtk.Button.new_with_label(voc.get("new", "New"))
     btn_new_profile.set_tooltip_text(
         voc.get("new-profile-tooltip", "Create a new profile")
@@ -1470,6 +1479,9 @@ def main():
 
     # Register the save button with the profile manager
     profile_manager.set_save_button(btn_save_profile)
+
+    # Register the profile label with the profile manager
+    profile_manager.set_profile_label(profile_label)
 
     # Also pass display_buttons and other required data to profile manager
     profile_manager.set_display_buttons(display_buttons)
