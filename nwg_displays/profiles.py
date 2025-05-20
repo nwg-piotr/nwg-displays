@@ -99,6 +99,14 @@ class ProfileManager:
 
         dialog.destroy()
 
+    def _add_button_with_padding(self, dialog, text, response_id):
+        """Helper method to add buttons with proper padding to dialogs"""
+        button = dialog.add_button(text, response_id)
+        button.set_property("margin", 5)  # Add margin around the button
+        button.set_property("margin-start", 10)
+        button.set_property("margin-end", 10)
+        return button
+
     def select_profile(self, widget):
         """Select an existing profile to load"""
         # Get list of profile files
@@ -122,12 +130,24 @@ class ProfileManager:
             flags=Gtk.DialogFlags.MODAL,
         )
 
-        dialog.add_button(self.voc.get("cancel", "Cancel"), Gtk.ResponseType.CANCEL)
-        dialog.add_button(self.voc.get("load", "Load"), Gtk.ResponseType.OK)
-        dialog.add_button(self.voc.get("delete", "Delete"), Gtk.ResponseType.REJECT)
+        # Set spacing between action buttons
+        action_area = dialog.get_action_area()
+        action_area.set_property("spacing", 10)
+        action_area.set_property("margin", 10)
+
+        # Use the helper method to add padded buttons
+        self._add_button_with_padding(
+            dialog, self.voc.get("cancel", "Cancel"), Gtk.ResponseType.CANCEL
+        )
+        self._add_button_with_padding(
+            dialog, self.voc.get("load", "Load"), Gtk.ResponseType.OK
+        )
+        self._add_button_with_padding(
+            dialog, self.voc.get("delete", "Delete"), Gtk.ResponseType.REJECT
+        )
 
         content_area = dialog.get_content_area()
-        content_area.set_property("margin", 10)
+        content_area.set_property("margin", 15)  # Increase content margin too
 
         profile_combo = Gtk.ComboBoxText()
         for file in profile_files:
