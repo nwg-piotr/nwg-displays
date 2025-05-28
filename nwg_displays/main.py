@@ -1168,6 +1168,16 @@ def main():
         )
 
         parser.add_argument(
+            "-w",
+            "--workspaces_path",
+            type=str,
+            default="{}/workspaces.conf".format(hypr_config_dir),
+            help="path to save the workspaces.conf file to, default: {}".format(
+                "{}/workspaces.conf".format(hypr_config_dir)
+            ),
+        )
+
+        parser.add_argument(
             "-n",
             "--num_ws",
             type=int,
