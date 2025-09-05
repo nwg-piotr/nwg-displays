@@ -1099,6 +1099,9 @@ def main():
     args = parser.parse_args()
 
     if args.daemon:
+        if sway:
+            eprint("ERROR: Daemon mode is not supported for sway yet. Only Hyprland is supported.")
+            sys.exit(1)
         from nwg_displays.daemon import MonitorDaemon
         eprint(f"Starting daemon mode with {args.daemon_interval}s interval")
         daemon = MonitorDaemon(check_interval=args.daemon_interval)
@@ -1384,12 +1387,15 @@ def main():
         form_mirror.connect("changed", on_mirror_selected)
         grid.attach(form_mirror, 7, 4, 1, 1)
 
-    # Add daemon toggle
-    daemon_toggle = Gtk.CheckButton.new_with_label("Enable monitor disconnect protection")
-    daemon_toggle.set_tooltip_text("Automatically handle monitor disconnections and restore settings")
-    daemon_toggle.set_active(config.get("daemon-enabled", False))
-    daemon_toggle.connect("toggled", on_daemon_toggled)
-    form_wrapper_box.pack_start(daemon_toggle, False, False, 6)
+    # Add daemon toggle, rn only hypr support
+    if hypr:
+        daemon_toggle = Gtk.CheckButton.new_with_label("Enable monitor disconnect protection")
+        daemon_toggle.set_tooltip_text("Automatically handle monitor disconnections and restore settings")
+        daemon_toggle.set_active(config.get("daemon-enabled", False))
+        daemon_toggle.connect("toggled", on_daemon_toggled)
+        form_wrapper_box.pack_start(daemon_toggle, False, False, 6)
+    
+        
     
     # Check daemon status on startup
     if config.get("daemon-enabled", False) and not is_daemon_running():
