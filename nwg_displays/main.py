@@ -32,6 +32,7 @@ except ValueError:
 from gi.repository import Gtk, GLib, GtkLayerShell
 
 from nwg_displays.tools import *
+from nwg_displays.tools import is_daemon_running, start_daemon, stop_daemon, create_autostart_entry, remove_autostart_entry
 
 from nwg_displays.__about__ import __version__
 
@@ -535,11 +536,54 @@ def on_mirror_selected(widget):
         selected_output_button.mirror = widget.get_active_id()
 
 
+def save_monitor_preferences(display_buttons):
+    """Save current monitor settings as preferences"""
+    preferences = {}
+    for db in display_buttons:
+        preferences[db.name] = {
+            "width": db.physical_width,
+            "height": db.physical_height,
+            "refresh": db.refresh,
+            "x": db.x,
+            "y": db.y,
+            "scale": db.scale,
+            "transform": db.transform,
+            "scale_filter": db.scale_filter,
+            "adaptive_sync": db.adaptive_sync,
+            "ten_bit": db.ten_bit,
+            "mirror": db.mirror
+        }
+    
+    prefs_file = os.path.join(config_dir, "monitor_preferences.json")
+    save_json(preferences, prefs_file)
+    eprint(f"Saved monitor preferences to {prefs_file}")
+
+def on_daemon_toggled(widget):
+    """Handle daemon enable/disable toggle"""
+    enabled = widget.get_active()
+    config["daemon-enabled"] = enabled
+    save_json(config, os.path.join(config_dir, "config"))
+    
+    if enabled:
+        if start_daemon():
+            create_autostart_entry()
+            eprint("Daemon enabled and will start on boot")
+        else:
+            widget.set_active(False)
+            config["daemon-enabled"] = False
+            save_json(config, os.path.join(config_dir, "config"))
+    else:
+        stop_daemon()
+        remove_autostart_entry()
+        eprint("Daemon disabled")
+
 def on_apply_button(widget):
     global outputs_activity
     apply_settings(display_buttons, outputs_activity, outputs_path, use_desc=config["use-desc"])
     # save config file
     save_json(config, os.path.join(config_dir, "config"))
+    # save monitor preferences
+    save_monitor_preferences(display_buttons)
 
 
 def on_output_toggled(check_btn, name):
@@ -1045,7 +1089,27 @@ def main():
                         action="version",
                         version="%(prog)s version {}".format(__version__),
                         help="display version information")
+    
+    # Daemon related stuff
+    parser.add_argument("--daemon",action="store_true",help="run daemon to monitor display changes")
+    parser.add_argument("--daemon-interval",
+                    type=int,
+                    default=5,
+                    help="daemon check interval in seconds, default: 5")
     args = parser.parse_args()
+
+    if args.daemon:
+        if sway:
+            eprint("ERROR: Daemon mode is not supported for sway yet. Only Hyprland is supported.")
+            sys.exit(1)
+        from nwg_displays.daemon import MonitorDaemon
+        eprint(f"Starting daemon mode with {args.daemon_interval}s interval")
+        daemon = MonitorDaemon(check_interval=args.daemon_interval)
+        try:
+            daemon.monitor_loop()
+        except KeyboardInterrupt:
+            eprint("Daemon stopped")
+            sys.exit(0)
 
     load_vocabulary()
 
@@ -1322,6 +1386,21 @@ def main():
         form_mirror = Gtk.ComboBoxText()
         form_mirror.connect("changed", on_mirror_selected)
         grid.attach(form_mirror, 7, 4, 1, 1)
+
+    # Add daemon toggle, rn only hypr support
+    if hypr:
+        daemon_toggle = Gtk.CheckButton.new_with_label("Enable monitor disconnect protection")
+        daemon_toggle.set_tooltip_text("Automatically handle monitor disconnections and restore settings")
+        daemon_toggle.set_active(config.get("daemon-enabled", False))
+        daemon_toggle.connect("toggled", on_daemon_toggled)
+        form_wrapper_box.pack_start(daemon_toggle, False, False, 6)
+    
+        
+    
+    # Check daemon status on startup
+    if config.get("daemon-enabled", False) and not is_daemon_running():
+        eprint("Daemon should be running but isn't - starting it")
+        start_daemon()
 
     if display_buttons:
         update_form_from_widget(display_buttons[0])

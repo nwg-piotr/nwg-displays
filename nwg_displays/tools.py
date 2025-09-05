@@ -285,7 +285,8 @@ def config_keys_missing(config, config_file):
                 "indicator-timeout": 500,
                 "custom-mode": [],
                 "use-desc": False,
-                "confirm-timeout": 10, }
+                "confirm-timeout": 10,
+                "daemon-enabled": False, }
     for key in defaults:
         if key not in config:
             config[key] = defaults[key]
@@ -438,3 +439,96 @@ def load_shell_data():
             shell_data[key] = defaults[key]
 
     return shell_data
+
+
+def is_daemon_running():
+    """Check if nwg-displays daemon is running"""
+    try:
+        result = subprocess.run(['pgrep', '-f', 'nwg-displays-daemon'], 
+                              capture_output=True, text=True)
+        return result.returncode == 0
+    except:
+        return False
+
+
+def start_daemon():
+    """Start the nwg-displays daemon"""
+    try:
+        # Try different possible paths for the daemon
+        daemon_paths = [
+            'nwg-displays-daemon',  # In PATH
+            os.path.expanduser('~/.local/bin/nwg-displays-daemon'),  # User install
+            '/usr/bin/nwg-displays-daemon',  # System install
+        ]
+        
+        for daemon_path in daemon_paths:
+            if os.path.exists(daemon_path) or daemon_path == 'nwg-displays-daemon':
+                try:
+                    subprocess.Popen([daemon_path, '--interval', '5'], 
+                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    eprint(f"Started nwg-displays daemon from {daemon_path}")
+                    return True
+                except:
+                    continue
+        
+        eprint("Failed to start daemon: executable not found")
+        return False
+    except Exception as e:
+        eprint(f"Failed to start daemon: {e}")
+        return False
+
+
+def stop_daemon():
+    """Stop the nwg-displays daemon"""
+    try:
+        subprocess.run(['pkill', '-f', 'nwg-displays-daemon'], check=False)
+        eprint("Stopped nwg-displays daemon")
+        return True
+    except Exception as e:
+        eprint(f"Failed to stop daemon: {e}")
+        return False
+
+
+def create_autostart_entry():
+    """Create autostart desktop entry for daemon"""
+    autostart_dir = os.path.join(get_config_home(), "autostart")
+    os.makedirs(autostart_dir, exist_ok=True)
+    
+    # Find daemon executable path
+    daemon_path = 'nwg-displays-daemon'
+    if os.path.exists(os.path.expanduser('~/.local/bin/nwg-displays-daemon')):
+        daemon_path = os.path.expanduser('~/.local/bin/nwg-displays-daemon')
+    elif os.path.exists('/usr/bin/nwg-displays-daemon'):
+        daemon_path = '/usr/bin/nwg-displays-daemon'
+    
+    desktop_file = os.path.join(autostart_dir, "nwg-displays-daemon.desktop")
+    content = f"""[Desktop Entry]
+Type=Application
+Name=nwg-displays Monitor Daemon
+Exec={daemon_path} --interval 5
+Hidden=false
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
+"""
+    
+    try:
+        with open(desktop_file, 'w') as f:
+            f.write(content)
+        eprint(f"Created autostart entry with {daemon_path}")
+        return True
+    except Exception as e:
+        eprint(f"Failed to create autostart entry: {e}")
+        return False
+
+
+def remove_autostart_entry():
+    """Remove autostart desktop entry for daemon"""
+    desktop_file = os.path.join(get_config_home(), "autostart", "nwg-displays-daemon.desktop")
+    try:
+        if os.path.exists(desktop_file):
+            os.remove(desktop_file)
+            eprint("Removed autostart entry")
+        return True
+    except Exception as e:
+        eprint(f"Failed to remove autostart entry: {e}")
+        return False

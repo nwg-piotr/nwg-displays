@@ -25,6 +25,9 @@ setup(
     entry_points={
         'gui_scripts': [
             'nwg-displays = nwg_displays.main:main',
+        ],
+        'console_scripts':[
+            'nwg-displays-daemon = nwg_displays.daemon:main',
         ]
     }
 )
