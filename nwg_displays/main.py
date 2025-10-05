@@ -19,15 +19,18 @@ import sys
 
 import gi
 
-gi.require_version('Gtk', '3.0')
+gi.require_version("Gtk", "3.0")
 try:
-    gi.require_version('GtkLayerShell', '0.1')
+    gi.require_version("GtkLayerShell", "0.1")
 except ValueError:
-    raise RuntimeError('\n\n' +
-                       'If you haven\'t installed GTK Layer Shell, you need to point Python to the\n' +
-                       'library by setting GI_TYPELIB_PATH and LD_LIBRARY_PATH to <build-dir>/src/.\n' +
-                       'For example you might need to run:\n\n' +
-                       'GI_TYPELIB_PATH=build/src LD_LIBRARY_PATH=build/src python3 ' + ' '.join(sys.argv))
+    raise RuntimeError(
+        "\n\n"
+        + "If you haven't installed GTK Layer Shell, you need to point Python to the\n"
+        + "library by setting GI_TYPELIB_PATH and LD_LIBRARY_PATH to <build-dir>/src/.\n"
+        + "For example you might need to run:\n\n"
+        + "GI_TYPELIB_PATH=build/src LD_LIBRARY_PATH=build/src python3 "
+        + " ".join(sys.argv)
+    )
 
 from gi.repository import Gtk, GLib, GtkLayerShell
 
@@ -45,12 +48,18 @@ old_config_dir = os.path.join(get_config_home(), "nwg-outputs")
 
 sway_config_dir = os.path.join(get_config_home(), "sway")
 if sway and not os.path.isdir(sway_config_dir):
-    print("WARNING: Couldn't find sway config directory '{}'".format(sway_config_dir), file=sys.stderr)
+    print(
+        "WARNING: Couldn't find sway config directory '{}'".format(sway_config_dir),
+        file=sys.stderr,
+    )
     sys.exit(1)
 
 hypr_config_dir = os.path.join(get_config_home(), "hypr")
 if hypr and not os.path.isdir(hypr_config_dir):
-    print("WARNING: Couldn't find Hyprland config directory '{}'".format(hypr_config_dir), file=sys.stderr)
+    print(
+        "WARNING: Couldn't find Hyprland config directory '{}'".format(hypr_config_dir),
+        file=sys.stderr,
+    )
     sys.exit(1)
 
 # Create empty files if not found
@@ -73,7 +82,9 @@ i3.get_outputs() does not return some output attributes, especially when connect
 i3.get_tree() on the other hand does not return inactive outputs. So we'll list attributes with .get_tree(),
 and the add inactive outputs, if any, from what we detect with .get_outputs()
 """
-outputs = {}  # Active outputs, listed from the sway tree; stores name and all attributes.
+outputs = (
+    {}
+)  # Active outputs, listed from the sway tree; stores name and all attributes.
 outputs_activity = {}  # Just a dictionary "name": is_active - from get_outputs()
 workspaces = {}  # "workspace_num": "display_name"
 
@@ -150,7 +161,11 @@ def load_vocabulary():
     if lang is None:
         lang = "en_US"
     else:
-        lang = lang.split(".")[0] if not shell_data["interface-locale"] else shell_data["interface-locale"]
+        lang = (
+            lang.split(".")[0]
+            if not shell_data["interface-locale"]
+            else shell_data["interface-locale"]
+        )
 
     # translate if translation available
     if lang != "en_US":
@@ -187,8 +202,12 @@ def on_button_press_event(widget, event):
         # note that we're rounding down now so that these max values don't get
         # rounded upward later and push the widget off the edge of its parent.
         global max_x, max_y
-        max_x = round_down_to_multiple(p.get_allocation().width - widget.get_allocation().width, SENSITIVITY)
-        max_y = round_down_to_multiple(p.get_allocation().height - widget.get_allocation().height, SENSITIVITY)
+        max_x = round_down_to_multiple(
+            p.get_allocation().width - widget.get_allocation().width, SENSITIVITY
+        )
+        max_y = round_down_to_multiple(
+            p.get_allocation().height - widget.get_allocation().height, SENSITIVITY
+        )
 
         update_form_from_widget(widget)
 
@@ -297,7 +316,9 @@ def update_form_from_widget(widget):
     form_dpms.set_active(widget.dpms)
     form_adaptive_sync.set_active(widget.adaptive_sync)
     form_custom_mode.set_active(widget.custom_mode)
-    form_view_scale.set_value(config["view-scale"])  # not really from the widget, but from the global value
+    form_view_scale.set_value(
+        config["view-scale"]
+    )  # not really from the widget, but from the global value
     form_use_desc.set_active(config["use-desc"])
     form_x.set_value(widget.x)
     form_y.set_value(widget.y)
@@ -322,14 +343,43 @@ def update_form_from_widget(widget):
 
     form_modes.remove_all()
     active = ""
+
+    # Add custom modes for this display
+    custom_modes_config = config.get("custom-modes", {})
+    if isinstance(custom_modes_config, dict):
+        display_custom_modes = custom_modes_config.get(widget.name, [])
+    else:
+        display_custom_modes = []
+    for custom_mode in display_custom_modes:
+        name = custom_mode.get("name", "Custom")
+        m = "{}x{}@{}Hz ({})".format(
+            custom_mode["width"], custom_mode["height"], custom_mode["refresh"], name
+        )
+        form_modes.append(m, m)
+        if (
+            custom_mode["width"] == widget.physical_width
+            and custom_mode["height"] == widget.physical_height
+            and custom_mode["refresh"] == widget.refresh
+        ):
+            active = m
+
+    # Add hardware modes
     for mode in widget.modes:
-        m = "{}x{}@{}Hz".format(mode["width"], mode["height"], mode["refresh"] / 1000, mode[
-            "refresh"] / 1000, widget.refresh)
+        m = "{}x{}@{}Hz".format(
+            mode["width"],
+            mode["height"],
+            mode["refresh"] / 1000,
+            mode["refresh"] / 1000,
+            widget.refresh,
+        )
         form_modes.append(m, m)
         # This is just to set active_id
 
-        if mode["width"] == widget.physical_width and mode["height"] == widget.physical_height and mode[
-            "refresh"] / 1000 == widget.refresh:
+        if (
+            mode["width"] == widget.physical_width
+            and mode["height"] == widget.physical_height
+            and mode["refresh"] / 1000 == widget.refresh
+        ):
             active = m
     if active:
         form_modes.set_active_id(active)
@@ -340,9 +390,28 @@ def update_form_from_widget(widget):
 
 
 class DisplayButton(Gtk.Button):
-    def __init__(self, name, description, x, y, physical_width, physical_height, transform, scale, scale_filter,
-                 refresh, modes, active, dpms, adaptive_sync_status, ten_bit, custom_mode_status, focused, monitor,
-                 mirror=""):
+    def __init__(
+        self,
+        name,
+        description,
+        x,
+        y,
+        physical_width,
+        physical_height,
+        transform,
+        scale,
+        scale_filter,
+        refresh,
+        modes,
+        active,
+        dpms,
+        adaptive_sync_status,
+        ten_bit,
+        custom_mode_status,
+        focused,
+        monitor,
+        mirror="",
+    ):
         super().__init__()
         # Output properties
         self.name = name
@@ -362,7 +431,9 @@ class DisplayButton(Gtk.Button):
         # self.modes = modes
         self.active = active
         self.dpms = dpms
-        self.adaptive_sync = adaptive_sync_status == "enabled"  # converts "enabled | disabled" to bool
+        self.adaptive_sync = (
+            adaptive_sync_status == "enabled"
+        )  # converts "enabled | disabled" to bool
         self.custom_mode = custom_mode_status
         self.focused = focused
         self.mirror = mirror
@@ -380,8 +451,13 @@ class DisplayButton(Gtk.Button):
         self.rescale_transform()
         self.set_property("name", "output")
 
-        self.indicator = Indicator(monitor, name, round(self.physical_width * config["view-scale"]),
-                                   round(self.physical_height * config["view-scale"]), config["indicator-timeout"])
+        self.indicator = Indicator(
+            monitor,
+            name,
+            round(self.physical_width * config["view-scale"]),
+            round(self.physical_height * config["view-scale"]),
+            config["indicator-timeout"],
+        )
 
         self.show()
 
@@ -409,8 +485,10 @@ class DisplayButton(Gtk.Button):
         self.set_property("name", "output")
 
     def rescale_transform(self):
-        self.set_size_request(round(self.logical_width * config["view-scale"]),
-                              round(self.logical_height * config["view-scale"]))
+        self.set_size_request(
+            round(self.logical_width * config["view-scale"]),
+            round(self.logical_height * config["view-scale"]),
+        )
 
     def on_active_check_button_toggled(self, w):
         self.active = w.get_active()
@@ -478,15 +556,21 @@ def on_custom_mode_toggle(widget):
 def on_pos_x_changed(widget):
     if selected_output_button:
         selected_output_button.x = round(widget.get_value())
-        fixed.move(selected_output_button, selected_output_button.x * config["view-scale"],
-                   selected_output_button.y * config["view-scale"])
+        fixed.move(
+            selected_output_button,
+            selected_output_button.x * config["view-scale"],
+            selected_output_button.y * config["view-scale"],
+        )
 
 
 def on_pos_y_changed(widget):
     if selected_output_button:
         selected_output_button.y = round(widget.get_value())
-        fixed.move(selected_output_button, selected_output_button.x * config["view-scale"],
-                   selected_output_button.y * config["view-scale"])
+        fixed.move(
+            selected_output_button,
+            selected_output_button.x * config["view-scale"],
+            selected_output_button.y * config["view-scale"],
+        )
 
 
 def on_width_changed(widget):
@@ -521,12 +605,37 @@ def on_refresh_changed(widget):
 
 def on_mode_changed(widget):
     if selected_output_button and not on_mode_changed_silent:
-        mode = selected_output_button.modes[widget.get_active()]
-        selected_output_button.physical_width = mode["width"]
-        selected_output_button.physical_height = mode["height"]
-        selected_output_button.refresh = mode["refresh"] / 1000
-        selected_output_button.rescale_transform()
+        selected_text = widget.get_active_text()
+        if not selected_text:
+            return
 
+        # Parse the selected mode text
+        if "(" in selected_text and ")" in selected_text:
+            # Handle custom mode
+            mode_text = selected_text.split(" (")[0]
+            parts = mode_text.split("@")
+            if len(parts) == 2:
+                width_height = parts[0].split("x")
+                refresh = float(parts[1].replace("Hz", ""))
+                if len(width_height) == 2:
+                    selected_output_button.physical_width = int(width_height[0])
+                    selected_output_button.physical_height = int(width_height[1])
+                    selected_output_button.refresh = refresh
+        else:
+            # Handle hardware mode
+            active_index = widget.get_active()
+            custom_modes_count = len(config.get("custom-modes", []))
+            hardware_mode_index = active_index - custom_modes_count
+
+            if hardware_mode_index >= 0 and hardware_mode_index < len(
+                selected_output_button.modes
+            ):
+                mode = selected_output_button.modes[hardware_mode_index]
+                selected_output_button.physical_width = mode["width"]
+                selected_output_button.physical_height = mode["height"]
+                selected_output_button.refresh = mode["refresh"] / 1000
+
+        selected_output_button.rescale_transform()
         update_form_from_widget(selected_output_button)
 
 
@@ -535,9 +644,163 @@ def on_mirror_selected(widget):
         selected_output_button.mirror = widget.get_active_id()
 
 
+def on_save_custom_mode(widget):
+    """Save current resolution as a custom mode with name"""
+    if not selected_output_button:
+        return
+
+    # Prompt for name
+    dialog = Gtk.MessageDialog(
+        transient_for=None,
+        flags=0,
+        message_type=Gtk.MessageType.QUESTION,
+        buttons=Gtk.ButtonsType.OK_CANCEL,
+        text="Enter name for custom mode:",
+    )
+
+    entry = Gtk.Entry()
+    entry.set_text("Custom Mode")
+    dialog.get_content_area().pack_start(entry, False, False, 0)
+    dialog.show_all()
+
+    response = dialog.run()
+    name = entry.get_text().strip()
+    dialog.destroy()
+
+    if response != Gtk.ResponseType.OK or not name:
+        return
+
+    display_name = selected_output_button.name
+    custom_modes = config.get("custom-modes", {})
+    if not isinstance(custom_modes, dict):
+        custom_modes = {}
+        config["custom-modes"] = custom_modes
+    if display_name not in custom_modes:
+        custom_modes[display_name] = []
+
+    # Check if this mode already exists for this display
+    for existing_mode in custom_modes[display_name]:
+        if (
+            existing_mode["width"] == selected_output_button.physical_width
+            and existing_mode["height"] == selected_output_button.physical_height
+            and existing_mode["refresh"] == selected_output_button.refresh
+        ):
+            eprint(
+                f"Mode {selected_output_button.physical_width}x{selected_output_button.physical_height}@{selected_output_button.refresh}Hz already exists for {display_name}"
+            )
+            return
+
+    # Add new custom mode
+    custom_mode = {
+        "name": name,
+        "width": selected_output_button.physical_width,
+        "height": selected_output_button.physical_height,
+        "refresh": selected_output_button.refresh,
+    }
+
+    custom_modes[display_name].append(custom_mode)
+    config["custom-modes"] = custom_modes
+    save_json(config, os.path.join(config_dir, "config"))
+
+    # Refresh the modes dropdown
+    update_form_from_widget(selected_output_button)
+    eprint(
+        f"Saved custom mode '{name}': {custom_mode['width']}x{custom_mode['height']}@{custom_mode['refresh']}Hz for {display_name}"
+    )
+
+
+def on_manage_custom_modes(widget):
+    """Open dialog to manage custom modes for the selected display"""
+    if not selected_output_button:
+        return
+
+    display_name = selected_output_button.name
+    custom_modes_config = config.get("custom-modes", {})
+    if isinstance(custom_modes_config, dict):
+        custom_modes = custom_modes_config.get(display_name, [])
+    else:
+        custom_modes = []
+
+    # Create management dialog
+    dialog = Gtk.Dialog(
+        title=f"Manage Custom Modes - {display_name}", transient_for=None, flags=0
+    )
+    dialog.set_default_size(400, 300)
+
+    # Create scrolled window with list
+    scrolled = Gtk.ScrolledWindow()
+    scrolled.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+
+    listbox = Gtk.ListBox()
+    scrolled.add(listbox)
+
+    def refresh_list():
+        for child in listbox.get_children():
+            listbox.remove(child)
+
+        custom_modes_config = config.get("custom-modes", {})
+        if isinstance(custom_modes_config, dict):
+            current_modes = custom_modes_config.get(display_name, [])
+        else:
+            current_modes = []
+        for i, mode in enumerate(current_modes):
+            row = Gtk.ListBoxRow()
+            hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+            hbox.set_margin_left(10)
+            hbox.set_margin_right(10)
+            hbox.set_margin_top(5)
+            hbox.set_margin_bottom(5)
+
+            # Mode info
+            label = Gtk.Label()
+            label.set_text(
+                f"{mode['name']}: {mode['width']}x{mode['height']}@{mode['refresh']}Hz"
+            )
+            label.set_halign(Gtk.Align.START)
+            hbox.pack_start(label, True, True, 0)
+
+            # Delete button
+            delete_btn = Gtk.Button.new_with_label("Delete")
+            delete_btn.connect("clicked", lambda btn, idx=i: delete_mode(idx))
+            hbox.pack_end(delete_btn, False, False, 0)
+
+            row.add(hbox)
+            listbox.add(row)
+
+        listbox.show_all()
+
+    def delete_mode(index):
+        custom_modes_config = config.get("custom-modes", {})
+        if isinstance(custom_modes_config, dict):
+            current_modes = custom_modes_config.get(display_name, [])
+        else:
+            current_modes = []
+        if 0 <= index < len(current_modes):
+            removed_mode = current_modes.pop(index)
+            config["custom-modes"][display_name] = current_modes
+            save_json(config, os.path.join(config_dir, "config"))
+            refresh_list()
+            update_form_from_widget(selected_output_button)
+
+    refresh_list()
+
+    # Add to dialog
+    content_area = dialog.get_content_area()
+    content_area.pack_start(scrolled, True, True, 0)
+
+    # Add close button
+    dialog.add_button("Close", Gtk.ResponseType.CLOSE)
+
+    dialog.show_all()
+    dialog.run()
+    dialog.destroy()
+
+
 def on_apply_button(widget):
     global outputs_activity
-    apply_settings(display_buttons, outputs_activity, outputs_path, use_desc=config["use-desc"])
+    apply_settings(
+        display_buttons, outputs_activity, outputs_path, use_desc=config["use-desc"]
+    )
     # save config file
     save_json(config, os.path.join(config_dir, "config"))
 
@@ -570,15 +833,35 @@ def create_display_buttons():
     for key in outputs:
         item = outputs[key]
         custom_mode = key in config["custom-mode"]
-        b = DisplayButton(key, item["description"], item["x"], item["y"], round(item["physical-width"]),
-                          round(item["physical-height"]),
-                          item["transform"], item["scale"], item["scale_filter"], item["refresh"], item["modes"],
-                          item["active"], item["dpms"], item["adaptive_sync_status"], item["ten_bit"], custom_mode,
-                          item["focused"], item["monitor"], mirror=item["mirror"])
+        b = DisplayButton(
+            key,
+            item["description"],
+            item["x"],
+            item["y"],
+            round(item["physical-width"]),
+            round(item["physical-height"]),
+            item["transform"],
+            item["scale"],
+            item["scale_filter"],
+            item["refresh"],
+            item["modes"],
+            item["active"],
+            item["dpms"],
+            item["adaptive_sync_status"],
+            item["ten_bit"],
+            custom_mode,
+            item["focused"],
+            item["monitor"],
+            mirror=item["mirror"],
+        )
 
         display_buttons.append(b)
 
-        fixed.put(b, round(item["x"] * config["view-scale"]), round(item["y"] * config["view-scale"]))
+        fixed.put(
+            b,
+            round(item["x"] * config["view-scale"]),
+            round(item["y"] * config["view-scale"]),
+        )
 
     display_buttons[0].select()
     update_form_from_widget(display_buttons[0])
@@ -624,7 +907,9 @@ def handle_keyboard(window, event):
 def create_workspaces_window(btn):
     global sway_config_dir
     global workspaces
-    workspaces = load_workspaces(os.path.join(sway_config_dir, "workspaces"), use_desc=config["use-desc"])
+    workspaces = load_workspaces(
+        os.path.join(sway_config_dir, "workspaces"), use_desc=config["use-desc"]
+    )
     old_workspaces = workspaces.copy()
     global dialog_win
     if dialog_win:
@@ -665,7 +950,9 @@ def create_workspaces_window(btn):
     btn_apply = Gtk.Button()
     btn_apply.set_label(voc["apply"])
     if sway_config_dir:
-        btn_apply.connect("clicked", on_workspaces_apply_btn, dialog_win, old_workspaces)
+        btn_apply.connect(
+            "clicked", on_workspaces_apply_btn, dialog_win, old_workspaces
+        )
     else:
         btn_apply.set_sensitive(False)
         btn_apply.set_tooltip_text("Config dir not found")
@@ -682,7 +969,8 @@ def create_workspaces_window(btn):
 def create_workspaces_window_hypr(btn):
     global workspaces
     workspaces = load_workspaces_hypr(
-        os.path.join(hypr_config_dir, "workspaces.conf"), num_ws=num_ws)
+        os.path.join(hypr_config_dir, "workspaces.conf"), num_ws=num_ws
+    )
     eprint("WS->Mon:", workspaces)
     old_workspaces = workspaces.copy()
     global dialog_win
@@ -703,7 +991,9 @@ def create_workspaces_window_hypr(btn):
     for i in range(num_ws):
         lbl = Gtk.Label()
         if config["use-desc"]:
-            lbl.set_markup("Workspace rule: <b>workspace={},monitor:desc:</b>".format(i + 1))
+            lbl.set_markup(
+                "Workspace rule: <b>workspace={},monitor:desc:</b>".format(i + 1)
+            )
         else:
             lbl.set_markup("Workspace rule: <b>workspace={},monitor:</b>".format(i + 1))
         lbl.set_property("halign", Gtk.Align.END)
@@ -729,7 +1019,9 @@ def create_workspaces_window_hypr(btn):
     btn_apply = Gtk.Button()
     btn_apply.set_label(voc["apply"])
     if hypr_config_dir:
-        btn_apply.connect("clicked", on_workspaces_apply_btn_hypr, dialog_win, old_workspaces)
+        btn_apply.connect(
+            "clicked", on_workspaces_apply_btn_hypr, dialog_win, old_workspaces
+        )
     else:
         btn_apply.set_sensitive(False)
         btn_apply.set_tooltip_text("Config dir not found")
@@ -755,7 +1047,11 @@ def close_dialog(w, win):
 def on_workspaces_apply_btn(w, win, old_workspaces):
     global workspaces
     if workspaces != old_workspaces:
-        save_workspaces(workspaces, os.path.join(sway_config_dir, "workspaces"), use_desc=config["use-desc"])
+        save_workspaces(
+            workspaces,
+            os.path.join(sway_config_dir, "workspaces"),
+            use_desc=config["use-desc"],
+        )
         notify("Workspaces assignment", "Restart sway for changes to take effect")
 
     close_dialog(w, win)
@@ -768,9 +1064,12 @@ def on_workspaces_apply_btn_hypr(w, win, old_workspaces):
         text_file = open(workspace_conf_file, "w")
 
         now = datetime.datetime.now()
-        line = "# Generated by nwg-displays on {} at {}. Do not edit manually.\n".format(
-            datetime.datetime.strftime(now, '%Y-%m-%d'),
-            datetime.datetime.strftime(now, '%H:%M:%S'))
+        line = (
+            "# Generated by nwg-displays on {} at {}. Do not edit manually.\n".format(
+                datetime.datetime.strftime(now, "%Y-%m-%d"),
+                datetime.datetime.strftime(now, "%H:%M:%S"),
+            )
+        )
         text_file.write(line + "\n")
 
         monitors_with_default_workspace = []
@@ -795,9 +1094,12 @@ def on_workspaces_apply_btn_hypr(w, win, old_workspaces):
 
 def apply_settings(display_buttons, outputs_activity, outputs_path, use_desc=False):
     now = datetime.datetime.now()
-    lines = ["# Generated by nwg-displays on {} at {}. Do not edit manually.\n".format(
-        datetime.datetime.strftime(now, '%Y-%m-%d'),
-        datetime.datetime.strftime(now, '%H:%M:%S'))]
+    lines = [
+        "# Generated by nwg-displays on {} at {}. Do not edit manually.\n".format(
+            datetime.datetime.strftime(now, "%Y-%m-%d"),
+            datetime.datetime.strftime(now, "%H:%M:%S"),
+        )
+    ]
     cmds = []
     db_names = []
     # just active outputs have their buttons
@@ -811,8 +1113,13 @@ def apply_settings(display_buttons, outputs_activity, outputs_path, use_desc=Fal
 
             custom_mode_str = "--custom" if db.custom_mode else ""
             lines.append(
-                "    mode {} {}x{}@{}Hz".format(custom_mode_str, db.physical_width, db.physical_height, db.refresh))
-            cmd += " mode {} {}x{}@{}Hz".format(custom_mode_str, db.physical_width, db.physical_height, db.refresh)
+                "    mode {} {}x{}@{}Hz".format(
+                    custom_mode_str, db.physical_width, db.physical_height, db.refresh
+                )
+            )
+            cmd += " mode {} {}x{}@{}Hz".format(
+                custom_mode_str, db.physical_width, db.physical_height, db.refresh
+            )
 
             lines.append("    pos {} {}".format(db.x, db.y))
             cmd += " pos {} {}".format(db.x, db.y)
@@ -873,13 +1180,34 @@ def apply_settings(display_buttons, outputs_activity, outputs_path, use_desc=Fal
         create_confirm_win(backup, outputs_path)
 
     elif os.getenv("HYPRLAND_INSTANCE_SIGNATURE"):
-        transforms = {"normal": 0, "90": 1, "180": 2, "270": 3, "flipped": 4, "flipped-90": 5, "flipped-180": 6,
-                      "flipped-270": 7}
+        transforms = {
+            "normal": 0,
+            "90": 1,
+            "180": 2,
+            "270": 3,
+            "flipped": 4,
+            "flipped-90": 5,
+            "flipped-180": 6,
+            "flipped-270": 7,
+        }
         for db in display_buttons:
-            name = db.name if not use_desc else "desc:{}".format(db.description.replace("#", "##"))
+            name = (
+                db.name
+                if not use_desc
+                else "desc:{}".format(db.description.replace("#", "##"))
+            )
             db_names.append(name)
 
-            line = "monitor={},{}x{}@{},{}x{},{}".format(name, db.physical_width, db.physical_height, db.refresh, db.x, db.y, db.scale)
+            # Add custom mode support for Hyprland (same format as sway uses @)
+            line = "monitor={},{}x{}@{},{}x{},{}".format(
+                name,
+                db.physical_width,
+                db.physical_height,
+                db.refresh,
+                db.x,
+                db.y,
+                db.scale,
+            )
             if db.mirror:
                 line += ",mirror,{}".format(db.mirror)
             if db.ten_bit:
@@ -887,7 +1215,9 @@ def apply_settings(display_buttons, outputs_activity, outputs_path, use_desc=Fal
 
             lines.append(line)
             if db.transform != "normal":
-                lines.append("monitor={},transform,{}".format(name, transforms[db.transform]))
+                lines.append(
+                    "monitor={},transform,{}".format(name, transforms[db.transform])
+                )
 
             # avoid looking up the hardware name
             if db.name in outputs_activity and not outputs_activity[db.name]:
@@ -905,6 +1235,7 @@ def apply_settings(display_buttons, outputs_activity, outputs_path, use_desc=Fal
             backup = load_text_file(outputs_path).splitlines()
         save_list_to_text_file(lines, outputs_path)
         create_confirm_win(backup, outputs_path)
+
 
 def create_confirm_win(backup, path):
     global confirm_win
@@ -981,7 +1312,7 @@ def restore_old_settings(btn, backup, path):
         # remove "{"
         single_line = single_line.replace("{", "")
         # convert multiple spaces into single
-        single_line = ' '.join(single_line.split())
+        single_line = " ".join(single_line.split())
         cmds = single_line.split("}")
         # execute line by line
         i3 = Connection()
@@ -1001,50 +1332,65 @@ def restore_old_settings(btn, backup, path):
 
 
 def main():
-    GLib.set_prgname('nwg-displays')
+    GLib.set_prgname("nwg-displays")
 
     parser = argparse.ArgumentParser()
 
     if sway:
-        parser.add_argument("-o",
-                            "--outputs_path",
-                            type=str,
-                            default="{}/outputs".format(sway_config_dir),
-                            help="path to save Outputs config to, default: {}".format(
-                                "{}/outputs".format(sway_config_dir)))
+        parser.add_argument(
+            "-o",
+            "--outputs_path",
+            type=str,
+            default="{}/outputs".format(sway_config_dir),
+            help="path to save Outputs config to, default: {}".format(
+                "{}/outputs".format(sway_config_dir)
+            ),
+        )
 
-        parser.add_argument("-n",
-                            "--num_ws",
-                            type=int,
-                            default=8,
-                            help="number of Workspaces in use, default: 8")
+        parser.add_argument(
+            "-n",
+            "--num_ws",
+            type=int,
+            default=8,
+            help="number of Workspaces in use, default: 8",
+        )
 
     elif hypr:
-        parser.add_argument("-m",
-                            "--monitors_path",
-                            type=str,
-                            default="{}/monitors.conf".format(hypr_config_dir),
-                            help="path to save the monitors.conf file to, default: {}".format(
-                                "{}/monitors.conf".format(hypr_config_dir)))
+        parser.add_argument(
+            "-m",
+            "--monitors_path",
+            type=str,
+            default="{}/monitors.conf".format(hypr_config_dir),
+            help="path to save the monitors.conf file to, default: {}".format(
+                "{}/monitors.conf".format(hypr_config_dir)
+            ),
+        )
 
-        parser.add_argument("-w",
-                            "--workspaces_path",
-                            type=str,
-                            default="{}/workspaces.conf".format(hypr_config_dir),
-                            help="path to save the workspaces.conf file to, default: {}".format(
-                                "{}/workspaces.conf".format(hypr_config_dir)))
+        parser.add_argument(
+            "-w",
+            "--workspaces_path",
+            type=str,
+            default="{}/workspaces.conf".format(hypr_config_dir),
+            help="path to save the workspaces.conf file to, default: {}".format(
+                "{}/workspaces.conf".format(hypr_config_dir)
+            ),
+        )
 
-        parser.add_argument("-n",
-                            "--num_ws",
-                            type=int,
-                            default=10,
-                            help="number of Workspaces in use, default: 10")
+        parser.add_argument(
+            "-n",
+            "--num_ws",
+            type=int,
+            default=10,
+            help="number of Workspaces in use, default: 10",
+        )
 
-    parser.add_argument("-v",
-                        "--version",
-                        action="version",
-                        version="%(prog)s version {}".format(__version__),
-                        help="display version information")
+    parser.add_argument(
+        "-v",
+        "--version",
+        action="version",
+        version="%(prog)s version {}".format(__version__),
+        help="display version information",
+    )
     args = parser.parse_args()
 
     load_vocabulary()
@@ -1063,10 +1409,14 @@ def main():
             if os.path.lexists(outputs_path):
                 is_writable = os.access(outputs_path, os.W_OK)
                 if os.path.islink(outputs_path) and not is_writable:
-                    eprint(f"INFO: '{outputs_path}' is a read-only symlink. Replacing with a writable file.")
+                    eprint(
+                        f"INFO: '{outputs_path}' is a read-only symlink. Replacing with a writable file."
+                    )
                     tmp_path = f"{outputs_path}.tmp"
                     try:
-                        with open(outputs_path, 'r') as src_file, open(tmp_path, 'w') as tmp_file:
+                        with open(outputs_path, "r") as src_file, open(
+                            tmp_path, "w"
+                        ) as tmp_file:
                             tmp_file.write(src_file.read())
                         backup_path = f"{outputs_path}.bkp"
                         counter = 1
@@ -1079,9 +1429,13 @@ def main():
                     except Exception as e:
                         eprint(f"ERROR: Failed to replace read-only symlink: {e}")
                 elif not os.path.islink(outputs_path) and not is_writable:
-                    eprint(f"INFO: '{outputs_path}' is a read-only file. Making it writable.")
+                    eprint(
+                        f"INFO: '{outputs_path}' is a read-only file. Making it writable."
+                    )
                     try:
-                        os.chmod(outputs_path, os.stat(outputs_path).st_mode | stat.S_IWUSR)
+                        os.chmod(
+                            outputs_path, os.stat(outputs_path).st_mode | stat.S_IWUSR
+                        )
                     except Exception as e:
                         eprint(f"ERROR: Failed to make file writable: {e}")
             workspaces_path = args.workspaces_path
@@ -1125,16 +1479,21 @@ def main():
     screen = Gdk.Screen.get_default()
     provider = Gtk.CssProvider()
     style_context = Gtk.StyleContext()
-    style_context.add_provider_for_screen(screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+    style_context.add_provider_for_screen(
+        screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+    )
     try:
         file = os.path.join(dir_name, "resources/style.css")
         provider.load_from_path(file)
     except:
-        sys.stderr.write("ERROR: {} file not found, using GTK styling\n".format(os.path.join(dir_name,
-                                                                                             "resources/style.css")))
+        sys.stderr.write(
+            "ERROR: {} file not found, using GTK styling\n".format(
+                os.path.join(dir_name, "resources/style.css")
+            )
+        )
 
     window.connect("key-release-event", handle_keyboard)
-    window.connect('destroy', Gtk.main_quit)
+    window.connect("destroy", Gtk.main_quit)
 
     builder.get_object("lbl-modes").set_label("{}:".format(voc["modes"]))
     builder.get_object("lbl-position-x").set_label("{}:".format(voc["position-x"]))
@@ -1182,37 +1541,49 @@ def main():
     global form_view_scale
     form_view_scale = builder.get_object("view-scale")
     form_view_scale.set_tooltip_text(voc["view-scale-tooltip"])
-    adj = Gtk.Adjustment(lower=0.1, upper=0.6, step_increment=0.05, page_increment=0.1, page_size=0.1)
+    adj = Gtk.Adjustment(
+        lower=0.1, upper=0.6, step_increment=0.05, page_increment=0.1, page_size=0.1
+    )
     form_view_scale.configure(adj, 1, 2)
     form_view_scale.connect("changed", on_view_scale_changed)
 
     global form_x
     form_x = builder.get_object("x")
-    adj = Gtk.Adjustment(lower=0, upper=60000, step_increment=1, page_increment=10, page_size=1)
+    adj = Gtk.Adjustment(
+        lower=0, upper=60000, step_increment=1, page_increment=10, page_size=1
+    )
     form_x.configure(adj, 1, 0)
     form_x.connect("value-changed", on_pos_x_changed)
 
     global form_y
     form_y = builder.get_object("y")
-    adj = Gtk.Adjustment(lower=0, upper=40000, step_increment=1, page_increment=10, page_size=1)
+    adj = Gtk.Adjustment(
+        lower=0, upper=40000, step_increment=1, page_increment=10, page_size=1
+    )
     form_y.configure(adj, 1, 0)
     form_y.connect("value-changed", on_pos_y_changed)
 
     global form_width
     form_width = builder.get_object("width")
-    adj = Gtk.Adjustment(lower=0, upper=7680, step_increment=1, page_increment=10, page_size=1)
+    adj = Gtk.Adjustment(
+        lower=0, upper=7680, step_increment=1, page_increment=10, page_size=1
+    )
     form_width.configure(adj, 1, 0)
     form_width.connect("value-changed", on_width_changed)
 
     global form_height
     form_height = builder.get_object("height")
-    adj = Gtk.Adjustment(lower=0, upper=4320, step_increment=1, page_increment=10, page_size=1)
+    adj = Gtk.Adjustment(
+        lower=0, upper=4320, step_increment=1, page_increment=10, page_size=1
+    )
     form_height.configure(adj, 1, 0)
     form_height.connect("value-changed", on_height_changed)
 
     global form_scale
     form_scale = builder.get_object("scale")
-    adj = Gtk.Adjustment(lower=0.1, upper=10, step_increment=0.1, page_increment=10, page_size=1)
+    adj = Gtk.Adjustment(
+        lower=0.1, upper=10, step_increment=0.1, page_increment=10, page_size=1
+    )
     form_scale.configure(adj, 0.1, 6)
     form_scale.connect("value-changed", on_scale_changed)
 
@@ -1226,7 +1597,9 @@ def main():
 
     global form_refresh
     form_refresh = builder.get_object("refresh")
-    adj = Gtk.Adjustment(lower=1, upper=1200, step_increment=1, page_increment=10, page_size=1)
+    adj = Gtk.Adjustment(
+        lower=1, upper=1200, step_increment=1, page_increment=10, page_size=1
+    )
     form_refresh.configure(adj, 1, 3)
     form_refresh.connect("changed", on_refresh_changed)
 
@@ -1234,6 +1607,23 @@ def main():
     form_modes = builder.get_object("modes")
     form_modes.set_tooltip_text(voc["modes-tooltip"])
     form_modes.connect("changed", on_mode_changed)
+
+    # Add Save Custom Mode button
+    save_custom_btn = Gtk.Button.new_with_label("Save Custom")
+    save_custom_btn.set_tooltip_text(
+        "Save current size & refresh as a custom mode for easy selection"
+    )
+    save_custom_btn.connect("clicked", on_save_custom_mode)
+
+    # Add Manage Custom Modes button
+    manage_custom_btn = Gtk.Button.new_with_label("Manage")
+    manage_custom_btn.set_tooltip_text("Manage custom modes for this display")
+    manage_custom_btn.connect("clicked", on_manage_custom_modes)
+
+    # Add to the grid next to modes dropdown
+    grid = builder.get_object("grid")
+    grid.attach(save_custom_btn, 5, 5.2, 1, 1)
+    grid.attach(manage_custom_btn, 8, 3, 1, 1)
 
     global form_use_desc
     form_use_desc = builder.get_object("use-desc")
@@ -1330,7 +1720,9 @@ def main():
     screen = Gdk.Screen.get_default()
     provider = Gtk.CssProvider()
     style_context = Gtk.StyleContext()
-    style_context.add_provider_for_screen(screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+    style_context.add_provider_for_screen(
+        screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+    )
     css = b""" #popup { border-radius: 6px; border: solid 1px; border-color: #f00 } """
     provider.load_from_data(css)
 
@@ -1343,5 +1735,5 @@ def main():
     Gtk.main()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())
