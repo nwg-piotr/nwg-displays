@@ -516,8 +516,6 @@ def on_refresh_changed(widget):
     if selected_output_button:
         selected_output_button.refresh = widget.get_value()
 
-        update_form_from_widget(selected_output_button)
-
 
 def on_mode_changed(widget):
     if selected_output_button and not on_mode_changed_silent:
