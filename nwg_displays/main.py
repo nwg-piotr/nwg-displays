@@ -884,6 +884,8 @@ def apply_settings(display_buttons, outputs_activity, outputs_path, use_desc=Fal
                 line += ",mirror,{}".format(db.mirror)
             if db.ten_bit:
                 line += ",bitdepth,10"
+            if db.adaptive_sync:
+                line += ",vrr,1"
 
             lines.append(line)
             if db.transform != "normal":
@@ -1163,7 +1165,7 @@ def main():
 
     global form_adaptive_sync
     form_adaptive_sync = builder.get_object("adaptive-sync")
-    if sway:
+    if sway or hypr:
         form_adaptive_sync.set_label(voc["adaptive-sync"])
         form_adaptive_sync.set_tooltip_text(voc["adaptive-sync-tooltip"])
         form_adaptive_sync.connect("toggled", on_adaptive_sync_toggled)
