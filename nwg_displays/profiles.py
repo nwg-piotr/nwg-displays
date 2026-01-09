@@ -303,6 +303,14 @@ class ProfileManager:
 
     def load_profile_from_file(self, profile_path):
         """Load display configuration from a profile file"""
+        # Refresh display buttons from fixed container to ensure we have live widgets
+        if self.fixed:
+            self.display_buttons = [
+                w
+                for w in self.fixed.get_children()
+                if hasattr(w, "physical_width") and hasattr(w, "name")
+            ]
+
         if not self.display_buttons or not self.fixed or not self.update_callback:
             notify(
                 self.voc.get("error", "Error"),
@@ -325,16 +333,17 @@ class ProfileManager:
             for key, value in profile_data["config"].items():
                 self.config[key] = value
 
+        updated_displays = []
         if "displays" in profile_data:
             # First apply transforms to ensure correct dimensions before positioning
             for db in self.display_buttons:
                 for display in profile_data["displays"]:
                     if db.name == display["name"]:
                         # Update transform first so the sizing is correct
-                        db.transform = display["transform"]
-                        db.physical_width = display["physical_width"]
-                        db.physical_height = display["physical_height"]
-                        db.scale = display["scale"]
+                        db.transform = display.get("transform", "normal")
+                        db.physical_width = int(display.get("physical_width") or 0)
+                        db.physical_height = int(display.get("physical_height") or 0)
+                        db.scale = float(display.get("scale") or 1.0)
                         # Update the button's size according to the new transform
                         db.rescale_transform()
                         break
@@ -343,17 +352,39 @@ class ProfileManager:
             for db in self.display_buttons:
                 for display in profile_data["displays"]:
                     if db.name == display["name"]:
+                        updated_displays.append(db.name)
                         # Update all other display settings
-                        db.x = display["x"]
-                        db.y = display["y"]
-                        db.scale_filter = display["scale_filter"]
-                        db.refresh = display["refresh"]
-                        db.dpms = display["dpms"]
-                        db.adaptive_sync = display["adaptive_sync"]
-                        db.custom_mode = display["custom_mode"]
-                        db.mirror = display["mirror"]
-                        db.ten_bit = display["ten_bit"]
-                        db.active = display["active"]
+                        db.x = int(display.get("x") or 0)
+                        db.y = int(display.get("y") or 0)
+
+                        db.scale_filter = display.get("scale_filter", "linear")
+                        db.refresh = float(display.get("refresh") or 60.0)
+                        db.dpms = (
+                            display.get("dpms")
+                            if display.get("dpms") is not None
+                            else True
+                        )
+                        db.adaptive_sync = (
+                            display.get("adaptive_sync")
+                            if display.get("adaptive_sync") is not None
+                            else False
+                        )
+                        db.custom_mode = (
+                            display.get("custom_mode")
+                            if display.get("custom_mode") is not None
+                            else False
+                        )
+                        db.mirror = display.get("mirror", "")
+                        db.ten_bit = (
+                            display.get("ten_bit")
+                            if display.get("ten_bit") is not None
+                            else False
+                        )
+                        db.active = (
+                            display.get("active")
+                            if display.get("active") is not None
+                            else True
+                        )
 
                         # Update button position with the correct dimensions
                         self.fixed.move(
@@ -363,7 +394,35 @@ class ProfileManager:
                         )
                         break
 
+        # Handle displays not in the profile (e.g. newly connected)
+        # We place them to the right of the profile displays to avoid overlap
+        max_x = 0
+        for db in self.display_buttons:
+            if db.name in updated_displays:
+                max_x = max(max_x, db.x + db.logical_width)
+
+        current_x = max_x + 10
+        for db in self.display_buttons:
+            if db.name not in updated_displays:
+                # Ensure the button is rescaled according to the new view-scale
+                db.rescale_transform()
+
+                # Move to a safe position
+                db.x = int(current_x)
+                db.y = 0
+
+                self.fixed.move(
+                    db,
+                    db.x * self.config["view-scale"],
+                    db.y * self.config["view-scale"],
+                )
+
+                current_x += db.logical_width + 10
+
         # Update the form if a display is selected
         selected_button = next((db for db in self.display_buttons if db.selected), None)
         if selected_button:
-            self.update_callback(selected_button)
+            try:
+                self.update_callback(selected_button)
+            except Exception as e:
+                print(f"Error updating form: {e}")

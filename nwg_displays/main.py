@@ -16,7 +16,6 @@ Thank you, Kurt Jacobson!
 import argparse
 import os.path
 import sys
-
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -461,6 +460,7 @@ class DisplayButton(Gtk.Button):
         selected_output_button = self
 
     def unselect(self):
+        self.selected = False
         self.set_property("name", "output")
 
     def rescale_transform(self):
