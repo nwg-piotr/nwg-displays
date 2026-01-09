@@ -16,6 +16,7 @@ Thank you, Kurt Jacobson!
 import argparse
 import os.path
 import sys
+import stat
 
 import gi
 
