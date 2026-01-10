@@ -58,5 +58,7 @@
   "delete-error-message": "Não foi possível excluir o perfil: {e}",
   "load-error-missing-data": "Dados insuficientes para carregar o perfil",
   "load-error-message": "Não foi possível carregar o perfil",
-  "current-profile": "Perfil"
+  "current-profile": "Perfil",
+  "profile-bound-wallpapers": "Papéis de parede vinculados ao perfil",
+  "profile-bound-wallpapers-tooltip": "Salve e carregue papéis de parede junto com perfis"
 }

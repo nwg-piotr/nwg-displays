@@ -41,5 +41,7 @@
   "select-profile-tooltip": "Select a profile",
   "save-profile-tooltip": "Save to current profile",
   "no-profiles": "No profiles available",
-  "load": "Load"
+  "load": "Load",
+  "profile-bound-wallpapers": "Profile-bound wallpapers",
+  "profile-bound-wallpapers-tooltip": "Save and load wallpapers together with display profiles"
 }

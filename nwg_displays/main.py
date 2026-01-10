@@ -117,6 +117,7 @@ form_apply = None
 form_version = None
 form_mirror = None
 form_ten_bit = None
+form_profile_wallpapers = None
 
 dialog_win = None
 confirm_win = None
@@ -324,6 +325,8 @@ def update_form_from_widget(widget):
     form_view_scale.set_value(
         config["view-scale"]
     )  # not really from the widget, but from the global value
+    if form_profile_wallpapers:
+        form_profile_wallpapers.set_active(config.get("profile-bound-wallpapers", True))
     form_use_desc.set_active(config["use-desc"])
     form_x.set_value(widget.x)
     form_y.set_value(widget.y)
@@ -496,6 +499,11 @@ def on_view_scale_changed(*args):
         b.rescale_transform()
         fixed.move(b, b.x * config["view-scale"], b.y * config["view-scale"])
 
+    save_json(config, os.path.join(config_dir, "config"))
+
+
+def on_profile_wallpapers_toggled(widget):
+    config["profile-bound-wallpapers"] = widget.get_active()
     save_json(config, os.path.join(config_dir, "config"))
 
 
@@ -975,7 +983,8 @@ def keep_current_settings(btn, config_dir=None, profile_name=None):
     confirm_win.close()
 
     if config_dir and profile_name:
-        WallpaperManager.apply_profile_wallpapers(config_dir, profile_name)
+        if config.get("profile-bound-wallpapers", True):
+            WallpaperManager.apply_profile_wallpapers(config_dir, profile_name)
 
 
 def restore_old_settings(btn, backup, path):
@@ -1374,6 +1383,20 @@ def main():
         False
     )  # Initially disabled until a profile is selected
     profile_box.pack_start(btn_save_profile, False, False, 0)
+
+    global form_profile_wallpapers
+    form_profile_wallpapers = Gtk.CheckButton.new_with_label(
+        voc.get("profile-bound-wallpapers", "Profile-bound wallpapers")
+    )
+    form_profile_wallpapers.set_tooltip_text(
+        voc.get(
+            "profile-bound-wallpapers-tooltip",
+            "Save and load wallpapers together with display profiles",
+        )
+    )
+    form_profile_wallpapers.set_active(config.get("profile-bound-wallpapers", True))
+    form_profile_wallpapers.connect("toggled", on_profile_wallpapers_toggled)
+    form_wrapper_box.pack_start(form_profile_wallpapers, False, False, 6)
 
     # Register the save button with the profile manager
     profile_manager.set_save_button(btn_save_profile)

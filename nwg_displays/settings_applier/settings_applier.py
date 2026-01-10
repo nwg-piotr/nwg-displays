@@ -93,7 +93,9 @@ class SettingsApplier:
         save_list_to_text_file(lines, outputs_path)
         hyprctl("reload")
 
-        if "wallpapers" in profile_data:
+        if "wallpapers" in profile_data and profile_data.get("config", {}).get(
+            "profile-bound-wallpapers", True
+        ):
             print("[Profile] Applying wallpapers...")
             time.sleep(1)
             WallpaperManager.apply_wallpapers(profile_data["wallpapers"])
@@ -380,6 +382,9 @@ class SettingsApplier:
 
             with open(prev_profile_path, "r") as f:
                 data = json.load(f)
+
+            if not data.get("config", {}).get("profile-bound-wallpapers", True):
+                return
 
             if "wallpapers" not in data:
                 data["wallpapers"] = {}
