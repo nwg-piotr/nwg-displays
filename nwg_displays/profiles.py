@@ -93,6 +93,7 @@ class ProfileManager:
             parent=widget.get_toplevel(),
             flags=Gtk.DialogFlags.MODAL,
         )
+        dialog.set_resizable(False)
 
         dialog.add_button(self.voc.get("cancel", "Cancel"), Gtk.ResponseType.CANCEL)
         dialog.add_button(self.voc.get("create", "Create"), Gtk.ResponseType.OK)
@@ -166,6 +167,7 @@ class ProfileManager:
             parent=widget.get_toplevel(),
             flags=Gtk.DialogFlags.MODAL,
         )
+        dialog.set_resizable(False)
 
         # Set the Load button as the default response when Enter is pressed
         dialog.set_default_response(Gtk.ResponseType.OK)
@@ -191,7 +193,7 @@ class ProfileManager:
         load_btn.grab_default()
 
         content_area = dialog.get_content_area()
-        content_area.set_property("margin", 15)  # Increase content margin too
+        content_area.set_property("margin", 10)
 
         profile_combo = Gtk.ComboBoxText()
         for file in profile_files:
