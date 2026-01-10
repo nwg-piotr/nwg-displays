@@ -16,7 +16,8 @@ from nwg_displays.tools import save_json, load_json, notify
 class ProfileManager:
     def __init__(self, config_dir, config, voc):
         self.profiles_dir = os.path.join(config_dir, "profiles")
-        self.current_profile = None
+        self.state_file = os.path.join(config_dir, "active_profile.json")
+        self.current_profile = self._load_active_profile()
         self.config = config
         self.voc = voc
         self.btn_save_profile = None
@@ -29,9 +30,20 @@ class ProfileManager:
         if not os.path.isdir(self.profiles_dir):
             os.makedirs(self.profiles_dir, exist_ok=True)
 
+    def _load_active_profile(self):
+        data = load_json(self.state_file)
+        if data and "active_profile" in data:
+            return data["active_profile"]
+        return None
+
+    def _save_active_profile(self):
+        save_json({"active_profile": self.current_profile}, self.state_file)
+
     def set_save_button(self, button):
         """Store reference to the save button to enable/disable it"""
         self.btn_save_profile = button
+        if self.current_profile:
+            self.btn_save_profile.set_sensitive(True)
 
     def set_display_buttons(self, buttons):
         """Store reference to display buttons"""
@@ -48,6 +60,7 @@ class ProfileManager:
     def set_profile_label(self, label):
         """Store reference to the profile label"""
         self.profile_label = label
+        self._update_profile_label()
 
     def _update_profile_label(self):
         """Update profile label text with current profile name"""
@@ -108,6 +121,7 @@ class ProfileManager:
                 profile_path = os.path.join(self.profiles_dir, f"{profile_name}.json")
                 self.save_profile_to_file(profile_path)
                 self.current_profile = profile_name
+                self._save_active_profile()
                 if self.btn_save_profile:
                     self.btn_save_profile.set_sensitive(True)
                 # Update the profile label
@@ -204,6 +218,7 @@ class ProfileManager:
                 )
                 self.load_profile_from_file(profile_path)
                 self.current_profile = selected_profile
+                self._save_active_profile()
                 if self.btn_save_profile:
                     self.btn_save_profile.set_sensitive(True)
                 # Update the profile label
@@ -240,6 +255,7 @@ class ProfileManager:
                         # If current profile was deleted, reset it
                         if self.current_profile == selected_profile:
                             self.current_profile = None
+                            self._save_active_profile()
                             if self.btn_save_profile:
                                 self.btn_save_profile.set_sensitive(False)
                             # Update the profile label
