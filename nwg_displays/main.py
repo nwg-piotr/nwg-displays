@@ -15,6 +15,7 @@ Thank you, Kurt Jacobson!
 
 import argparse
 import sys
+import threading
 import gi
 from nwg_displays.settings_applier import SettingsApplier
 from nwg_displays.wallpaper_manager import WallpaperManager
@@ -984,7 +985,11 @@ def keep_current_settings(btn, config_dir=None, profile_name=None):
 
     if config_dir and profile_name:
         if config.get("profile-bound-wallpapers", True):
-            WallpaperManager.apply_profile_wallpapers(config_dir, profile_name)
+            threading.Thread(
+                target=WallpaperManager.apply_profile_wallpapers,
+                args=(config_dir, profile_name),
+                daemon=True,
+            ).start()
 
 
 def restore_old_settings(btn, backup, path):
