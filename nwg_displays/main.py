@@ -17,6 +17,7 @@ import argparse
 import sys
 import gi
 from nwg_displays.settings_applier import SettingsApplier
+from nwg_displays.wallpaper_manager import WallpaperManager
 
 
 gi.require_version("Gtk", "3.0")
@@ -916,7 +917,7 @@ def on_workspaces_apply_btn_hypr(w, win, old_workspaces):
     close_dialog(w, win)
 
 
-def create_confirm_win(backup, path):
+def create_confirm_win(backup, path, config_dir=None, profile_name=None):
     global confirm_win
     if confirm_win:
         confirm_win.destroy()
@@ -949,7 +950,7 @@ def create_confirm_win(backup, path):
 
     grid.attach(btn_restore, 0, 2, 1, 1)
     btn_keep = Gtk.Button.new_with_label(voc["keep"])
-    btn_keep.connect("clicked", keep_current_settings)
+    btn_keep.connect("clicked", keep_current_settings, config_dir, profile_name)
     grid.attach(btn_keep, 1, 2, 1, 1)
 
     confirm_win.show_all()
@@ -968,10 +969,13 @@ def count_down(label, backup, path):
     restore_old_settings(None, backup, path)
 
 
-def keep_current_settings(btn):
+def keep_current_settings(btn, config_dir=None, profile_name=None):
     if src_tag > 0:
         GLib.Source.remove(src_tag)
     confirm_win.close()
+
+    if config_dir and profile_name:
+        WallpaperManager.apply_profile_wallpapers(config_dir, profile_name)
 
 
 def restore_old_settings(btn, backup, path):

@@ -1,6 +1,8 @@
 import os
 import shutil
 import subprocess
+import json
+import time
 
 
 class WallpaperManager:
@@ -80,3 +82,17 @@ class WallpaperManager:
     def _apply_hyprpaper():
         print("[Wallpapers] Hyprpaper detected (swww is recommended for profiles)")
         pass
+
+    @staticmethod
+    def apply_profile_wallpapers(config_dir, profile_name):
+        profile_path = os.path.join(config_dir, "profiles", f"{profile_name}.json")
+        if os.path.isfile(profile_path):
+            try:
+                with open(profile_path, "r") as f:
+                    profile_data = json.load(f)
+                if "wallpapers" in profile_data:
+                    print("[Profile] Applying wallpapers...")
+                    time.sleep(1)
+                    WallpaperManager.apply_wallpapers(profile_data["wallpapers"])
+            except Exception as e:
+                print(f"[Error] Failed to apply wallpapers from profile: {e}")

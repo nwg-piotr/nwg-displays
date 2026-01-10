@@ -156,6 +156,8 @@ class SettingsApplier:
                 outputs_path,
                 use_desc,
                 create_confirm_win_callback,
+                config_dir,
+                profile_name,
             )
 
         elif os.getenv("HYPRLAND_INSTANCE_SIGNATURE"):
@@ -165,10 +167,11 @@ class SettingsApplier:
                 outputs_path,
                 use_desc,
                 create_confirm_win_callback,
+                config_dir,
+                profile_name,
             )
 
         if config_dir and profile_name:
-            SettingsApplier._apply_profile_wallpapers(config_dir, profile_name)
             SettingsApplier._set_active_profile(config_dir, profile_name)
 
     @staticmethod
@@ -178,6 +181,8 @@ class SettingsApplier:
         outputs_path,
         use_desc,
         create_confirm_win_callback,
+        config_dir=None,
+        profile_name=None,
     ):
         from i3ipc import Connection
 
@@ -260,7 +265,7 @@ class SettingsApplier:
             i3.command(cmd)
 
         if create_confirm_win_callback:
-            create_confirm_win_callback(backup, outputs_path)
+            create_confirm_win_callback(backup, outputs_path, config_dir, profile_name)
 
     @staticmethod
     def _apply_hyprland_gui(
@@ -269,6 +274,8 @@ class SettingsApplier:
         outputs_path,
         use_desc,
         create_confirm_win_callback,
+        config_dir=None,
+        profile_name=None,
     ):
         transforms = {
             "normal": 0,
@@ -327,21 +334,7 @@ class SettingsApplier:
         save_list_to_text_file(lines, outputs_path)
 
         if create_confirm_win_callback:
-            create_confirm_win_callback(backup, outputs_path)
-
-    @staticmethod
-    def _apply_profile_wallpapers(config_dir, profile_name):
-        profile_path = os.path.join(config_dir, "profiles", f"{profile_name}.json")
-        if os.path.isfile(profile_path):
-            try:
-                with open(profile_path, "r") as f:
-                    profile_data = json.load(f)
-                if "wallpapers" in profile_data:
-                    print("[Profile] Applying wallpapers...")
-                    time.sleep(1)
-                    WallpaperManager.apply_wallpapers(profile_data["wallpapers"])
-            except Exception as e:
-                print(f"[Error] Failed to apply wallpapers from profile: {e}")
+            create_confirm_win_callback(backup, outputs_path, config_dir, profile_name)
 
     @staticmethod
     def _get_header(source="nwg-displays"):
