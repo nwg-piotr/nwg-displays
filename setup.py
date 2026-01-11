@@ -25,7 +25,7 @@ setup(
             "nwg-displays = nwg_displays.main:main",
         ],
         "console_scripts": [
-            "nwg-displays-apply = nwg_displays.utils.apply_profile_json:main"
+            "nwg-displays-apply = nwg_displays.scripts.apply_profile_json:main"
         ],
     },
 )
