@@ -3,9 +3,10 @@ import sys
 import json
 import argparse
 from nwg_displays.settings_applier import SettingsApplier
-from nwg_displays.utils import get_config_dir
+from nwg_displays.utils.get_config_dir import get_config_dir
 
-if __name__ == "__main__":
+
+def main():
     parser = argparse.ArgumentParser(description="Load nwg-displays profile directly.")
     parser.add_argument(
         "-p", "--profile", type=str, required=True, help="Name of the profile to load"
@@ -31,11 +32,11 @@ if __name__ == "__main__":
         sys.exit(1)
 
     try:
-        # Load and Apply new profile
         with open(profile_path, "r") as f:
             profile_data = json.load(f)
 
         print(f"Loading profile: '{args.profile}'")
+
         SettingsApplier.apply_from_json(
             profile_data, outputs_path, config_dir, args.profile
         )
@@ -48,3 +49,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
