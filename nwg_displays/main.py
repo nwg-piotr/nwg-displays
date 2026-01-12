@@ -51,7 +51,7 @@ old_config_dir = os.path.join(get_config_home(), "nwg-outputs")
 sway_config_dir = os.path.join(get_config_home(), "sway")
 if sway and not os.path.isdir(sway_config_dir):
     print(
-        "WARNING: Couldn't find sway config directory '{}'".format(sway_config_dir),
+        "[Warning] Couldn't find sway config directory '{}'".format(sway_config_dir),
         file=sys.stderr,
     )
     sys.exit(1)
@@ -59,7 +59,9 @@ if sway and not os.path.isdir(sway_config_dir):
 hypr_config_dir = os.path.join(get_config_home(), "hypr")
 if hypr and not os.path.isdir(hypr_config_dir):
     print(
-        "WARNING: Couldn't find Hyprland config directory '{}'".format(hypr_config_dir),
+        "[Warning] Couldn't find Hyprland config directory '{}'".format(
+            hypr_config_dir
+        ),
         file=sys.stderr,
     )
     sys.exit(1)
@@ -72,7 +74,7 @@ elif hypr:
     for name in ["monitors.conf", "workspaces.conf"]:
         create_empty_file(os.path.join(hypr_config_dir, name))
 else:
-    eprint("Neither sway nor Hyprland detected, terminating")
+    eprint("[Error] Neither sway nor Hyprland detected, terminating")
     sys.exit(1)
 
 config = {}
@@ -993,7 +995,7 @@ def keep_current_settings(btn, config_dir=None, profile_name=None):
 
 
 def restore_old_settings(btn, backup, path):
-    print("Restoring old settings...")
+    print("[Settings] Restoring old settings...")
     if src_tag > 0:
         GLib.Source.remove(src_tag)
 
@@ -1112,19 +1114,19 @@ def main():
     global num_ws
     num_ws = args.num_ws
     if sway:
-        print("Number of workspaces: {}".format(num_ws))
+        print("[Info] Number of workspaces: {}".format(num_ws))
 
     config_file = os.path.join(config_dir, "config")
     global config
     if not os.path.isfile(config_file):
         # migrate old config file, if not yet migrated
         if os.path.isfile(os.path.join(old_config_dir, "config")):
-            print("Migrating config to the proper path...")
+            print("[Config] Migrating config to the proper path...")
             os.rename(old_config_dir, config_dir)
         else:
             if not os.path.isdir(config_dir):
                 os.makedirs(config_dir, exist_ok=True)
-            print("'{}' file not found, creating default".format(config_file))
+            print("[Config] '{}' file not found, creating default".format(config_file))
             save_json(config, config_file)
     else:
         config = load_json(config_file)
@@ -1135,8 +1137,6 @@ def main():
     if "profile-bound-wallpapers" not in config:
         config["profile-bound-wallpapers"] = True
         save_json(config, config_file)
-
-    eprint("Settings: {}".format(config))
 
     # Initialize the profile manager
     global profile_manager

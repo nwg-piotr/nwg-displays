@@ -28,26 +28,26 @@ def main():
         )
 
     if not os.path.isfile(profile_path):
-        print(f"Error: Profile file not found at {profile_path}")
+        print(f"[Error] Profile file not found at {profile_path}")
         sys.exit(1)
 
     try:
         with open(profile_path, "r") as f:
             profile_data = json.load(f)
 
-        print(f"Loading profile: '{args.profile}'")
+        print(f"[Profile] Loading '{args.profile}'")
 
         SettingsApplier.apply_from_json(
             profile_data, outputs_path, config_dir, args.profile
         )
 
-        print("Done.")
+        print("[Profile] Done.")
 
     except json.JSONDecodeError:
-        print(f"Error: Failed to parse {profile_path}. Invalid JSON.")
+        print(f"[Error] Failed to parse {profile_path}. Invalid JSON.")
         sys.exit(1)
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+        print(f"[Error] An unexpected error occurred: {e}")
         sys.exit(1)
 
 

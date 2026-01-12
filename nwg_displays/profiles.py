@@ -443,4 +443,4 @@ class ProfileManager:
             try:
                 self.update_callback(selected_button)
             except Exception as e:
-                print(f"Error updating form: {e}")
+                print(f"[Error] Error updating form: {e}")

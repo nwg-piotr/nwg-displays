@@ -13,10 +13,10 @@ def main():
     config["profile-bound-wallpapers"] = new_value
 
     save_json(config, config_file)
-    print(f"Saved configuration to {config_file}")
+    print(f"[Config] Saved configuration to {config_file}")
 
     status = "enabled" if new_value else "disabled"
-    print(f"Profile-bound wallpapers {status}")
+    print(f"[Config] Profile-bound wallpapers {status}")
 
 
 if __name__ == "__main__":

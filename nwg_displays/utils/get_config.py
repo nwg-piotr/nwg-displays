@@ -9,12 +9,12 @@ def get_config():
     config_file = os.path.join(config_dir, "config")
 
     if not os.path.isfile(config_file):
-        print(f"Config file not found at {config_file}")
+        print(f"[Error] Config file not found at {config_file}")
         sys.exit(1)
 
     config = load_json(config_file)
     if config is None:
-        print("Failed to load configuration")
+        print("[Error] Failed to load configuration")
         sys.exit(1)
 
     return config, config_file

@@ -243,20 +243,12 @@ class SettingsApplier:
                     lines.append('output "{}" disable'.format(desc))
                     cmds.append('output "{}" disable'.format(desc))
 
-        print("[Saving]")
-        for line in lines:
-            print(line)
-
         if os.path.isfile(outputs_path):
             backup = load_text_file(outputs_path).splitlines()
         else:
             backup = []
 
         save_list_to_text_file(lines, outputs_path)
-
-        print("[Executing]")
-        for cmd in cmds:
-            print(cmd)
 
         i3 = Connection()
         for cmd in cmds:
@@ -322,10 +314,6 @@ class SettingsApplier:
             cmd = "on" if db.dpms else "off"
             hyprctl(f"dispatch dpms {cmd} {db.name}")
 
-        print("[Saving]")
-        for line in lines:
-            print(line)
-
         backup = []
         if os.path.isfile(outputs_path):
             backup = load_text_file(outputs_path).splitlines()
@@ -376,7 +364,6 @@ class SettingsApplier:
                 return
 
             current_walls = WallpaperManager.get_current_wallpapers()
-            print(f"[Persistence] Current wallpapers: {current_walls}")
             if not current_walls:
                 return
 
@@ -387,7 +374,6 @@ class SettingsApplier:
                 data["wallpapers"] = {}
 
             data["wallpapers"].update(current_walls)
-            print("Wallpaper saved!")
 
             with open(prev_profile_path, "w") as f:
                 json.dump(data, f, indent=2)
