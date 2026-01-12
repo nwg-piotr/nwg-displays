@@ -1132,6 +1132,10 @@ def main():
     if config_keys_missing(config, config_file):
         config = load_json(config_file)
 
+    if "profile-bound-wallpapers" not in config:
+        config["profile-bound-wallpapers"] = True
+        save_json(config, config_file)
+
     eprint("Settings: {}".format(config))
 
     # Initialize the profile manager

@@ -2,8 +2,6 @@ import os
 import datetime
 import json
 import time
-
-# Assuming these tools exist based on original code structure
 from nwg_displays.tools import (
     hyprctl,
     save_list_to_text_file,
@@ -11,11 +9,7 @@ from nwg_displays.tools import (
     inactive_output_description,
 )
 from nwg_displays.wallpaper_manager import WallpaperManager
-
-# If create_confirm_win is in main or ui, you might need to pass it as a callback
-# or import it if circular imports aren't an issue.
-# from nwg_displays.main import create_confirm_win
-
+from nwg_displays.utils.get_config import get_config
 
 class SettingsApplier:
     @staticmethod
@@ -93,7 +87,9 @@ class SettingsApplier:
         save_list_to_text_file(lines, outputs_path)
         hyprctl("reload")
 
-        if "wallpapers" in profile_data and profile_data.get("config", {}).get(
+        config, config_file = get_config()
+
+        if "wallpapers" in profile_data and config.get(
             "profile-bound-wallpapers", True
         ):
             print("[Profile] Applying wallpapers...")
@@ -365,6 +361,10 @@ class SettingsApplier:
             if not last_profile_name:
                 return
 
+            config, _ = get_config()
+            if not config.get("profile-bound-wallpapers", True):
+                return
+
             prev_profile_path = os.path.join(
                 config_dir, "profiles", f"{last_profile_name}.json"
             )
@@ -382,9 +382,6 @@ class SettingsApplier:
 
             with open(prev_profile_path, "r") as f:
                 data = json.load(f)
-
-            if not data.get("config", {}).get("profile-bound-wallpapers", True):
-                return
 
             if "wallpapers" not in data:
                 data["wallpapers"] = {}

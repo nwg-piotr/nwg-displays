@@ -19,7 +19,7 @@ done
 [ -d "./dist" ] && rm -rf ./dist
 
 # Remove launcher scripts
-filenames=("/usr/bin/nwg-displays" "/usr/bin/nwg-displays-apply")
+filenames=("/usr/bin/nwg-displays" "/usr/bin/nwg-displays-apply" "/usr/bin/nwg-displays-toggle-wallpapers")
 
 for filename in "${filenames[@]}"; do
   if [ -f "$filename" ]; then
