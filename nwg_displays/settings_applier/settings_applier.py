@@ -286,6 +286,11 @@ class SettingsApplier:
                 else "desc:{}".format(db.description.replace("#", "##"))
             )
 
+            if db.name in outputs_activity and not outputs_activity[db.name]:
+                lines.append("monitor={},disable".format(name))
+                hyprctl(f"dispatch dpms off {db.name}")
+                continue
+
             # Format: monitor=name,resolution@refresh,position,scale
             line = "monitor={},{}x{}@{},{}x{},{}".format(
                 name,
@@ -307,10 +312,6 @@ class SettingsApplier:
                     "monitor={},transform,{}".format(name, transforms[db.transform])
                 )
 
-            # avoid looking up the hardware name
-            if db.name in outputs_activity and not outputs_activity[db.name]:
-                lines.append("monitor={},disable".format(name))
-
             cmd = "on" if db.dpms else "off"
             hyprctl(f"dispatch dpms {cmd} {db.name}")
 
@@ -318,6 +319,7 @@ class SettingsApplier:
         if os.path.isfile(outputs_path):
             backup = load_text_file(outputs_path).splitlines()
         save_list_to_text_file(lines, outputs_path)
+        hyprctl("reload")
 
         if create_confirm_win_callback:
             create_confirm_win_callback(backup, outputs_path, config_dir, profile_name)
