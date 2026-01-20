@@ -30,5 +30,18 @@
   "view-scale-tooltip": "Outputs preview scale",
   "workspaces": "Workspaces",
   "workspaces-tooltip": "Opens Workspace -> Output assignment popup.",
-  "zoom": "Zoom"
+  "zoom": "Zoom",
+  "new": "New",
+  "select": "Select",
+  "save": "Save",
+  "new-profile": "New Profile",
+  "select-profile": "Select Profile",
+  "profile-name": "Profile Name:",
+  "new-profile-tooltip": "Create a new profile",
+  "select-profile-tooltip": "Select a profile",
+  "save-profile-tooltip": "Save to current profile",
+  "no-profiles": "No profiles available",
+  "load": "Load",
+  "profile-bound-wallpapers": "Profile-bound wallpapers",
+  "profile-bound-wallpapers-tooltip": "Save and load wallpapers together with display profiles"
 }

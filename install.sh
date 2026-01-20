@@ -19,11 +19,13 @@ done
 [ -d "./dist" ] && rm -rf ./dist
 
 # Remove launcher scripts
-filenames=("/usr/bin/nwg-displays")
+filenames=("/usr/bin/nwg-displays" "/usr/bin/nwg-displays-apply" "/usr/bin/nwg-displays-toggle-wallpapers")
 
 for filename in "${filenames[@]}"; do
-  rm -f "$filename"
-  echo "Removing -f $filename"
+  if [ -f "$filename" ]; then
+      rm -f "$filename"
+      echo "Removing -f $filename"
+  fi
 done
 
 python -m build --wheel --no-isolation
