@@ -27,6 +27,27 @@ def get_config_home():
     return config_home
 
 
+def get_config_dir():
+    xdg_config_home = os.getenv("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
+    return os.path.join(xdg_config_home, "nwg-displays")
+
+
+def get_config():
+    config_dir = get_config_dir()
+    config_file = os.path.join(config_dir, "config")
+
+    if not os.path.isfile(config_file):
+        print(f"[Error] Config file not found at {config_file}")
+        sys.exit(1)
+
+    config = load_json(config_file)
+    if config is None:
+        print("[Error] Failed to load configuration")
+        sys.exit(1)
+
+    return config, config_file
+
+
 def hyprctl(cmd):
     # /tmp/hypr moved to $XDG_RUNTIME_DIR/hypr in #5788
     xdg_runtime_dir = os.getenv("XDG_RUNTIME_DIR")

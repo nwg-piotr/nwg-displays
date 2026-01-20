@@ -1,7 +1,7 @@
 import os
 import sys
 from nwg_displays.tools import save_json
-from nwg_displays.utils.get_config import get_config
+from nwg_displays.tools import get_config
 
 
 def main():

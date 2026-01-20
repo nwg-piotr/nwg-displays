@@ -9,7 +9,7 @@ from nwg_displays.tools import (
     inactive_output_description,
 )
 from nwg_displays.wallpaper_manager import WallpaperManager
-from nwg_displays.utils.get_config import get_config
+from nwg_displays.tools import get_config
 
 class SettingsApplier:
     @staticmethod

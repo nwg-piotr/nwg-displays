@@ -3,7 +3,7 @@ import sys
 import json
 import argparse
 from nwg_displays.settings_applier import SettingsApplier
-from nwg_displays.utils.get_config_dir import get_config_dir
+from nwg_displays.tools import get_config_dir
 
 
 def main():
