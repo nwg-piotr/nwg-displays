@@ -1,15 +1,16 @@
 import os
-import shutil
 import subprocess
 import json
 import time
+
+from nwg_displays.tools import is_command
 
 
 class WallpaperManager:
     @staticmethod
     def get_current_wallpapers():
         """Returns a dict of {monitor: path} from running swww instances."""
-        if not shutil.which("swww"):
+        if not is_command("swww"):
             return {}
 
         try:
@@ -56,10 +57,10 @@ class WallpaperManager:
         if not wallpaper_data:
             return
 
-        if shutil.which("swww"):
+        if is_command("swww"):
             WallpaperManager._apply_swww(wallpaper_data)
 
-        elif shutil.which("hyprpaper"):
+        elif is_command("hyprpaper"):
             WallpaperManager._apply_hyprpaper()
 
         else:
