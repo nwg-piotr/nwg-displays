@@ -122,7 +122,6 @@ class ProfileManager:
                 profile_path = os.path.join(self.profiles_dir, f"{profile_name}.json")
                 self.save_profile_to_file(profile_path)
                 self.current_profile = profile_name
-                self._save_active_profile()
                 if self.btn_save_profile:
                     self.btn_save_profile.set_sensitive(True)
                 # Update the profile label
@@ -220,7 +219,6 @@ class ProfileManager:
                 )
                 self.load_profile_from_file(profile_path)
                 self.current_profile = selected_profile
-                self._save_active_profile()
                 if self.btn_save_profile:
                     self.btn_save_profile.set_sensitive(True)
                 # Update the profile label
