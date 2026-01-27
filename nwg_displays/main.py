@@ -623,9 +623,8 @@ def on_apply_button(widget, p_manager=None):
         p_manager = profile_manager
 
     profile_name = p_manager.current_profile if p_manager else None
-    if profile_name:
-        config["active-profile"] = profile_name
-    elif "active-profile" in config:
+    # Remove legacy storage
+    if "active-profile" in config:
         del config["active-profile"]
 
     SettingsApplier.apply_from_gui(
@@ -1141,8 +1140,6 @@ def main():
     # Initialize the profile manager
     global profile_manager
     profile_manager = ProfileManager(config_dir, config, voc)
-    if "active-profile" in config:
-        profile_manager.current_profile = config["active-profile"]
 
     global snap_threshold_scaled
     snap_threshold_scaled = config["snap-threshold"]

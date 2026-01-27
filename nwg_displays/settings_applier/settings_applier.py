@@ -7,6 +7,8 @@ from nwg_displays.tools import (
     save_list_to_text_file,
     load_text_file,
     inactive_output_description,
+    load_json,
+    save_json,
 )
 from nwg_displays.wallpaper_manager import WallpaperManager
 from nwg_displays.tools import get_config
@@ -339,14 +341,14 @@ class SettingsApplier:
         Reads the last active profile name, gets current wallpapers,
         and updates that profile's JSON file.
         """
-        state_file = os.path.join(config_dir, "active_profile")
+        state_file = os.path.join(config_dir, "active_profile.json")
 
         if not os.path.isfile(state_file):
             return
 
         try:
-            with open(state_file, "r") as f:
-                last_profile_name = f.read().strip()
+            data = load_json(state_file)
+            last_profile_name = data.get("active_profile") if data else None
 
             if not last_profile_name:
                 return
@@ -387,9 +389,8 @@ class SettingsApplier:
 
     @staticmethod
     def _set_active_profile(config_dir, profile_name):
-        state_file = os.path.join(config_dir, "active_profile")
+        state_file = os.path.join(config_dir, "active_profile.json")
         try:
-            with open(state_file, "w") as f:
-                f.write(profile_name)
+            save_json({"active_profile": profile_name}, state_file)
         except Exception as e:
             print(f"[Error] Failed to set active profile: {e}")
