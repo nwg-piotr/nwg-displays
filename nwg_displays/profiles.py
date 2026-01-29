@@ -130,8 +130,8 @@ class ProfileManager:
                     self.voc.get("profile-created", "Profile Created"),
                     self.voc.get(
                         "profile-created-message",
-                        f"Profile '{profile_name}' has been created",
-                    ),
+                        "Profile '{profile_name}' has been created",
+                    ).format(profile_name=profile_name),
                 )
 
         dialog.destroy()
@@ -233,8 +233,8 @@ class ProfileManager:
                     type=Gtk.MessageType.QUESTION,
                     buttons=Gtk.ButtonsType.YES_NO,
                     message_format=self.voc.get(
-                        "confirm-delete", f"Delete profile '{selected_profile}'?"
-                    ),
+                        "confirm-delete", "Delete profile '{selected_profile}'?"
+                    ).format(selected_profile=selected_profile),
                 )
 
                 confirm_response = confirm_dialog.run()
@@ -248,8 +248,8 @@ class ProfileManager:
                             self.voc.get("profile-deleted", "Profile Deleted"),
                             self.voc.get(
                                 "profile-deleted-message",
-                                f"Profile '{selected_profile}' has been deleted",
-                            ),
+                                "Profile '{selected_profile}' has been deleted",
+                            ).format(selected_profile=selected_profile),
                         )
 
                         # If current profile was deleted, reset it
@@ -264,8 +264,8 @@ class ProfileManager:
                         notify(
                             self.voc.get("error", "Error"),
                             self.voc.get(
-                                "delete-error-message", f"Could not delete profile: {e}"
-                            ),
+                                "delete-error-message", "Could not delete profile: {e}"
+                            ).format(e=e),
                         )
 
                 confirm_dialog.destroy()
@@ -283,8 +283,8 @@ class ProfileManager:
             self.voc.get("profile-saved", "Profile Saved"),
             self.voc.get(
                 "profile-saved-message",
-                f"Profile '{self.current_profile}' has been updated",
-            ),
+                "Profile '{profile}' has been updated",
+            ).format(profile=self.current_profile),
         )
 
     def save_profile_to_file(self, profile_path):
