@@ -14,6 +14,7 @@ Thank you, Kurt Jacobson!
 """
 
 import argparse
+import stat
 import sys
 import threading
 import gi
@@ -1104,6 +1105,32 @@ def main():
     elif hypr:
         if os.path.isdir(hypr_config_dir):
             outputs_path = args.monitors_path
+            # 97, 115
+            if os.path.lexists(outputs_path):
+                is_writable = os.access(outputs_path, os.W_OK)
+                if os.path.islink(outputs_path) and not is_writable:
+                    eprint(f"INFO: '{outputs_path}' is a read-only symlink. Replacing with a writable file.")
+                    tmp_path = f"{outputs_path}.tmp"
+                    try:
+                        with open(outputs_path, 'r') as src_file, open(tmp_path, 'w') as tmp_file:
+                            tmp_file.write(src_file.read())
+                        backup_path = f"{outputs_path}.bkp"
+                        counter = 1
+                        while os.path.lexists(backup_path):
+                            backup_path = f"{outputs_path}.bkp{counter}"
+                            counter += 1
+                        eprint(f"INFO: Backing up '{outputs_path}' to '{backup_path}'")
+                        os.rename(outputs_path, backup_path)
+                        os.rename(tmp_path, outputs_path)
+                    except Exception as e:
+                        eprint(f"ERROR: Failed to replace read-only symlink: {e}")
+                elif not os.path.islink(outputs_path) and not is_writable:
+                    eprint(f"INFO: '{outputs_path}' is a read-only file. Making it writable.")
+                    try:
+                        os.chmod(outputs_path, os.stat(outputs_path).st_mode | stat.S_IWUSR)
+                    except Exception as e:
+                        eprint(f"ERROR: Failed to make file writable: {e}")
+
             workspaces_path = args.workspaces_path
         else:
             eprint("Hyprland config directory not found!")
