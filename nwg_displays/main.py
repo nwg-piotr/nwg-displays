@@ -1350,6 +1350,24 @@ def main():
     else:
         btn.destroy()
 
+    if hypr:
+        grid = builder.get_object("grid")
+
+        global form_ten_bit
+        form_ten_bit = Gtk.CheckButton.new_with_label(voc["10-bit-support"])
+        form_ten_bit.set_tooltip_text(voc["10-bit-support-tooltip"])
+        form_ten_bit.connect("toggled", on_ten_bit_toggled)
+        grid.attach(form_ten_bit, 5, 4, 1, 1)
+
+        lbl = Gtk.Label.new("Mirror:")
+        lbl.set_property("halign", Gtk.Align.END)
+        grid.attach(lbl, 6, 4, 1, 1)
+
+        global form_mirror
+        form_mirror = Gtk.ComboBoxText()
+        form_mirror.connect("changed", on_mirror_selected)
+        grid.attach(form_mirror, 7, 4, 1, 1)
+
     # Add profile management buttons
     separator = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
     form_wrapper_box.pack_start(separator, False, False, 10)
