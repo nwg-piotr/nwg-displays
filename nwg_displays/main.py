@@ -1304,6 +1304,7 @@ def main():
 
     global form_modes
     form_modes = builder.get_object("modes")
+    form_modes.set_wrap_width(1)
     form_modes.set_tooltip_text(voc["modes-tooltip"])
     form_modes.connect("changed", on_mode_changed)
 
@@ -1315,6 +1316,7 @@ def main():
 
     global form_transform
     form_transform = builder.get_object("transform")
+    form_transform.set_wrap_width(1)
     form_transform.set_tooltip_text(voc["transform-tooltip"])
     form_transform.connect("changed", on_transform_changed)
 
@@ -1392,6 +1394,7 @@ def main():
 
         global form_mirror
         form_mirror = Gtk.ComboBoxText()
+        form_mirror.set_wrap_width(1)
         form_mirror.connect("changed", on_mirror_selected)
         grid.attach(form_mirror, 7, 4, 1, 1)
 
