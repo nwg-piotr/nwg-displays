@@ -13,7 +13,7 @@ setup(
     description="nwg-shell output configuration utility",
     packages=find_packages(),
     include_package_data=True,
-    package_data={"": ["resources/*", "langs/*"]},
+    package_data={"": ["resources/*", "langs/*", "scripts/*", "settings_applier/*", "wallpaper_manager/*"]},
     url="https://github.com/nwg-piotr/nwg-displays",
     license="MIT",
     author="Piotr Miller",
