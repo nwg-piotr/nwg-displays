@@ -31,6 +31,8 @@ class ProfileManager:
             os.makedirs(self.profiles_dir, exist_ok=True)
 
     def _load_active_profile(self):
+        if not os.path.isfile(self.state_file):
+            return None
         data = load_json(self.state_file)
         if data and "active_profile" in data:
             return data["active_profile"]

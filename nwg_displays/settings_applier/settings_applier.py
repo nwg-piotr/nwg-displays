@@ -4,7 +4,10 @@ import json
 import time
 from nwg_displays.tools import (
     hyprctl,
+    niri_msg,
     save_list_to_text_file,
+    save_kdl_output,
+    ensure_niri_config_include,
     load_text_file,
     inactive_output_description,
     load_json,
@@ -23,7 +26,12 @@ class SettingsApplier:
         config = profile_data["config"]
         use_desc = config.get("use-desc", False)
 
-        if os.getenv("HYPRLAND_INSTANCE_SIGNATURE"):
+        if os.getenv("NIRI_SOCKET"):
+            SettingsApplier._apply_niri_json(
+                displays, use_desc, outputs_path, profile_data
+            )
+
+        elif os.getenv("HYPRLAND_INSTANCE_SIGNATURE"):
             SettingsApplier._apply_hyprland_json(
                 displays, use_desc, outputs_path, profile_data
             )
@@ -99,6 +107,49 @@ class SettingsApplier:
             WallpaperManager.apply_wallpapers(profile_data["wallpapers"])
 
     @staticmethod
+    def _apply_niri_json(displays, use_desc, outputs_path, profile_data):
+        """Apply niri configuration by writing monitor.kdl file"""
+        print(f"[Profile] Applying {len(displays)} displays for niri...")
+        
+        kdl_data = []
+        for d in displays:
+            name = d["name"]
+            
+            display_config = {
+                "name": name,
+                "active": d["active"],
+                "physical_width": d["physical_width"],
+                "physical_height": d["physical_height"],
+                "refresh": d["refresh"],
+                "x": d["x"],
+                "y": d["y"],
+                "scale": d["scale"],
+                "transform": d["transform"],
+                "adaptive_sync": d.get("adaptive_sync", False)
+            }
+            kdl_data.append(display_config)
+        
+        # Save to monitor.kdl
+        save_kdl_output(kdl_data, outputs_path)
+        
+        # Ensure config.kdl includes monitor.kdl
+        niri_config_dir = os.path.dirname(outputs_path)
+        ensure_niri_config_include(niri_config_dir, outputs_path)
+        
+        # Reload niri configuration
+        niri_msg('{"Action":{"ReloadConfig":{}}}')
+        
+        config, config_file = get_config()
+        
+        if "wallpapers" in profile_data and config.get(
+            "profile-bound-wallpapers", True
+        ):
+            print("[Profile] Applying wallpapers...")
+            import time
+            time.sleep(1)
+            WallpaperManager.apply_wallpapers(profile_data["wallpapers"])
+
+    @staticmethod
     def _apply_sway_json(displays, use_desc):
         from i3ipc import Connection
 
@@ -149,7 +200,19 @@ class SettingsApplier:
         if config_dir:
             SettingsApplier._save_current_state_to_previous_profile(config_dir)
 
-        if os.getenv("SWAYSOCK"):
+        if os.getenv("NIRI_SOCKET"):
+            print(f"[DEBUG] Applying niri config to {outputs_path}")
+            SettingsApplier._apply_niri_gui(
+                display_buttons,
+                outputs_activity,
+                outputs_path,
+                use_desc,
+                create_confirm_win_callback,
+                config_dir,
+                profile_name,
+            )
+
+        elif os.getenv("SWAYSOCK"):
             SettingsApplier._apply_sway_gui(
                 display_buttons,
                 outputs_activity,
@@ -170,6 +233,8 @@ class SettingsApplier:
                 config_dir,
                 profile_name,
             )
+        else:
+            print("[Error] No compositor detected (Sway/Hyprland/Niri)")
 
         if config_dir and profile_name:
             SettingsApplier._set_active_profile(config_dir, profile_name)
@@ -256,6 +321,52 @@ class SettingsApplier:
         for cmd in cmds:
             i3.command(cmd)
 
+        if create_confirm_win_callback:
+            create_confirm_win_callback(backup, outputs_path, config_dir, profile_name)
+
+    @staticmethod
+    def _apply_niri_gui(
+        display_buttons,
+        outputs_activity,
+        outputs_path,
+        use_desc,
+        create_confirm_win_callback,
+        config_dir=None,
+        profile_name=None,
+    ):
+        """Apply niri configuration from GUI by writing monitor.kdl file"""
+        print(f"[niri] Applying {len(display_buttons)} displays...")
+        
+        kdl_data = []
+        for db in display_buttons:
+            display_config = {
+                "name": db.name,
+                "active": db.name not in outputs_activity or outputs_activity.get(db.name, True),
+                "physical_width": db.physical_width,
+                "physical_height": db.physical_height,
+                "refresh": db.refresh,
+                "x": db.x,
+                "y": db.y,
+                "scale": db.scale,
+                "transform": db.transform,
+                "adaptive_sync": db.adaptive_sync
+            }
+            kdl_data.append(display_config)
+        
+        # Save to monitor.kdl in KDL format
+        save_kdl_output(kdl_data, outputs_path)
+        
+        # Ensure config.kdl includes monitor.kdl
+        niri_config_dir = os.path.dirname(outputs_path)
+        ensure_niri_config_include(niri_config_dir, outputs_path)
+        
+        # Reload niri configuration
+        niri_msg('{"Action":{"ReloadConfig":{}}}')
+        
+        backup = []
+        if os.path.isfile(outputs_path):
+            backup = load_text_file(outputs_path).splitlines()
+        
         if create_confirm_win_callback:
             create_confirm_win_callback(backup, outputs_path, config_dir, profile_name)
 
