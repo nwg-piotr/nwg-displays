@@ -14,6 +14,7 @@ Thank you, Kurt Jacobson!
 """
 
 import argparse
+import shutil
 import stat
 import sys
 import threading
@@ -237,7 +238,6 @@ def on_motion_notify_event(widget, event):
     # px,py stores previous values of x,y
 
     global px, py
-    global offset_x, offset_y
 
     # get starting values for x,y
     x = event.x_root - offset_x
@@ -629,10 +629,7 @@ def on_mirror_selected(widget):
 
 
 def on_apply_button(widget, p_manager=None):
-    global outputs_activity
-
     if p_manager is None:
-        global profile_manager
         p_manager = profile_manager
 
     profile_name = p_manager.current_profile if p_manager else None
@@ -654,13 +651,11 @@ def on_apply_button(widget, p_manager=None):
 
 
 def on_output_toggled(check_btn, name):
-    global outputs_activity
     outputs_activity[name] = check_btn.get_active()
 
 
 def on_toggle_button(btn):
     i3 = Connection()
-    global outputs_activity
     for key in outputs_activity:
         toggle = "enable" if outputs_activity[key] else "disable"
         cmd = "output {} {}".format(key, toggle)
@@ -676,7 +671,6 @@ def create_display_buttons():
         item.destroy()
     display_buttons = []
 
-    global outputs
     outputs = list_outputs()
     
     if not outputs:
@@ -759,7 +753,6 @@ def handle_keyboard(window, event):
 
 
 def create_workspaces_window(btn):
-    global sway_config_dir
     global workspaces
     workspaces = load_workspaces(
         os.path.join(sway_config_dir, "workspaces"), use_desc=config["use-desc"]
@@ -778,8 +771,6 @@ def create_workspaces_window(btn):
     grid.set_column_spacing(12)
     grid.set_row_spacing(12)
     dialog_win.add(grid)
-    global num_ws
-    global outputs
     last_row = 0
     for i in range(num_ws):
         lbl = Gtk.Label()
@@ -840,7 +831,6 @@ def create_workspaces_window_hypr(btn):
     grid.set_column_spacing(12)
     grid.set_row_spacing(6)
     dialog_win.add(grid)
-    global outputs
     last_row = 0
     for i in range(num_ws):
         lbl = Gtk.Label()
@@ -890,7 +880,6 @@ def create_workspaces_window_hypr(btn):
 
 
 def on_ws_combo_changed(combo, ws_num):
-    global workspaces
     workspaces[ws_num] = combo.get_active_id()
 
 
@@ -899,7 +888,6 @@ def close_dialog(w, win):
 
 
 def on_workspaces_apply_btn(w, win, old_workspaces):
-    global workspaces
     if workspaces != old_workspaces:
         save_workspaces(
             workspaces,
@@ -912,7 +900,6 @@ def on_workspaces_apply_btn(w, win, old_workspaces):
 
 
 def on_workspaces_apply_btn_hypr(w, win, old_workspaces):
-    global workspaces
     if workspaces != old_workspaces:
         workspace_conf_file = workspaces_path
         text_file = open(workspace_conf_file, "w")
@@ -1003,6 +990,10 @@ def keep_current_settings(btn, config_dir=None, profile_name=None):
         GLib.Source.remove(src_tag)
     confirm_win.close()
 
+    if os.getenv("NIRI_SOCKET"):
+        niri_reload_config()
+        GLib.timeout_add(2000, create_display_buttons)
+
     if config_dir and profile_name:
         if config.get("profile-bound-wallpapers", True):
             threading.Thread(
@@ -1048,11 +1039,12 @@ def restore_old_settings(btn, backup, path):
         GLib.timeout_add(2000, create_display_buttons)
 
     elif os.getenv("NIRI_SOCKET"):
-        save_list_to_text_file(backup, path)
+        # For niri: backup is a file path (.bak), restore by copying it back
+        if backup and os.path.isfile(backup):
+            shutil.copy2(backup, path)
+            print(f"[niri] Restored from {backup}")
         confirm_win.close()
-        # Reload niri configuration
-        niri_msg('{"Action":{"ReloadConfig":{}}}')
-        # Give niri time to reload before refreshing UI
+        niri_reload_config()
         GLib.timeout_add(2000, create_display_buttons)
 
 
@@ -1213,7 +1205,6 @@ def main():
             eprint("niri config directory not found!")
             outputs_path = ""
 
-    global num_ws
     num_ws = args.num_ws
     if sway:
         print("[Info] Number of workspaces: {}".format(num_ws))

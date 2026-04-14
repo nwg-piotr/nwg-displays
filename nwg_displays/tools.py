@@ -44,10 +44,8 @@ def niri_msg(cmd):
         return None
     
     try:
-        import socket
         s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         s.connect(niri_socket)
-        # Send request with newline terminator
         request = cmd + "\n"
         s.send(request.encode("utf-8"))
         s.shutdown(socket.SHUT_WR)
@@ -62,6 +60,17 @@ def niri_msg(cmd):
     except Exception as e:
         eprint(f"Error communicating with niri: {e}")
         return None
+
+
+def niri_reload_config():
+    """Reload niri configuration via niri msg CLI"""
+    try:
+        subprocess.run(['niri', 'msg', 'action', 'load-config-file', 
+                       os.path.join(get_config_home(), "niri", "config.kdl")],
+                      capture_output=True, text=True, timeout=5)
+        print("[niri] Config reloaded")
+    except Exception as e:
+        eprint(f"[niri] Failed to reload config: {e}")
 
 
 def get_config():
@@ -106,9 +115,6 @@ def list_outputs():
         eprint("Running on niri")
         
         try:
-            import json
-            # Use niri msg command directly for better compatibility
-            import subprocess
             try:
                 result = subprocess.run(['niri', 'msg', '-j', 'outputs'], 
                                       capture_output=True, text=True, timeout=5)
@@ -303,7 +309,7 @@ def list_outputs():
             outputs_dict[m["name"]]["monitor"] = None
 
     else:
-        eprint("This program only supports sway and Hyprland, and we seem to be elsewhere, terminating.")
+        eprint("This program only supports sway, Hyprland and niri, and we seem to be elsewhere, terminating.")
         sys.exit(1)
 
     # We used to assign Gdk.Monitor to output on the basis of x and y coordinates, but it no longer works,
@@ -330,7 +336,11 @@ def list_outputs():
 
 def list_outputs_activity():
     result = {}
-    if os.getenv("SWAYSOCK"):
+    if os.getenv("NIRI_SOCKET"):
+        outputs = list_outputs()
+        for name in outputs:
+            result[name] = outputs[name].get("active", True)
+    elif os.getenv("SWAYSOCK"):
         i3 = Connection()
         outputs = i3.get_outputs()
         for o in outputs:

@@ -1,10 +1,12 @@
 import os
+import shutil
 import datetime
 import json
 import time
 from nwg_displays.tools import (
     hyprctl,
     niri_msg,
+    niri_reload_config,
     save_list_to_text_file,
     save_kdl_output,
     ensure_niri_config_include,
@@ -137,7 +139,7 @@ class SettingsApplier:
         ensure_niri_config_include(niri_config_dir, outputs_path)
         
         # Reload niri configuration
-        niri_msg('{"Action":{"ReloadConfig":{}}}')
+        niri_reload_config()
         
         config, config_file = get_config()
         
@@ -337,6 +339,14 @@ class SettingsApplier:
         """Apply niri configuration from GUI by writing monitor.kdl file"""
         print(f"[niri] Applying {len(display_buttons)} displays...")
         
+        # Save backup BEFORE applying new settings
+        backup_path = outputs_path + ".bak"
+        if os.path.isfile(outputs_path):
+            shutil.copy2(outputs_path, backup_path)
+            print(f"[niri] Backup saved to {backup_path}")
+        else:
+            backup_path = None
+        
         kdl_data = []
         for db in display_buttons:
             display_config = {
@@ -361,14 +371,11 @@ class SettingsApplier:
         ensure_niri_config_include(niri_config_dir, outputs_path)
         
         # Reload niri configuration
-        niri_msg('{"Action":{"ReloadConfig":{}}}')
+        niri_reload_config()
         
-        backup = []
-        if os.path.isfile(outputs_path):
-            backup = load_text_file(outputs_path).splitlines()
-        
+        # Pass backup file path and current file path to confirm window
         if create_confirm_win_callback:
-            create_confirm_win_callback(backup, outputs_path, config_dir, profile_name)
+            create_confirm_win_callback(backup_path, outputs_path, config_dir, profile_name)
 
     @staticmethod
     def _apply_hyprland_gui(
