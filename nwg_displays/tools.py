@@ -159,6 +159,10 @@ def list_outputs():
             outputs_dict[m["name"]]["focused"] = m["focused"]
             outputs_dict[m["name"]]["dpms"] = m["dpmsStatus"]
 
+            outputs_dict[m["name"]]["cm"] = m["colorManagementPreset"]
+            outputs_dict[m["name"]]["sdr_brightness"] = m["sdrBrightness"]
+            outputs_dict[m["name"]]["sdr_saturation"] = m["sdrSaturation"]
+
             outputs_dict[name]["modes"] = []
 
             for item in m["availableModes"]:
