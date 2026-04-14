@@ -3,7 +3,7 @@
 
 This application is a part of the [nwg-shell](https://nwg-piotr.github.io/nwg-shell) project.
 
-**Nwg-displays** is an output management utility for [sway](https://github.com/swaywm/sway) and [Hyprland](https://github.com/hyprwm/Hyprland) 
+**Nwg-displays** is an output management utility for [sway](https://github.com/swaywm/sway) and [Hyprland](https://github.com/hyprwm/Hyprland)
 Wayland compositor, inspired by wdisplays and wlay. The program is expected to:
 
 - provide an intuitive GUI to manage multiple displays;
@@ -104,9 +104,25 @@ source = ~/.config/hypr/workspaces.conf
 
 Do not set `disable_autoreload true` in Hyprland settings, or you'll have to reload Hyprland manually after applying chages.
 
+### Niri
+
+[Outputs](https://niri-wm.github.io/niri/Configuration:-Outputs.html):
+
+The program automatically adds an include directive to your `~/.config/niri/config.kdl` file:
+
+```kdl
+include "monitor.kdl"
+```
+
+The configuration is saved to `~/.config/niri/monitor.kdl` in KDL format:
+
+Niri will automatically reload the configuration when you apply settings in nwg-displays.
+
+**Note:** Niri uses dynamic workspaces, so the workspace assignment feature is not available for Niri.
+
 ## Settings
 
-The runtime configuration file is placed in your config directory, like `~/.config/nwg-displays/config`. 
+The runtime configuration file is placed in your config directory, like `~/.config/nwg-displays/config`.
 It's a simple JSON file:
 
 ```json
