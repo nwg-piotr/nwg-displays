@@ -3,14 +3,14 @@
 
 This application is a part of the [nwg-shell](https://nwg-piotr.github.io/nwg-shell) project.
 
-**Nwg-displays** is an output management utility for [sway](https://github.com/swaywm/sway) and [Hyprland](https://github.com/hyprwm/Hyprland)
+**Nwg-displays** is an output management utility for [sway](https://github.com/swaywm/sway), [Hyprland](https://github.com/hyprwm/Hyprland) and [Niri](https://github.com/niri-wm/niri)
 Wayland compositor, inspired by wdisplays and wlay. The program is expected to:
 
 - provide an intuitive GUI to manage multiple displays;
 - apply settings;
 - save outputs configuration to a text file;
 - save workspace -> output assignments to a text file;
-- support sway and Hyprland only.
+- support sway, Hyprland and Niri only.
 
 <img src="https://user-images.githubusercontent.com/20579136/158013748-5b27f742-0e6a-4d82-a5ac-06368b4df008.png" width=640, alt="screenshot"><br>
 
