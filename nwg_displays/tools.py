@@ -160,10 +160,19 @@ def list_outputs():
                 
                 logical = mon.get("logical", {})
                 
+                # Store raw make/model for accurate matching (not just description)
+                raw_make = mon.get("make", "")
+                raw_model = mon.get("model", "")
+                raw_serial = mon.get("serial")
+                physical_size = mon.get("physical_size", [])
+                
+                # Format description for backward compatibility
+                description = f'{raw_make} {raw_model} {raw_serial or ""}'.strip()
+                
                 outputs_dict[name] = {
                     "active": True,  # If it's in the list, it's active
                     "dpms": True,
-                    "description": f'{mon.get("make", "")} {mon.get("model", "")} {mon.get("serial") or ""}'.strip(),
+                    "description": description,
                     "x": int(logical.get("x", 0)),
                     "y": int(logical.get("y", 0)),
                     "logical-width": int(logical.get("width", 0)),
@@ -179,7 +188,12 @@ def list_outputs():
                     "adaptive_sync_status": "enabled" if mon.get("vrr_enabled", False) else "disabled",
                     "mirror": "",
                     "ten_bit": False,
-                    "monitor": None
+                    "monitor": None,
+                    # Store raw make/model for matching
+                    "__niri_make": raw_make,
+                    "__niri_model": raw_model,
+                    "__niri_serial": raw_serial,
+                    "__niri_physical_size": physical_size,
                 }
                 
                 # Parse available modes
@@ -315,19 +329,65 @@ def list_outputs():
     # We used to assign Gdk.Monitor to output on the basis of x and y coordinates, but it no longer works,
     # starting from gtk3-1:3.24.42: all monitors have x=0, y=0. This is most likely a bug, but from now on
     # we must rely on gdk monitors order.
+    # For niri, we use property-based matching to avoid order issues after config reload.
     monitors = []
     display = Gdk.Display.get_default()
     for i in range(display.get_n_monitors()):
         monitor = display.get_monitor(i)
         monitors.append(monitor)
 
-    idx = 0
-    for key in outputs_dict:
-        try:
-            outputs_dict[key]["monitor"] = monitors[idx]
-        except IndexError:
-            print(f"Couldn't assign a Gdk.Monitor to {outputs_dict[key]}")
-        idx += 1
+    if os.getenv("NIRI_SOCKET"):
+        # Niri: Use property-based matching (manufacturer + model + physical_size)
+        # Note: GdkWaylandMonitor doesn't have get_serial(), only manufacturer+model+size
+        gdk_lookup = {}
+        for m in monitors:
+            manufacturer = m.get_manufacturer() or ""
+            model = m.get_model() or ""
+            width_mm = m.get_width_mm()
+            height_mm = m.get_height_mm()
+            physical_size = f"{width_mm}x{height_mm}" if width_mm and height_mm else ""
+            # Use manufacturer + model + physical_size for matching
+            key = f"{manufacturer}|{model}|{physical_size}"
+            if key not in gdk_lookup:
+                gdk_lookup[key] = m
+
+        for key in outputs_dict:
+            if key in outputs_dict:
+                data = outputs_dict[key]
+                
+                # Use raw niri data if available (preferred)
+                make = data.get("__niri_make", "")
+                model = data.get("__niri_model", "")
+                
+                # Get physical size from output data (try multiple sources)
+                physical_size = data.get("__niri_physical_size", [])
+                if not physical_size:
+                    # Fallback to physical-width/physical-height if no physical_size
+                    physical_size = [data.get("physical_width", 0), data.get("physical_height", 0)]
+                
+                size_str = f"{physical_size[0]}x{physical_size[1]}" if len(physical_size) >= 2 else ""
+                
+                match_key = f"{make}|{model}|{size_str}"
+                if match_key in gdk_lookup:
+                    outputs_dict[key]["monitor"] = gdk_lookup[match_key]
+                else:
+                    # Fallback to index matching if no match found
+                    idx = 0
+                    for k in outputs_dict:
+                        if k == key:
+                            break
+                        idx += 1
+                    if idx < len(monitors):
+                        outputs_dict[key]["monitor"] = monitors[idx]
+    else:
+        # Sway/Hyprland: Keep original index-based matching
+        idx = 0
+        for key in outputs_dict:
+            try:
+                outputs_dict[key]["monitor"] = monitors[idx]
+            except IndexError:
+                print(f"Couldn't assign a Gdk.Monitor to {outputs_dict[key]}")
+            idx += 1
 
     for key in outputs_dict:
         eprint(key, outputs_dict[key])
