@@ -6,6 +6,7 @@
   "adaptive-sync-tooltip": "Povolí, nebo zakáže adaptivní synchronizaci \n(často označovanou jako VRR proměnná obnovovací frekvence, \nnebo podle výrobců FreeSync/G-Sync).",
   "apply": "Použít",
   "close": "Zavřít",
+  "clear": "Vymazat",
   "custom-mode": "Upravený mód",
   "custom-mode-tooltip": "Přidá '--custom' argument k nastavení módu \nNeyobrayeného v dostupných.\nPoužijte POUZE pokud přesně víte, co děláte.",
   "dpms-tooltip": "Povolí, nebo zakáže výstup přez DPMS. \nPro vypnutí výstupu (tj. Vyprázdnění obrazovkz, \nale ponechání pracovních ploch beze změn), můžete vypnout DPMS.",
