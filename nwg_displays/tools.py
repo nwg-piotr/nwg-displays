@@ -337,41 +337,31 @@ def list_outputs():
         monitors.append(monitor)
 
     if os.getenv("NIRI_SOCKET"):
-        # Niri: Use property-based matching (manufacturer + model + physical_size)
-        # Note: GdkWaylandMonitor doesn't have get_serial(), only manufacturer+model+size
-        gdk_lookup = {}
-        for m in monitors:
-            manufacturer = m.get_manufacturer() or ""
-            model = m.get_model() or ""
-            width_mm = m.get_width_mm()
-            height_mm = m.get_height_mm()
-            physical_size = f"{width_mm}x{height_mm}" if width_mm and height_mm else ""
-            # Use manufacturer + model + physical_size for matching
-            key = f"{manufacturer}|{model}|{physical_size}"
-            if key not in gdk_lookup:
-                gdk_lookup[key] = m
-
+        # Niri: Use position-based matching with Gdk.Monitor geometry
+        # This ensures correct matching even when multiple monitors have identical properties
         for key in outputs_dict:
             if key in outputs_dict:
                 data = outputs_dict[key]
+                output_x = data.get("x", 0)
+                output_y = data.get("y", 0)
                 
-                # Use raw niri data if available (preferred)
-                make = data.get("__niri_make", "")
-                model = data.get("__niri_model", "")
+                # Find matching monitor by position (x, y coordinates)
+                matched = False
+                for m in monitors:
+                    try:
+                        geom = m.get_geometry()
+                        gdk_x = geom.x
+                        gdk_y = geom.y
+                        # Check if positions match (allow small tolerance)
+                        if abs(gdk_x - output_x) < 10 and abs(gdk_y - output_y) < 10:
+                            outputs_dict[key]["monitor"] = m
+                            matched = True
+                            break
+                    except:
+                        pass
                 
-                # Get physical size from output data (try multiple sources)
-                physical_size = data.get("__niri_physical_size", [])
-                if not physical_size:
-                    # Fallback to physical-width/physical-height if no physical_size
-                    physical_size = [data.get("physical_width", 0), data.get("physical_height", 0)]
-                
-                size_str = f"{physical_size[0]}x{physical_size[1]}" if len(physical_size) >= 2 else ""
-                
-                match_key = f"{make}|{model}|{size_str}"
-                if match_key in gdk_lookup:
-                    outputs_dict[key]["monitor"] = gdk_lookup[match_key]
-                else:
-                    # Fallback to index matching if no match found
+                # Fallback to index-based if position matching fails
+                if not matched:
                     idx = 0
                     for k in outputs_dict:
                         if k == key:
