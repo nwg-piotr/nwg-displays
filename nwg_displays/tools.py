@@ -33,6 +33,46 @@ def get_config_dir():
     return os.path.join(xdg_config_home, "nwg-displays")
 
 
+def niri_msg(cmd):
+    """Execute niri msg command and return output"""
+    niri_socket = os.getenv("NIRI_SOCKET")
+    if not niri_socket:
+        return None
+    
+    if not os.path.exists(niri_socket):
+        eprint(f"[niri] Socket file not found: {niri_socket}")
+        return None
+    
+    try:
+        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        s.connect(niri_socket)
+        request = cmd + "\n"
+        s.send(request.encode("utf-8"))
+        s.shutdown(socket.SHUT_WR)
+        output = ""
+        while True:
+            chunk = s.recv(4096)
+            if not chunk:
+                break
+            output += chunk.decode('utf-8')
+        s.close()
+        return output.strip()
+    except Exception as e:
+        eprint(f"Error communicating with niri: {e}")
+        return None
+
+
+def niri_reload_config():
+    """Reload niri configuration via niri msg CLI"""
+    try:
+        subprocess.run(['niri', 'msg', 'action', 'load-config-file', 
+                       os.path.join(get_config_home(), "niri", "config.kdl")],
+                      capture_output=True, text=True, timeout=5)
+        print("[niri] Config reloaded")
+    except Exception as e:
+        eprint(f"[niri] Failed to reload config: {e}")
+
+
 def get_config():
     config_dir = get_config_dir()
     config_file = os.path.join(config_dir, "config")
@@ -70,7 +110,111 @@ def is_command(cmd):
 
 
 def list_outputs():
-    if os.getenv("SWAYSOCK"):
+    if os.getenv("NIRI_SOCKET"):
+        outputs_dict = {}
+        eprint("Running on niri")
+        
+        try:
+            try:
+                result = subprocess.run(['niri', 'msg', '-j', 'outputs'], 
+                                      capture_output=True, text=True, timeout=5)
+                output = result.stdout
+            except Exception as e:
+                eprint(f"[niri] Failed to run niri msg: {e}")
+                # Fallback to socket communication
+                output = niri_msg('{"Outputs":null}')
+                
+            if not output:
+                eprint("[niri] Could not communicate with niri compositor")
+                return {}
+                
+            data = json.loads(output)
+            
+            # niri msg returns dict directly: {"eDP-1": {...}}
+            # Or via IPC: {"Ok":{"Outputs":{"eDP-1":{...}}}}
+            monitors_dict = None
+            if isinstance(data, dict):
+                if "Ok" in data:
+                    monitors_dict = data.get("Outputs", {})
+                elif "Err" in data:
+                    eprint(f"[niri] Error from compositor: {data['Err']}")
+                    return {}
+                else:
+                    # Direct response from niri msg
+                    monitors_dict = data
+            
+            if monitors_dict is None or not isinstance(monitors_dict, dict):
+                eprint(f"[niri] Unexpected response format: {data}")
+                return {}
+            
+            # monitors_dict is a dict keyed by output name
+            transforms = {"Normal": "normal", "90": "90", "180": "180", "270": "270", 
+                         "Flipped": "flipped", "Flipped90": "flipped-90", 
+                         "Flipped180": "flipped-180", "Flipped270": "flipped-270"}
+            
+            for name, mon in monitors_dict.items():
+                # Get current mode info
+                current_mode_idx = mon.get("current_mode", 0)
+                modes_list = mon.get("modes", [])
+                current_mode = modes_list[current_mode_idx] if modes_list and current_mode_idx < len(modes_list) else {}
+                
+                logical = mon.get("logical", {})
+                
+                # Store raw make/model for accurate matching (not just description)
+                raw_make = mon.get("make", "")
+                raw_model = mon.get("model", "")
+                raw_serial = mon.get("serial")
+                physical_size = mon.get("physical_size", [])
+                
+                # Format description for backward compatibility
+                description = f'{raw_make} {raw_model} {raw_serial or ""}'.strip()
+                
+                outputs_dict[name] = {
+                    "active": True,  # If it's in the list, it's active
+                    "dpms": True,
+                    "description": description,
+                    "x": int(logical.get("x", 0)),
+                    "y": int(logical.get("y", 0)),
+                    "logical-width": int(logical.get("width", 0)),
+                    "logical-height": int(logical.get("height", 0)),
+                    "physical-width": int(current_mode.get("width", 0)),
+                    "physical-height": int(current_mode.get("height", 0)),
+                    "transform": transforms.get(logical.get("transform", "Normal"), "normal"),
+                    "scale": float(logical.get("scale", 1.0)),
+                    "scale_filter": "linear",
+                    "refresh": round(float(current_mode.get("refresh_rate", 60000)) / 1000, 2),
+                    "modes": [],
+                    "focused": mon.get("is_focused", False),
+                    "adaptive_sync_status": "enabled" if mon.get("vrr_enabled", False) else "disabled",
+                    "mirror": "",
+                    "ten_bit": False,
+                    "monitor": None,
+                    # Store raw make/model for matching
+                    "__niri_make": raw_make,
+                    "__niri_model": raw_model,
+                    "__niri_serial": raw_serial,
+                    "__niri_physical_size": physical_size,
+                }
+                
+                # Parse available modes
+                for mode in modes_list:
+                    try:
+                        outputs_dict[name]["modes"].append({
+                            "width": int(mode.get("width", 0)),
+                            "height": int(mode.get("height", 0)),
+                            "refresh": float(mode.get("refresh_rate", 60000))
+                        })
+                    except:
+                        pass
+        except json.JSONDecodeError as e:
+            eprint(f"[niri] JSON decode error: {e}")
+            return {}
+        except Exception as e:
+            eprint(f"Error parsing niri outputs: {e}")
+            # Return empty dict if parsing fails
+            return {}
+            
+    elif os.getenv("SWAYSOCK"):
         outputs_dict = {}
         eprint("Running on sway")
         i3 = Connection()
@@ -179,25 +323,61 @@ def list_outputs():
             outputs_dict[m["name"]]["monitor"] = None
 
     else:
-        eprint("This program only supports sway and Hyprland, and we seem to be elsewhere, terminating.")
+        eprint("This program only supports sway, Hyprland and niri, and we seem to be elsewhere, terminating.")
         sys.exit(1)
 
     # We used to assign Gdk.Monitor to output on the basis of x and y coordinates, but it no longer works,
     # starting from gtk3-1:3.24.42: all monitors have x=0, y=0. This is most likely a bug, but from now on
     # we must rely on gdk monitors order.
+    # For niri, we use property-based matching to avoid order issues after config reload.
     monitors = []
     display = Gdk.Display.get_default()
     for i in range(display.get_n_monitors()):
         monitor = display.get_monitor(i)
         monitors.append(monitor)
 
-    idx = 0
-    for key in outputs_dict:
-        try:
-            outputs_dict[key]["monitor"] = monitors[idx]
-        except IndexError:
-            print(f"Couldn't assign a Gdk.Monitor to {outputs_dict[key]}")
-        idx += 1
+    if os.getenv("NIRI_SOCKET"):
+        # Niri: Use position-based matching with Gdk.Monitor geometry
+        # This ensures correct matching even when multiple monitors have identical properties
+        for key in outputs_dict:
+            if key in outputs_dict:
+                data = outputs_dict[key]
+                output_x = data.get("x", 0)
+                output_y = data.get("y", 0)
+                
+                # Find matching monitor by position (x, y coordinates)
+                matched = False
+                for m in monitors:
+                    try:
+                        geom = m.get_geometry()
+                        gdk_x = geom.x
+                        gdk_y = geom.y
+                        # Check if positions match (allow small tolerance)
+                        if abs(gdk_x - output_x) < 10 and abs(gdk_y - output_y) < 10:
+                            outputs_dict[key]["monitor"] = m
+                            matched = True
+                            break
+                    except:
+                        pass
+                
+                # Fallback to index-based if position matching fails
+                if not matched:
+                    idx = 0
+                    for k in outputs_dict:
+                        if k == key:
+                            break
+                        idx += 1
+                    if idx < len(monitors):
+                        outputs_dict[key]["monitor"] = monitors[idx]
+    else:
+        # Sway/Hyprland: Keep original index-based matching
+        idx = 0
+        for key in outputs_dict:
+            try:
+                outputs_dict[key]["monitor"] = monitors[idx]
+            except IndexError:
+                print(f"Couldn't assign a Gdk.Monitor to {outputs_dict[key]}")
+            idx += 1
 
     for key in outputs_dict:
         eprint(key, outputs_dict[key])
@@ -206,7 +386,11 @@ def list_outputs():
 
 def list_outputs_activity():
     result = {}
-    if os.getenv("SWAYSOCK"):
+    if os.getenv("NIRI_SOCKET"):
+        outputs = list_outputs()
+        for name in outputs:
+            result[name] = outputs[name].get("active", True)
+    elif os.getenv("SWAYSOCK"):
         i3 = Connection()
         outputs = i3.get_outputs()
         for o in outputs:
@@ -333,6 +517,84 @@ def save_list_to_text_file(data, file_path):
     for line in data:
         text_file.write(line + "\n")
     text_file.close()
+
+
+def save_kdl_output(data, file_path):
+    """Save output configuration in KDL format for niri"""
+    text_file = open(file_path, "w")
+    now = datetime.datetime.now()
+    line = "// Generated by nwg-displays on {} at {}. Do not edit manually.\n".format(
+        datetime.datetime.strftime(now, '%Y-%m-%d'),
+        datetime.datetime.strftime(now, '%H:%M:%S'))
+    text_file.write(line + "\n")
+    
+    for d in data:
+        name = d["name"]
+        if not d["active"]:
+            text_file.write(f'output "{name}" {{\n    off\n}}\n\n')
+            continue
+        
+        text_file.write(f'output "{name}" {{\n')
+        
+        # Mode
+        text_file.write(f'    mode "{d["physical_width"]}x{d["physical_height"]}@{d["refresh"]}"\n')
+        
+        # Scale
+        text_file.write(f'    scale {d["scale"]}\n')
+        
+        # Transform
+        if d["transform"] != "normal":
+            text_file.write(f'    transform "{d["transform"]}"\n')
+        
+        # Position
+        text_file.write(f'    position x={d["x"]} y={d["y"]}\n')
+        
+        # Variable refresh rate (adaptive sync)
+        if d.get("adaptive_sync", False):
+            text_file.write(f'    variable-refresh-rate\n')
+        
+        text_file.write(f'}}\n\n')
+    
+    text_file.close()
+
+
+def ensure_niri_config_include(config_dir, monitors_file):
+    """Ensure that config.kdl includes monitor.kdl"""
+    config_kdl = os.path.join(config_dir, "config.kdl")
+    monitors_rel_path = "monitor.kdl"
+    
+    # Check if config.kdl exists
+    if not os.path.isfile(config_kdl):
+        # Create a minimal config.kdl with include
+        with open(config_kdl, "w") as f:
+            f.write(f'// Include monitor configuration generated by nwg-displays\n')
+            f.write(f'include "{monitors_rel_path}"\n')
+        eprint(f"[niri] Created {config_kdl} with include directive")
+        return
+    
+    # Read existing config
+    content = load_text_file(config_kdl)
+    if content is None:
+        return
+    
+    lines = content.splitlines()
+    
+    # Check if include already exists
+    include_pattern = f'include "{monitors_rel_path}"'
+    include_pattern_single = f"include '{monitors_rel_path}'"
+    
+    for line in lines:
+        if include_pattern in line or include_pattern_single in line:
+            # Already included
+            return
+    
+    # Add include directive at the beginning
+    new_content = f'// Include monitor configuration generated by nwg-displays\ninclude "{monitors_rel_path}"\n\n{content}'
+    
+    with open(config_kdl, "w") as f:
+        f.write(new_content)
+    
+    eprint(f"[niri] Added include directive to {config_kdl}")
 
 
 def create_empty_file(file_path):

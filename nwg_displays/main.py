@@ -14,6 +14,7 @@ Thank you, Kurt Jacobson!
 """
 
 import argparse
+import shutil
 import stat
 import sys
 import threading
@@ -44,6 +45,7 @@ from nwg_displays.__about__ import __version__
 dir_name = os.path.dirname(__file__)
 sway = os.getenv("SWAYSOCK") is not None
 hypr = os.getenv("HYPRLAND_INSTANCE_SIGNATURE") is not None
+niri = os.getenv("NIRI_SOCKET") is not None
 
 config_dir = os.path.join(get_config_home(), "nwg-displays")
 # This was done by mistake, and the config file need to be migrated to the proper path
@@ -67,6 +69,14 @@ if hypr and not os.path.isdir(hypr_config_dir):
     )
     sys.exit(1)
 
+niri_config_dir = os.path.join(get_config_home(), "niri")
+if niri and not os.path.isdir(niri_config_dir):
+    print(
+        "[Warning] Couldn't find niri config directory '{}'".format(niri_config_dir),
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
 # Create empty files if not found
 if sway:
     for name in ["outputs", "workspaces"]:
@@ -74,8 +84,11 @@ if sway:
 elif hypr:
     for name in ["monitors.conf", "workspaces.conf"]:
         create_empty_file(os.path.join(hypr_config_dir, name))
+elif niri:
+    for name in ["monitor.kdl"]:
+        create_empty_file(os.path.join(niri_config_dir, name))
 else:
-    eprint("[Error] Neither sway nor Hyprland detected, terminating")
+    eprint("[Error] Neither sway, Hyprland nor niri detected, terminating")
     sys.exit(1)
 
 config = {}
@@ -225,7 +238,6 @@ def on_motion_notify_event(widget, event):
     # px,py stores previous values of x,y
 
     global px, py
-    global offset_x, offset_y
 
     # get starting values for x,y
     x = event.x_root - offset_x
@@ -617,10 +629,7 @@ def on_mirror_selected(widget):
 
 
 def on_apply_button(widget, p_manager=None):
-    global outputs_activity
-
     if p_manager is None:
-        global profile_manager
         p_manager = profile_manager
 
     profile_name = p_manager.current_profile if p_manager else None
@@ -642,13 +651,11 @@ def on_apply_button(widget, p_manager=None):
 
 
 def on_output_toggled(check_btn, name):
-    global outputs_activity
     outputs_activity[name] = check_btn.get_active()
 
 
 def on_toggle_button(btn):
     i3 = Connection()
-    global outputs_activity
     for key in outputs_activity:
         toggle = "enable" if outputs_activity[key] else "disable"
         cmd = "output {} {}".format(key, toggle)
@@ -664,8 +671,12 @@ def create_display_buttons():
         item.destroy()
     display_buttons = []
 
-    global outputs
     outputs = list_outputs()
+    
+    if not outputs:
+        eprint("[Error] No outputs detected")
+        return
+    
     for key in outputs:
         item = outputs[key]
         custom_mode = key in config["custom-mode"]
@@ -699,8 +710,9 @@ def create_display_buttons():
             round(item["y"] * config["view-scale"]),
         )
 
-    display_buttons[0].select()
-    update_form_from_widget(display_buttons[0])
+    if display_buttons:
+        display_buttons[0].select()
+        update_form_from_widget(display_buttons[0])
 
 
 class Indicator(Gtk.Window):
@@ -741,7 +753,6 @@ def handle_keyboard(window, event):
 
 
 def create_workspaces_window(btn):
-    global sway_config_dir
     global workspaces
     workspaces = load_workspaces(
         os.path.join(sway_config_dir, "workspaces"), use_desc=config["use-desc"]
@@ -760,8 +771,6 @@ def create_workspaces_window(btn):
     grid.set_column_spacing(12)
     grid.set_row_spacing(12)
     dialog_win.add(grid)
-    global num_ws
-    global outputs
     last_row = 0
     for i in range(num_ws):
         lbl = Gtk.Label()
@@ -822,7 +831,6 @@ def create_workspaces_window_hypr(btn):
     grid.set_column_spacing(12)
     grid.set_row_spacing(6)
     dialog_win.add(grid)
-    global outputs
     last_row = 0
     for i in range(num_ws):
         lbl = Gtk.Label()
@@ -872,7 +880,6 @@ def create_workspaces_window_hypr(btn):
 
 
 def on_ws_combo_changed(combo, ws_num):
-    global workspaces
     workspaces[ws_num] = combo.get_active_id()
 
 
@@ -881,7 +888,6 @@ def close_dialog(w, win):
 
 
 def on_workspaces_apply_btn(w, win, old_workspaces):
-    global workspaces
     if workspaces != old_workspaces:
         save_workspaces(
             workspaces,
@@ -894,7 +900,6 @@ def on_workspaces_apply_btn(w, win, old_workspaces):
 
 
 def on_workspaces_apply_btn_hypr(w, win, old_workspaces):
-    global workspaces
     if workspaces != old_workspaces:
         workspace_conf_file = workspaces_path
         text_file = open(workspace_conf_file, "w")
@@ -985,6 +990,10 @@ def keep_current_settings(btn, config_dir=None, profile_name=None):
         GLib.Source.remove(src_tag)
     confirm_win.close()
 
+    if os.getenv("NIRI_SOCKET"):
+        niri_reload_config()
+        GLib.timeout_add(2000, create_display_buttons)
+
     if config_dir and profile_name:
         if config.get("profile-bound-wallpapers", True):
             threading.Thread(
@@ -1027,6 +1036,15 @@ def restore_old_settings(btn, backup, path):
         confirm_win.close()
         # Don't execute any command here, just save the file and wait for Hyprland to notice and apply the change.
         # Let's give it some time to do it before refreshing UI.
+        GLib.timeout_add(2000, create_display_buttons)
+
+    elif os.getenv("NIRI_SOCKET"):
+        # For niri: backup is a file path (.bak), restore by copying it back
+        if backup and os.path.isfile(backup):
+            shutil.copy2(backup, path)
+            print(f"[niri] Restored from {backup}")
+        confirm_win.close()
+        niri_reload_config()
         GLib.timeout_add(2000, create_display_buttons)
 
 
@@ -1072,6 +1090,25 @@ def main():
             default="{}/workspaces.conf".format(hypr_config_dir),
             help="path to save the workspaces.conf file to, default: {}".format(
                 "{}/workspaces.conf".format(hypr_config_dir)
+            ),
+        )
+
+        parser.add_argument(
+            "-n",
+            "--num_ws",
+            type=int,
+            default=10,
+            help="number of Workspaces in use, default: 10",
+        )
+
+    elif niri:
+        parser.add_argument(
+            "-m",
+            "--monitors_path",
+            type=str,
+            default="{}/monitor.kdl".format(niri_config_dir),
+            help="path to save the monitor.kdl file to, default: {}".format(
+                "{}/monitor.kdl".format(niri_config_dir)
             ),
         )
 
@@ -1136,8 +1173,38 @@ def main():
             eprint("Hyprland config directory not found!")
             outputs_path = ""
             workspaces_path = ""
+    elif niri:
+        if os.path.isdir(niri_config_dir):
+            outputs_path = args.monitors_path
+            # Check if file is writable
+            if os.path.lexists(outputs_path):
+                is_writable = os.access(outputs_path, os.W_OK)
+                if os.path.islink(outputs_path) and not is_writable:
+                    eprint(f"INFO: '{outputs_path}' is a read-only symlink. Replacing with a writable file.")
+                    tmp_path = f"{outputs_path}.tmp"
+                    try:
+                        with open(outputs_path, 'r') as src_file, open(tmp_path, 'w') as tmp_file:
+                            tmp_file.write(src_file.read())
+                        backup_path = f"{outputs_path}.bkp"
+                        counter = 1
+                        while os.path.lexists(backup_path):
+                            backup_path = f"{outputs_path}.bkp{counter}"
+                            counter += 1
+                        eprint(f"INFO: Backing up '{outputs_path}' to '{backup_path}'")
+                        os.rename(outputs_path, backup_path)
+                        os.rename(tmp_path, outputs_path)
+                    except Exception as e:
+                        eprint(f"ERROR: Failed to replace read-only symlink: {e}")
+                elif not os.path.islink(outputs_path) and not is_writable:
+                    eprint(f"INFO: '{outputs_path}' is a read-only file. Making it writable.")
+                    try:
+                        os.chmod(outputs_path, os.stat(outputs_path).st_mode | stat.S_IWUSR)
+                    except Exception as e:
+                        eprint(f"ERROR: Failed to make file writable: {e}")
+        else:
+            eprint("niri config directory not found!")
+            outputs_path = ""
 
-    global num_ws
     num_ws = args.num_ws
     if sway:
         print("[Info] Number of workspaces: {}".format(num_ws))
@@ -1331,6 +1398,10 @@ def main():
         form_workspaces.connect("clicked", create_workspaces_window)
     elif hypr:
         form_workspaces.connect("clicked", create_workspaces_window_hypr)
+    elif niri:
+        # Niri uses dynamic workspaces, no need for workspace assignment
+        form_workspaces.set_sensitive(False)
+        form_workspaces.set_tooltip_text("Niri uses dynamic workspaces")
 
     global form_close
     form_close = builder.get_object("close")
@@ -1341,7 +1412,7 @@ def main():
     global form_apply
     form_apply = builder.get_object("apply")
     form_apply.set_label(voc["apply"])
-    if (sway and sway_config_dir) or (hypr and hypr_config_dir):
+    if (sway and sway_config_dir) or (hypr and hypr_config_dir) or (niri and niri_config_dir):
         form_apply.connect("clicked", on_apply_button, profile_manager)
     else:
         form_apply.set_sensitive(False)
@@ -1379,7 +1450,7 @@ def main():
     else:
         btn.destroy()
 
-    if hypr:
+    if hypr or niri:
         grid = builder.get_object("grid")
 
         global form_ten_bit
