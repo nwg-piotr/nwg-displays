@@ -135,6 +135,9 @@ form_version = None
 form_mirror = None
 form_ten_bit = None
 form_profile_wallpapers = None
+form_cm = None
+form_sdr_brightness = None
+form_sdr_saturation = None
 
 dialog_win = None
 confirm_win = None
@@ -391,6 +394,9 @@ def update_form_from_widget(widget):
 
     on_mode_changed_silent = False
 
+    form_cm.set_active_id(widget.cm)
+    form_sdr_brightness.set_value(widget.sdr_brightness)
+    form_sdr_saturation.set_value(widget.sdr_saturation)
 
 class DisplayButton(Gtk.Button):
     def __init__(
@@ -413,6 +419,9 @@ class DisplayButton(Gtk.Button):
         custom_mode_status,
         focused,
         monitor,
+        cm,
+        sdr_brightness=1.0,
+        sdr_saturation=1.0,
         mirror="",
     ):
         super().__init__()
@@ -441,7 +450,9 @@ class DisplayButton(Gtk.Button):
         self.focused = focused
         self.mirror = mirror
         self.ten_bit = ten_bit
-
+        self.cm = cm
+        self.sdr_brightness = sdr_brightness
+        self.sdr_saturation = sdr_saturation
         # Button properties
         self.selected = False
         self.set_can_focus(False)
@@ -611,6 +622,25 @@ def on_refresh_changed(widget):
 
         update_form_from_widget(selected_output_button)
 
+def on_sdr_saturation_changed(widget):
+    if selected_output_button:
+        selected_output_button.sdr_saturation = widget.get_value()
+
+        update_form_from_widget(selected_output_button)
+
+
+def on_sdr_brightness_changed(widget):
+    if selected_output_button:
+        selected_output_button.sdr_brightness = widget.get_value()
+
+        update_form_from_widget(selected_output_button)
+
+
+def on_cm_changed(widget):
+    if selected_output_button:
+        selected_output_button.cm = widget.get_active_id()
+        update_form_from_widget(selected_output_button)
+
 
 def on_mode_changed(widget):
     if selected_output_button and not on_mode_changed_silent:
@@ -700,6 +730,9 @@ def create_display_buttons():
             item["focused"],
             item["monitor"],
             mirror=item["mirror"],
+            cm=item["cm"],
+            sdr_brightness=item["sdr_brightness"],
+            sdr_saturation=item["sdr_saturation"],
         )
 
         display_buttons.append(b)
@@ -1427,6 +1460,32 @@ def main():
 
     global fixed
     fixed = builder.get_object("fixed")
+
+    if hypr:
+        global form_cm
+        global form_sdr_brightness
+        global form_sdr_saturation
+        form_cm = builder.get_object("cm")
+        form_cm.set_wrap_width(1)
+        form_sdr_brightness = builder.get_object("sdr-brightness")
+        form_sdr_saturation = builder.get_object("sdr-saturation")
+        builder.get_object("lbl-cm").show()
+        builder.get_object("lbl-sdr-brightness").show()
+        builder.get_object("lbl-sdr-saturation").show()
+        adj = Gtk.Adjustment(
+            lower=0, upper=4, step_increment=0.01, page_increment=10, page_size=1
+        )
+        adj1 = Gtk.Adjustment(
+            lower=0, upper=4, step_increment=0.01, page_increment=10, page_size=1
+        )
+        form_sdr_brightness.configure(adj, 1, 2)
+        form_sdr_saturation.configure(adj1, 1, 2)
+        form_sdr_brightness.connect("changed", on_sdr_brightness_changed)
+        form_sdr_saturation.connect("changed", on_sdr_saturation_changed)
+        form_cm.connect("changed", on_cm_changed)
+        form_cm.show()
+        form_sdr_brightness.show()
+        form_sdr_saturation.show()
 
     create_display_buttons()
 

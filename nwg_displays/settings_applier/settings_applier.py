@@ -87,6 +87,9 @@ class SettingsApplier:
             if d.get("ten_bit"):
                 line += ",bitdepth,10"
 
+            if d.get("cm") != "srgb":
+                line += f"cm,{d.get('cm')},sdrbrightness,{d.get('sdr_brightness')}, sdrsaturation, {d.get('sdr_saturation')}"
+            
             lines.append(line)
 
             if d["transform"] != "normal":
@@ -425,6 +428,8 @@ class SettingsApplier:
                 line += ",mirror,{}".format(db.mirror)
             if db.ten_bit:
                 line += ",bitdepth,10"
+            if db.cm != "srgb":
+                line += f",cm,{db.cm},sdrbrightness,{db.sdr_brightness},sdrsaturation,{db.sdr_saturation}"
 
             lines.append(line)
             if db.transform != "normal":

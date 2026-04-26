@@ -54,7 +54,7 @@
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <child>
-                      <!-- n-columns=8 n-rows=6 -->
+                      <!-- n-columns=8 n-rows=7 -->
                       <object class="GtkGrid" id="grid">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
@@ -142,6 +142,78 @@
                           <packing>
                             <property name="left-attach">6</property>
                             <property name="top-attach">3</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="lbl-cm">
+                            <property name="can-focus">True</property>
+                            <property name="no-show-all">True</property>
+                            <property name="halign">end</property>
+                            <property name="label">CM:</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">5</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkComboBoxText" id="cm">
+                            <property name="can-focus">True</property>
+                            <property name="no-show-all">True</property>
+                            <property name="double-buffered">False</property>
+                            <items>
+                              <item id="srgb" translatable="yes">srgb</item>
+                              <item id="hdr" translatable="yes">hdr</item>
+                              <item id="hdredid" translatable="yes">hdredid</item>
+                            </items>
+                          </object>
+                          <packing>
+                            <property name="left-attach">1</property>
+                            <property name="top-attach">5</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="lbl-sdr-brightness">
+                            <property name="can-focus">True</property>
+                            <property name="no-show-all">True</property>
+                            <property name="halign">end</property>
+                            <property name="label">SDR Brightness:</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">2</property>
+                            <property name="top-attach">5</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkSpinButton" id="sdr-brightness">
+                            <property name="can-focus">True</property>
+                            <property name="no-show-all">True</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">3</property>
+                            <property name="top-attach">5</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="lbl-sdr-saturation">
+                            <property name="can-focus">True</property>
+                            <property name="no-show-all">True</property>
+                            <property name="halign">end</property>
+                            <property name="label">SDR Saturation:</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">4</property>
+                            <property name="top-attach">5</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkSpinButton" id="sdr-saturation">
+                            <property name="can-focus">True</property>
+                            <property name="no-show-all">True</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">5</property>
+                            <property name="top-attach">5</property>
                           </packing>
                         </child>
                         <child>
@@ -406,7 +478,7 @@
                           </object>
                           <packing>
                             <property name="left-attach">0</property>
-                            <property name="top-attach">5</property>
+                            <property name="top-attach">6</property>
                             <property name="width">4</property>
                           </packing>
                         </child>
@@ -478,7 +550,7 @@
                           </object>
                           <packing>
                             <property name="left-attach">3</property>
-                            <property name="top-attach">5</property>
+                            <property name="top-attach">6</property>
                             <property name="width">5</property>
                           </packing>
                         </child>
@@ -572,6 +644,12 @@
                             <property name="top-attach">4</property>
                             <property name="width">2</property>
                           </packing>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
                         </child>
                         <child>
                           <placeholder/>
