@@ -6,6 +6,7 @@
   "adaptive-sync-tooltip": "启用或停用 Adaptive-Sync 功能（通常称作可变刷新率，或品牌专属名词 FreeSync/G-Sync）。",
   "apply": "应用",
   "close": "关闭",
+  "clear": "清除",
   "custom-mode": "自定义模式",
   "custom-mode-tooltip": "使用“--custom”参数以使用未列入列表中的模式。不要使用此模式，除非你清楚自己在做什么！",
   "dpms-tooltip": "启用或停用通过 DPMS 的输出。若要关闭输出（即，使显示器黑屏但不变动工作区），可将 DPMS 关闭。",

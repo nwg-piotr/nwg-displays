@@ -6,6 +6,7 @@
   "adaptive-sync-tooltip": "Uyarlanabilir senkronizasyonu etkinleştirir veya devre dışı bırakır\n(genellikle Değişken Yenileme Hızı olarak anılır,\nveya üreticiye özel isimlerle FreeSync/G-Sync olarak bilinir).",
   "apply": "Uygula",
   "close": "Kapat",
+  "clear": "Temizle",
   "custom-mode": "Özel mod",
   "custom-mode-tooltip": "'--custom' argümanını ekleyerek\nlistede olmayan özel bir modu ayarlar.\nYalnızca ne yaptığınızı biliyorsanız kullanın.",
   "dpms-tooltip": "DPMS üzerinden çıkışı etkinleştirir veya devre dışı bırakır.\nBir çıkışı kapatmak için (ekranı karartmak ancak\nçalışma alanlarını korumak için), DPMS kapalı olarak ayarlanabilir.",

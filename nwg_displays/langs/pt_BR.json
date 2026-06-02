@@ -6,6 +6,7 @@
   "adaptive-sync-tooltip": "Ativa ou desativa sincronização adaptável \n(geralmente referida como Taxa de Atualização Variável, \nou pelo nomes comerciais FreeSync/G-Sync).",
   "apply": "Aplicar",
   "close": "Fechar",
+  "clear": "Limpar",
   "custom-mode": "Modo personalizado",
   "custom-mode-tooltip": "Adiciona o argumento '--custom' para definir um modo\nnão listado na listagem de disponíveis.\nUse isto SOMENTE se você sabe o que está fazendo.",
   "dpms-tooltip": "Ativa ou desativa saída via DPMS. \nPara desligar uma saída (ex. tela em branco \nmas manter espaços de trabalho como estão), o DPMS pode ser definido como off.",
