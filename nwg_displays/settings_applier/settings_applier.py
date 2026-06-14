@@ -1,22 +1,24 @@
-import os
-import shutil
 import datetime
 import json
+import os
+import shutil
 import time
+
 from nwg_displays.tools import (
-    hyprctl,
-    niri_msg,
-    niri_reload_config,
-    save_list_to_text_file,
-    save_kdl_output,
     ensure_niri_config_include,
-    load_text_file,
+    get_config,
+    hyprctl,
     inactive_output_description,
     load_json,
+    load_text_file,
+    niri_msg,
+    niri_reload_config,
     save_json,
+    save_kdl_output,
+    save_list_to_text_file,
 )
 from nwg_displays.wallpaper_manager import WallpaperManager
-from nwg_displays.tools import get_config
+
 
 class SettingsApplier:
     @staticmethod
@@ -59,7 +61,6 @@ class SettingsApplier:
         print(f"[Profile] Applying {len(displays)} displays for Hyprland...")
 
         header = SettingsApplier._get_header("Profile Loader")
-        lines_conf = [header]
         lines_lua = [header.replace("#", "--")]
 
         for d in displays:
@@ -72,41 +73,27 @@ class SettingsApplier:
             lua_props = [f'    output = "{name}"']
 
             if not d["active"]:
-                lines_conf.append(f"monitor={name},disable")
                 lua_props.append("    disabled = true")
                 hyprctl(f"dispatch dpms off {d['name']}")
             else:
-                conf_line = "monitor={},{}x{}@{},{}x{},{}".format(
-                    name,
-                    d["physical_width"],
-                    d["physical_height"],
-                    d["refresh"],
-                    d["x"],
-                    d["y"],
-                    d["scale"],
-                )
-
                 mode = f"{d['physical_width']}x{d['physical_height']}@{d['refresh']}"
                 pos = f"{d['x']}x{d['y']}"
-                lua_props.extend([
-                    f'    mode = "{mode}"',
-                    f'    position = "{pos}"',
-                    f'    scale = {d["scale"]}',
-                ])
+                lua_props.extend(
+                    [
+                        f'    mode = "{mode}"',
+                        f'    position = "{pos}"',
+                        f"    scale = {d['scale']}",
+                    ]
+                )
 
                 if d.get("mirror"):
-                    conf_line += f",mirror,{d['mirror']}"
                     lua_props.append(f'    mirror = "{d["mirror"]}"')
 
                 if d.get("ten_bit"):
-                    conf_line += ",bitdepth,10"
                     lua_props.append("    bitdepth = 10")
-
-                lines_conf.append(conf_line)
 
                 if d["transform"] != "normal":
                     t_code = transforms.get(d["transform"], 0)
-                    lines_conf.append(f"monitor={name},transform,{t_code}")
                     lua_props.append(f"    transform = {t_code}")
 
                 cmd = "on" if d["dpms"] else "off"
@@ -115,15 +102,7 @@ class SettingsApplier:
             lua_table = ",\n".join(lua_props)
             lines_lua.append(f"hl.monitor({{\n{lua_table}\n}})")
 
-        outputs_path_lua = (
-            outputs_path.removesuffix(".conf") + ".lua"
-            if outputs_path.endswith(".conf")
-            else "~/.config/hypr/monitors.lua"
-        )
-
-        save_list_to_text_file(lines_conf, outputs_path)
-        save_list_to_text_file(lines_lua, outputs_path_lua)
-
+        save_list_to_text_file(lines_lua, outputs_path)
         hyprctl("reload")
 
         config, config_file = get_config()
@@ -139,11 +118,11 @@ class SettingsApplier:
     def _apply_niri_json(displays, use_desc, outputs_path, profile_data):
         """Apply niri configuration by writing monitor.kdl file"""
         print(f"[Profile] Applying {len(displays)} displays for niri...")
-        
+
         kdl_data = []
         for d in displays:
             name = d["name"]
-            
+
             display_config = {
                 "name": name,
                 "active": d["active"],
@@ -154,27 +133,28 @@ class SettingsApplier:
                 "y": d["y"],
                 "scale": d["scale"],
                 "transform": d["transform"],
-                "adaptive_sync": d.get("adaptive_sync", False)
+                "adaptive_sync": d.get("adaptive_sync", False),
             }
             kdl_data.append(display_config)
-        
+
         # Save to monitor.kdl
         save_kdl_output(kdl_data, outputs_path)
-        
+
         # Ensure config.kdl includes monitor.kdl
         niri_config_dir = os.path.dirname(outputs_path)
         ensure_niri_config_include(niri_config_dir, outputs_path)
-        
+
         # Reload niri configuration
         niri_reload_config()
-        
+
         config, config_file = get_config()
-        
+
         if "wallpapers" in profile_data and config.get(
             "profile-bound-wallpapers", True
         ):
             print("[Profile] Applying wallpapers...")
             import time
+
             time.sleep(1)
             WallpaperManager.apply_wallpapers(profile_data["wallpapers"])
 
@@ -365,7 +345,7 @@ class SettingsApplier:
     ):
         """Apply niri configuration from GUI by writing monitor.kdl file"""
         print(f"[niri] Applying {len(display_buttons)} displays...")
-        
+
         # Save backup BEFORE applying new settings
         backup_path = outputs_path + ".bak"
         if os.path.isfile(outputs_path):
@@ -373,12 +353,13 @@ class SettingsApplier:
             print(f"[niri] Backup saved to {backup_path}")
         else:
             backup_path = None
-        
+
         kdl_data = []
         for db in display_buttons:
             display_config = {
                 "name": db.name,
-                "active": db.name not in outputs_activity or outputs_activity.get(db.name, True),
+                "active": db.name not in outputs_activity
+                or outputs_activity.get(db.name, True),
                 "physical_width": db.physical_width,
                 "physical_height": db.physical_height,
                 "refresh": db.refresh,
@@ -386,23 +367,25 @@ class SettingsApplier:
                 "y": db.y,
                 "scale": db.scale,
                 "transform": db.transform,
-                "adaptive_sync": db.adaptive_sync
+                "adaptive_sync": db.adaptive_sync,
             }
             kdl_data.append(display_config)
-        
+
         # Save to monitor.kdl in KDL format
         save_kdl_output(kdl_data, outputs_path)
-        
+
         # Ensure config.kdl includes monitor.kdl
         niri_config_dir = os.path.dirname(outputs_path)
         ensure_niri_config_include(niri_config_dir, outputs_path)
-        
+
         # Reload niri configuration
         niri_reload_config()
-        
+
         # Pass backup file path and current file path to confirm window
         if create_confirm_win_callback:
-            create_confirm_win_callback(backup_path, outputs_path, config_dir, profile_name)
+            create_confirm_win_callback(
+                backup_path, outputs_path, config_dir, profile_name
+            )
 
     @staticmethod
     def _apply_hyprland_gui(
@@ -426,7 +409,6 @@ class SettingsApplier:
         }
 
         header = SettingsApplier._get_header()
-        lines_conf = [header]
         lines_lua = [header.replace("#", "--")]
 
         for db in display_buttons:
@@ -439,33 +421,27 @@ class SettingsApplier:
             lua_props = [f'    output = "{name}"']
 
             if db.name in outputs_activity and not outputs_activity[db.name]:
-                lines_conf.append(f"monitor={name},disable")
                 lua_props.append("    disabled = true")
                 hyprctl(f"dispatch dpms off {db.name}")
             else:
-                conf_line = f"monitor={name},{db.physical_width}x{db.physical_height}@{db.refresh},{db.x}x{db.y},{db.scale}"
-
                 mode = f"{db.physical_width}x{db.physical_height}@{db.refresh}"
                 pos = f"{db.x}x{db.y}"
-                lua_props.extend([
-                    f'    mode = "{mode}"',
-                    f'    position = "{pos}"',
-                    f"    scale = {db.scale}",
-                ])
+                lua_props.extend(
+                    [
+                        f'    mode = "{mode}"',
+                        f'    position = "{pos}"',
+                        f"    scale = {db.scale}",
+                    ]
+                )
 
                 if db.mirror:
-                    conf_line += f",mirror,{db.mirror}"
                     lua_props.append(f'    mirror = "{db.mirror}"')
 
                 if db.ten_bit:
-                    conf_line += ",bitdepth,10"
                     lua_props.append("    bitdepth = 10")
-
-                lines_conf.append(conf_line)
 
                 if db.transform != "normal":
                     t_code = transforms.get(db.transform, 0)
-                    lines_conf.append(f"monitor={name},transform,{t_code}")
                     lua_props.append(f"    transform = {t_code}")
 
                 cmd = "on" if db.dpms else "off"
@@ -474,26 +450,15 @@ class SettingsApplier:
             lua_table = ",\n".join(lua_props)
             lines_lua.append(f"hl.monitor({{\n{lua_table}\n}})")
 
-        backup_conf = []
-        if os.path.isfile(outputs_path):
-            backup_conf = load_text_file(outputs_path).splitlines()
-
-        outputs_path_lua = (
-            outputs_path.removesuffix(".conf") + ".lua"
-            if outputs_path.endswith(".conf")
-            else "~/.config/hypr/monitors.lua"
+        backup = (
+            load_text_file(outputs_path).splitlines()
+            if os.path.isfile(outputs_path)
+            else []
         )
 
-        backup_lua = []
-        if os.path.isfile(outputs_path_lua):
-            backup_lua = load_text_file(outputs_path_lua).splitlines()
-
-        save_list_to_text_file(lines_conf, outputs_path)
-        save_list_to_text_file(lines_lua, outputs_path_lua)
+        save_list_to_text_file(lines_lua, outputs_path)
 
         hyprctl("reload")
-
-        backup = (backup_conf, backup_lua)
 
         if create_confirm_win_callback:
             create_confirm_win_callback(backup, outputs_path, config_dir, profile_name)
