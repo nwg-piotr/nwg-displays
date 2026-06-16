@@ -188,6 +188,10 @@ def list_outputs():
                     "adaptive_sync_status": "enabled" if mon.get("vrr_enabled", False) else "disabled",
                     "mirror": "",
                     "ten_bit": False,
+                    # Color management is Hyprland-only; keep neutral defaults elsewhere
+                    "color_mode": "",
+                    "sdr_brightness": 1.0,
+                    "sdr_saturation": 1.0,
                     "monitor": None,
                     # Store raw make/model for matching
                     "__niri_make": raw_make,
@@ -246,6 +250,10 @@ def list_outputs():
 
                 outputs_dict[item.name]["mirror"] = ""  # We only use it on Hyprland
                 outputs_dict[item.name]["ten_bit"] = False  # We have no way to check it on sway
+                # Color management is Hyprland-only; keep neutral defaults elsewhere
+                outputs_dict[item.name]["color_mode"] = ""
+                outputs_dict[item.name]["sdr_brightness"] = 1.0
+                outputs_dict[item.name]["sdr_saturation"] = 1.0
                 outputs_dict[item.name]["monitor"] = None
 
     elif os.getenv("HYPRLAND_INSTANCE_SIGNATURE"):
@@ -316,6 +324,14 @@ def list_outputs():
                 outputs_dict[m["name"]]["modes"].append(mode)
 
             outputs_dict[m["name"]]["ten_bit"] = True if m["currentFormat"] in ["XRGB2101010", "XBGR2101010"] else False
+
+            # Color management (Hyprland only). "srgb" is the implicit default, so
+            # treat it (and anything unknown) as "no cm line" to avoid touching configs
+            # that never opted into color management.
+            cm = m.get("colorManagementPreset", "")
+            outputs_dict[m["name"]]["color_mode"] = cm if cm in ["auto", "wide", "edid", "hdr", "hdredid"] else ""
+            outputs_dict[m["name"]]["sdr_brightness"] = float(m.get("sdrBrightness", 1.0))
+            outputs_dict[m["name"]]["sdr_saturation"] = float(m.get("sdrSaturation", 1.0))
 
             # to identify Gdk.Monitor
             outputs_dict[m["name"]]["model"] = m["model"]

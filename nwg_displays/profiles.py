@@ -313,6 +313,9 @@ class ProfileManager:
                 "custom_mode": db.custom_mode,
                 "mirror": db.mirror,
                 "ten_bit": db.ten_bit,
+                "color_mode": getattr(db, "color_mode", ""),
+                "sdr_brightness": getattr(db, "sdr_brightness", 1.0),
+                "sdr_saturation": getattr(db, "sdr_saturation", 1.0),
                 "active": db.active,
             }
             profile_data["displays"].append(display)
@@ -397,6 +400,17 @@ class ProfileManager:
                             display.get("ten_bit")
                             if display.get("ten_bit") is not None
                             else False
+                        )
+                        db.color_mode = display.get("color_mode", "") or ""
+                        db.sdr_brightness = float(
+                            display.get("sdr_brightness")
+                            if display.get("sdr_brightness") is not None
+                            else 1.0
+                        )
+                        db.sdr_saturation = float(
+                            display.get("sdr_saturation")
+                            if display.get("sdr_saturation") is not None
+                            else 1.0
                         )
                         db.active = (
                             display.get("active")
