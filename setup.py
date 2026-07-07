@@ -21,12 +21,13 @@ setup(
     python_requires=">=3.6.0",
     install_requires=[],
     entry_points={
-        "gui_scripts": [
-            "nwg-displays = nwg_displays.main:main",
+        'gui_scripts': [
+            'nwg-displays = nwg_displays.main:main',
         ],
-        "console_scripts": [
+        'console_scripts':[
+            'nwg-displays-daemon = nwg_displays.daemon:main',
             "nwg-displays-apply = nwg_displays.scripts.apply_profile_json:main",
             "nwg-displays-toggle-wallpapers = nwg_displays.scripts.toggle_profile_wallpapers:main",
-        ],
-    },
+        ]
+    }
 )
