@@ -59,15 +59,14 @@ class SettingsApplier:
         print(f"[Profile] Applying {len(displays)} displays for Hyprland...")
 
         header = SettingsApplier._get_header("Profile Loader")
-        lines_conf = [header]
+        lines_conf = []
         lines_lua = [header.replace("#", "--")]
 
         for d in displays:
             if not use_desc:
                 name = d["name"]
             else:
-                desc_safe = d["description"].replace("#", "##")
-                name = f"desc:{desc_safe}"
+                name = f"desc:{d['description']}"
 
             lua_props = [f'    output = "{name}"']
 
@@ -145,6 +144,8 @@ class SettingsApplier:
             if outputs_path.endswith(".conf")
             else "~/.config/hypr/monitors.lua"
         )
+
+        lines_conf = [header] + [ln.replace("#", "##") for ln in lines_conf]
 
         save_list_to_text_file(lines_conf, outputs_path)
         save_list_to_text_file(lines_lua, outputs_path_lua)
@@ -451,15 +452,11 @@ class SettingsApplier:
         }
 
         header = SettingsApplier._get_header()
-        lines_conf = [header]
+        lines_conf = []
         lines_lua = [header.replace("#", "--")]
 
         for db in display_buttons:
-            name = (
-                db.name
-                if not use_desc
-                else "desc:{}".format(db.description.replace("#", "##"))
-            )
+            name = db.name if not use_desc else "desc:{}".format(db.description)
 
             lua_props = [f'    output = "{name}"']
 
@@ -535,6 +532,8 @@ class SettingsApplier:
         backup_lua = []
         if os.path.isfile(outputs_path_lua):
             backup_lua = load_text_file(outputs_path_lua).splitlines()
+
+        lines_conf = [header] + [ln.replace("#", "##") for ln in lines_conf]
 
         save_list_to_text_file(lines_conf, outputs_path)
         save_list_to_text_file(lines_lua, outputs_path_lua)
