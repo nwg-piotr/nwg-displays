@@ -134,6 +134,9 @@ form_apply = None
 form_version = None
 form_mirror = None
 form_ten_bit = None
+form_color_mode = None
+form_sdr_brightness = None
+form_sdr_saturation = None
 form_profile_wallpapers = None
 
 dialog_win = None
@@ -353,6 +356,13 @@ def update_form_from_widget(widget):
     form_refresh.set_value(widget.refresh)
     if form_ten_bit:
         form_ten_bit.set_active(widget.ten_bit)
+    if form_color_mode:
+        form_color_mode.set_active_id(widget.color_mode if widget.color_mode else "")
+        update_color_dependent_widgets(widget.color_mode)
+    if form_sdr_brightness:
+        form_sdr_brightness.set_value(widget.sdr_brightness)
+    if form_sdr_saturation:
+        form_sdr_saturation.set_value(widget.sdr_saturation)
     if form_mirror:
         form_mirror.remove_all()
         form_mirror.append("", voc["none"])
@@ -414,6 +424,9 @@ class DisplayButton(Gtk.Button):
         focused,
         monitor,
         mirror="",
+        color_mode="",
+        sdr_brightness=1.0,
+        sdr_saturation=1.0,
     ):
         super().__init__()
         # Output properties
@@ -441,6 +454,10 @@ class DisplayButton(Gtk.Button):
         self.focused = focused
         self.mirror = mirror
         self.ten_bit = ten_bit
+        # Color management (Hyprland only)
+        self.color_mode = color_mode
+        self.sdr_brightness = sdr_brightness
+        self.sdr_saturation = sdr_saturation
 
         # Button properties
         self.selected = False
@@ -533,6 +550,41 @@ def on_transform_changed(*args):
 def on_ten_bit_toggled(check_btn):
     if selected_output_button:
         selected_output_button.ten_bit = check_btn.get_active()
+
+
+def is_hdr_mode(color_mode):
+    return color_mode in ["hdr", "hdredid"]
+
+
+def update_color_dependent_widgets(color_mode):
+    hdr = is_hdr_mode(color_mode)
+    # SDR brightness/saturation only take effect in HDR color modes
+    if form_sdr_brightness:
+        form_sdr_brightness.set_sensitive(hdr)
+    if form_sdr_saturation:
+        form_sdr_saturation.set_sensitive(hdr)
+    # HDR requires 10-bit: force the toggle on and lock it so the config stays valid
+    if form_ten_bit:
+        if hdr:
+            form_ten_bit.set_active(True)
+        form_ten_bit.set_sensitive(not hdr)
+
+
+def on_color_mode_changed(widget):
+    if selected_output_button:
+        color_mode = widget.get_active_id() or ""
+        selected_output_button.color_mode = color_mode
+        update_color_dependent_widgets(color_mode)
+
+
+def on_sdr_brightness_changed(widget):
+    if selected_output_button:
+        selected_output_button.sdr_brightness = round(widget.get_value(), 2)
+
+
+def on_sdr_saturation_changed(widget):
+    if selected_output_button:
+        selected_output_button.sdr_saturation = round(widget.get_value(), 2)
 
 
 def on_dpms_toggled(widget):
@@ -700,6 +752,9 @@ def create_display_buttons():
             item["focused"],
             item["monitor"],
             mirror=item["mirror"],
+            color_mode=item.get("color_mode", ""),
+            sdr_brightness=item.get("sdr_brightness", 1.0),
+            sdr_saturation=item.get("sdr_saturation", 1.0),
         )
 
         display_buttons.append(b)
@@ -1307,7 +1362,9 @@ def main():
 
     global form_adaptive_sync
     form_adaptive_sync = builder.get_object("adaptive-sync")
-    if sway:
+    # sway, Hyprland (vrr) and niri (variable-refresh-rate) all support per-output
+    # adaptive sync, so the toggle is available on all three.
+    if sway or hypr or niri:
         form_adaptive_sync.set_label(voc["adaptive-sync"])
         form_adaptive_sync.set_tooltip_text(voc["adaptive-sync-tooltip"])
         form_adaptive_sync.connect("toggled", on_adaptive_sync_toggled)
@@ -1487,6 +1544,58 @@ def main():
         form_mirror.set_wrap_width(1)
         form_mirror.connect("changed", on_mirror_selected)
         grid.attach(form_mirror, 7, 4, 1, 1)
+
+    if hypr:
+        # Color management / HDR controls (Hyprland only)
+        grid.insert_row(5)
+
+        lbl = Gtk.Label.new("{}:".format(voc["color-management"]))
+        lbl.set_property("halign", Gtk.Align.END)
+        grid.attach(lbl, 0, 5, 1, 1)
+
+        global form_color_mode
+        form_color_mode = Gtk.ComboBoxText()
+        form_color_mode.set_wrap_width(1)
+        form_color_mode.set_tooltip_text(voc["color-management-tooltip"])
+        for cm_id, cm_label in [
+            ("", voc["color-default"]),
+            ("auto", "Auto"),
+            ("srgb", "sRGB"),
+            ("wide", voc["color-wide"]),
+            ("edid", "EDID"),
+            ("hdr", "HDR"),
+            ("hdredid", "HDR (EDID)"),
+        ]:
+            form_color_mode.append(cm_id, cm_label)
+        form_color_mode.set_active_id("")
+        form_color_mode.connect("changed", on_color_mode_changed)
+        grid.attach(form_color_mode, 1, 5, 1, 1)
+
+        lbl = Gtk.Label.new("{}:".format(voc["sdr-brightness"]))
+        lbl.set_property("halign", Gtk.Align.END)
+        grid.attach(lbl, 2, 5, 1, 1)
+
+        global form_sdr_brightness
+        adj_b = Gtk.Adjustment(
+            value=1.0, lower=0.0, upper=2.0, step_increment=0.01, page_increment=0.1
+        )
+        form_sdr_brightness = Gtk.SpinButton.new(adj_b, 0.01, 2)
+        form_sdr_brightness.set_tooltip_text(voc["sdr-brightness-tooltip"])
+        form_sdr_brightness.connect("value-changed", on_sdr_brightness_changed)
+        grid.attach(form_sdr_brightness, 3, 5, 1, 1)
+
+        lbl = Gtk.Label.new("{}:".format(voc["sdr-saturation"]))
+        lbl.set_property("halign", Gtk.Align.END)
+        grid.attach(lbl, 4, 5, 1, 1)
+
+        global form_sdr_saturation
+        adj_s = Gtk.Adjustment(
+            value=1.0, lower=0.0, upper=2.0, step_increment=0.01, page_increment=0.1
+        )
+        form_sdr_saturation = Gtk.SpinButton.new(adj_s, 0.01, 2)
+        form_sdr_saturation.set_tooltip_text(voc["sdr-saturation-tooltip"])
+        form_sdr_saturation.connect("value-changed", on_sdr_saturation_changed)
+        grid.attach(form_sdr_saturation, 5, 5, 1, 1)
 
     # Add profile management buttons
     separator = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)

@@ -98,9 +98,34 @@ class SettingsApplier:
                     conf_line += f",mirror,{d['mirror']}"
                     lua_props.append(f'    mirror = "{d["mirror"]}"')
 
-                if d.get("ten_bit"):
+                color_mode = d.get("color_mode") or ""
+                hdr = color_mode in ("hdr", "hdredid")
+
+                # HDR requires 10-bit; force it even if not explicitly stored
+                if d.get("ten_bit") or hdr:
                     conf_line += ",bitdepth,10"
                     lua_props.append("    bitdepth = 10")
+
+                if color_mode:
+                    conf_line += f",cm,{color_mode}"
+                    lua_props.append(f'    cm = "{color_mode}"')
+                    if hdr:
+                        sdr_brightness = d.get("sdr_brightness", 1.0)
+                        sdr_saturation = d.get("sdr_saturation", 1.0)
+                        if sdr_brightness != 1.0:
+                            conf_line += f",sdrbrightness,{sdr_brightness}"
+                            lua_props.append(f"    sdrbrightness = {sdr_brightness}")
+                        if sdr_saturation != 1.0:
+                            conf_line += f",sdrsaturation,{sdr_saturation}"
+                            lua_props.append(f"    sdrsaturation = {sdr_saturation}")
+
+                # Adaptive sync (VRR). The toggle mirrors the monitor's effective
+                # state, so writing it explicitly is safe and keeps the toggle working.
+                # note: hyprland can also accept 2 or 3 to enable fullscreen-only VRR;
+                # may need to add that in the future
+                vrr = "1" if d.get("adaptive_sync") else "0"
+                conf_line += f",vrr,{vrr}"
+                lua_props.append(f"    vrr = {vrr}")
 
                 lines_conf.append(conf_line)
 
@@ -457,9 +482,32 @@ class SettingsApplier:
                     conf_line += f",mirror,{db.mirror}"
                     lua_props.append(f'    mirror = "{db.mirror}"')
 
-                if db.ten_bit:
+                color_mode = getattr(db, "color_mode", "") or ""
+                hdr = color_mode in ("hdr", "hdredid")
+
+                # HDR requires 10-bit; force it even if the checkbox is off
+                if db.ten_bit or hdr:
                     conf_line += ",bitdepth,10"
                     lua_props.append("    bitdepth = 10")
+
+                if color_mode:
+                    conf_line += f",cm,{color_mode}"
+                    lua_props.append(f'    cm = "{color_mode}"')
+                    if hdr:
+                        sdr_brightness = getattr(db, "sdr_brightness", 1.0)
+                        sdr_saturation = getattr(db, "sdr_saturation", 1.0)
+                        if sdr_brightness != 1.0:
+                            conf_line += f",sdrbrightness,{sdr_brightness}"
+                            lua_props.append(f"    sdrbrightness = {sdr_brightness}")
+                        if sdr_saturation != 1.0:
+                            conf_line += f",sdrsaturation,{sdr_saturation}"
+                            lua_props.append(f"    sdrsaturation = {sdr_saturation}")
+
+                # Adaptive sync (VRR). The toggle mirrors the monitor's effective
+                # state, so writing it explicitly is safe and keeps the toggle working.
+                vrr = "1" if db.adaptive_sync else "0"
+                conf_line += f",vrr,{vrr}"
+                lua_props.append(f"    vrr = {vrr}")
 
                 lines_conf.append(conf_line)
 
