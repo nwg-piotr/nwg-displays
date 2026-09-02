@@ -154,11 +154,23 @@ def list_outputs():
             
             for name, mon in monitors_dict.items():
                 # Get current mode info
-                current_mode_idx = mon.get("current_mode", 0)
                 modes_list = mon.get("modes", [])
-                current_mode = modes_list[current_mode_idx] if modes_list and current_mode_idx < len(modes_list) else {}
-                
-                logical = mon.get("logical", {})
+                current_mode_idx = mon.get("current_mode")
+                logical = mon.get("logical")
+                active = current_mode_idx is not None and logical is not None
+
+                if active and 0 <= current_mode_idx < len(modes_list):
+                    current_mode = modes_list[current_mode_idx]
+                else:
+                    # Disabled niri outputs have no current mode or logical
+                    # geometry. Keep them available in the GUI using their
+                    # preferred mode (or the first advertised mode).
+                    current_mode = next(
+                        (mode for mode in modes_list if mode.get("is_preferred")),
+                        modes_list[0] if modes_list else {},
+                    )
+
+                logical = logical or {}
                 
                 # Store raw make/model for accurate matching (not just description)
                 raw_make = mon.get("make", "")
@@ -170,8 +182,8 @@ def list_outputs():
                 description = f'{raw_make} {raw_model} {raw_serial or ""}'.strip()
                 
                 outputs_dict[name] = {
-                    "active": True,  # If it's in the list, it's active
-                    "dpms": True,
+                    "active": active,
+                    "dpms": active,
                     "description": description,
                     "x": int(logical.get("x", 0)),
                     "y": int(logical.get("y", 0)),
