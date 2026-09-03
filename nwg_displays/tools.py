@@ -166,8 +166,11 @@ def list_outputs():
                 raw_serial = mon.get("serial")
                 physical_size = mon.get("physical_size", [])
                 
-                # Format description for backward compatibility
-                description = f'{raw_make} {raw_model} {raw_serial or ""}'.strip()
+                # Format description for backward compatibility.
+                # niri matches outputs by "make model serial" (see OutputName::matches);
+                # a missing serial must be spelled out as "Unknown" for the
+                # description to work as a match key.
+                description = f'{raw_make} {raw_model} {raw_serial or "Unknown"}'
                 
                 outputs_dict[name] = {
                     "active": True,  # If it's in the list, it's active
