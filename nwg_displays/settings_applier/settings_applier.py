@@ -15,6 +15,12 @@ from nwg_displays.tools import (
     load_json,
     save_json,
 )
+from nwg_displays.umbriel import (
+    is_umbriel as _is_umbriel,
+    save_outputs as _umbriel_save_outputs,
+    ensure_include as _umbriel_ensure_include,
+    cli_dpms as _umbriel_cli_dpms,
+)
 from nwg_displays.wallpaper_manager import WallpaperManager
 from nwg_displays.tools import get_config
 
@@ -30,6 +36,11 @@ class SettingsApplier:
 
         if os.getenv("NIRI_SOCKET"):
             SettingsApplier._apply_niri_json(
+                displays, use_desc, outputs_path, profile_data
+            )
+
+        elif _is_umbriel():
+            SettingsApplier._apply_umbriel_json(
                 displays, use_desc, outputs_path, profile_data
             )
 
@@ -258,6 +269,18 @@ class SettingsApplier:
         if os.getenv("NIRI_SOCKET"):
             print(f"[DEBUG] Applying niri config to {outputs_path}")
             SettingsApplier._apply_niri_gui(
+                display_buttons,
+                outputs_activity,
+                outputs_path,
+                use_desc,
+                create_confirm_win_callback,
+                config_dir,
+                profile_name,
+            )
+
+        elif _is_umbriel():
+            print(f"[DEBUG] Applying umbriel config to {outputs_path}")
+            SettingsApplier._apply_umbriel_gui(
                 display_buttons,
                 outputs_activity,
                 outputs_path,
@@ -541,6 +564,79 @@ class SettingsApplier:
         hyprctl("reload")
 
         backup = (backup_conf, backup_lua)
+
+        if create_confirm_win_callback:
+            create_confirm_win_callback(backup, outputs_path, config_dir, profile_name)
+
+    @staticmethod
+    def _apply_umbriel_json(displays, use_desc, outputs_path, profile_data):
+        """Apply umbriel TOML config from a profile JSON."""
+        print(f"[Profile] Applying {len(displays)} displays for umbriel...")
+        _umbriel_save_outputs(displays, use_desc, outputs_path)
+        config_dir = os.path.dirname(outputs_path)
+        _umbriel_ensure_include(
+            os.path.join(config_dir, "config.toml"), "outputs.toml"
+        )
+        # Umbriel hot-reloads via file watcher — no IPC reload needed.
+        # Wallpaper pass-through (parity with hyprland/niri branches).
+        config, config_file = get_config()
+        if (
+            "wallpapers" in profile_data
+            and config.get("profile-bound-wallpapers", True)
+        ):
+            print("[Profile] Applying wallpapers...")
+            time.sleep(1)
+            WallpaperManager.apply_wallpapers(profile_data["wallpapers"])
+
+    @staticmethod
+    def _apply_umbriel_gui(
+        display_buttons,
+        outputs_activity,
+        outputs_path,
+        use_desc,
+        create_confirm_win_callback,
+        config_dir=None,
+        profile_name=None,
+    ):
+        """Apply umbriel TOML config from GUI state, plus live DPMS via CLI."""
+        print(f"[umbriel] Applying {len(display_buttons)} displays...")
+
+        backup_path = outputs_path + ".bak"
+        backup = None
+        if os.path.isfile(outputs_path):
+            shutil.copy2(outputs_path, backup_path)
+            backup = backup_path
+            print(f"[umbriel] Backup saved to {backup_path}")
+
+        displays = []
+        for db in display_buttons:
+            active = db.name not in outputs_activity or outputs_activity.get(db.name, True)
+            displays.append({
+                "name": db.name,
+                "active": active,
+                "physical_width": db.physical_width,
+                "physical_height": db.physical_height,
+                "refresh": db.refresh,
+                "x": db.x,
+                "y": db.y,
+                "scale": db.scale,
+                "transform": db.transform,
+                "adaptive_sync": db.adaptive_sync,
+                "description": db.description if use_desc else "",
+                "dpms": db.dpms,
+            })
+
+        _umbriel_save_outputs(displays, use_desc, outputs_path)
+        umbriel_config_dir = os.path.dirname(outputs_path)
+        _umbriel_ensure_include(
+            os.path.join(umbriel_config_dir, "config.toml"), "outputs.toml"
+        )
+
+        # Live DPMS for outputs toggled off: use `umbriel msg dpms-off:NAME`.
+        # Outputs toggled on stay in the TOML hot-reload path.
+        for db in display_buttons:
+            cmd = "on" if db.dpms else "off"
+            _umbriel_cli_dpms(db.name, db.dpms)
 
         if create_confirm_win_callback:
             create_confirm_win_callback(backup, outputs_path, config_dir, profile_name)

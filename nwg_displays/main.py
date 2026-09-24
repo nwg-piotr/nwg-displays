@@ -39,6 +39,7 @@ except ValueError:
 from gi.repository import Gtk, GLib, GtkLayerShell
 
 from nwg_displays.tools import *
+from nwg_displays.umbriel import is_umbriel as umbriel_is_umbriel, config_dir as umbriel_config_dir_path
 from nwg_displays.profiles import ProfileManager
 from nwg_displays.__about__ import __version__
 
@@ -46,6 +47,7 @@ dir_name = os.path.dirname(__file__)
 sway = os.getenv("SWAYSOCK") is not None
 hypr = os.getenv("HYPRLAND_INSTANCE_SIGNATURE") is not None
 niri = os.getenv("NIRI_SOCKET") is not None
+umbriel = umbriel_is_umbriel()
 
 config_dir = os.path.join(get_config_home(), "nwg-displays")
 # This was done by mistake, and the config file need to be migrated to the proper path
@@ -77,6 +79,16 @@ if niri and not os.path.isdir(niri_config_dir):
     )
     sys.exit(1)
 
+umbriel_config_dir = umbriel_config_dir_path()
+if umbriel and not os.path.isdir(umbriel_config_dir):
+    print(
+        "[Warning] Couldn't find umbriel config directory '{}'".format(
+            umbriel_config_dir
+        ),
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
 # Create empty files if not found
 if sway:
     for name in ["outputs", "workspaces"]:
@@ -87,8 +99,14 @@ elif hypr:
 elif niri:
     for name in ["monitor.kdl"]:
         create_empty_file(os.path.join(niri_config_dir, name))
+elif umbriel:
+    create_empty_file(os.path.join(umbriel_config_dir, "outputs.toml"))
+    # Ensure config.toml exists with [include] so file watcher has a target.
+    umbriel_cfg = os.path.join(umbriel_config_dir, "config.toml")
+    if not os.path.isfile(umbriel_cfg):
+        create_empty_file(umbriel_cfg)
 else:
-    eprint("[Error] Neither sway, Hyprland nor niri detected, terminating")
+    eprint("[Error] Neither sway, Hyprland, niri nor umbriel detected, terminating")
     sys.exit(1)
 
 config = {}
@@ -1193,6 +1211,17 @@ def main():
             help="number of Workspaces in use, default: 10",
         )
 
+    elif umbriel:
+        parser.add_argument(
+            "-m",
+            "--monitors_path",
+            type=str,
+            default="{}/outputs.toml".format(umbriel_config_dir),
+            help="path to save the outputs.toml file to, default: {}".format(
+                "{}/outputs.toml".format(umbriel_config_dir)
+            ),
+        )
+
     parser.add_argument(
         "-v",
         "--version",
@@ -1276,6 +1305,16 @@ def main():
                         eprint(f"ERROR: Failed to make file writable: {e}")
         else:
             eprint("niri config directory not found!")
+            outputs_path = ""
+    elif umbriel:
+        if os.path.isdir(umbriel_config_dir):
+            outputs_path = (
+                args.monitors_path
+                if getattr(args, "monitors_path", None)
+                else os.path.join(umbriel_config_dir, "outputs.toml")
+            )
+        else:
+            eprint("umbriel config directory not found!")
             outputs_path = ""
 
     global num_ws
@@ -1478,6 +1517,10 @@ def main():
         # Niri uses dynamic workspaces, no need for workspace assignment
         form_workspaces.set_sensitive(False)
         form_workspaces.set_tooltip_text("Niri uses dynamic workspaces")
+    elif umbriel:
+        # TODO: umbriel per-output `workspaces = N` dialog
+        form_workspaces.set_sensitive(False)
+        form_workspaces.set_tooltip_text("Umbriel: edit workspaces per output in outputs.toml")
 
     global form_close
     form_close = builder.get_object("close")
@@ -1488,7 +1531,12 @@ def main():
     global form_apply
     form_apply = builder.get_object("apply")
     form_apply.set_label(voc["apply"])
-    if (sway and sway_config_dir) or (hypr and hypr_config_dir) or (niri and niri_config_dir):
+    if (
+        (sway and sway_config_dir)
+        or (hypr and hypr_config_dir)
+        or (niri and niri_config_dir)
+        or (umbriel and umbriel_config_dir)
+    ):
         form_apply.connect("clicked", on_apply_button, profile_manager)
     else:
         form_apply.set_sensitive(False)
