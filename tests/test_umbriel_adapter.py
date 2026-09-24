@@ -223,6 +223,160 @@ class TestEnsureInclude(unittest.TestCase):
         self.assertIn("outputs.toml", text)
 
 
+class TestEndToEnd(unittest.TestCase):
+    """Smoke integration: simulate a full apply pipeline using synthetic data."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.outputs_path = os.path.join(self.tmpdir, "outputs.toml")
+        self.config_path = os.path.join(self.tmpdir, "config.toml")
+
+    def _seed_config(self):
+        open(self.config_path, "w").write(
+            "[general]\nmod_key = \"Super\"\n"
+            "[appearance.blur]\nradius = 3\n"
+        )
+
+    def test_pipeline_outputs_valid_toml(self):
+        """The whole apply flow must produce TOML that tomllib parses."""
+        import tomllib  # stdlib
+
+        # Simulate list_outputs → to_displays_dict
+        raw = umbriel.to_displays_dict(SAMPLE_HEADS)
+        self.assertTrue(raw, "display dict must be populated")
+
+        # Mirror the _apply_umbriel_json body (skipped import surface).
+        displays = [
+            {
+                "name": name,
+                "active": d["active"],
+                "physical_width": d["physical-width"],
+                "physical_height": d["physical-height"],
+                "refresh": d["refresh"],
+                "x": d["x"],
+                "y": d["y"],
+                "scale": d["scale"],
+                "transform": d["transform"],
+                "adaptive_sync": d["adaptive_sync_status"] == "enabled",
+                "description": d["description"],
+            }
+            for name, d in raw.items()
+        ]
+        umbriel.save_outputs(displays, use_desc=False, path=self.outputs_path)
+        umbriel.ensure_include(self.config_path, "outputs.toml")
+
+        # Round-trip via tomllib — what umbriel itself does on every reload.
+        with open(self.outputs_path, "rb") as f:
+            parsed = tomllib.load(f)
+        self.assertIn("DP-1", parsed.get("output", {}))
+        self.assertEqual(parsed["output"]["DP-1"]["scale"], 1.0)
+        self.assertEqual(parsed["output"]["DP-1"]["vrr"], "fullscreen")
+        self.assertIn("HDMI-A-1", parsed["output"])
+        self.assertFalse(parsed["output"]["HDMI-A-1"].get("enabled", True))
+
+        with open(self.config_path, "rb") as f:
+            cfg_parsed = tomllib.load(f)
+        self.assertIn("include", cfg_parsed)
+        self.assertIn("outputs.toml", cfg_parsed["include"]["files"])
+
+    def test_pipeline_outputs_valid_toml_desc_mode(self):
+        """use_desc=True round-trips with config_name keys (--use-desc)."""
+        import tomllib
+
+        displays = [
+            {
+                "name": "DP-1",
+                "active": True,
+                "physical_width": 1920,
+                "physical_height": 1080,
+                "refresh": 60.0,
+                "x": 0,
+                "y": 0,
+                "scale": 1.5,
+                "transform": "normal",
+                "adaptive_sync": False,
+                "description": "Microstep MSI G2712F CD6T084401192",
+            }
+        ]
+        umbriel.save_outputs(displays, use_desc=True, path=self.outputs_path)
+        with open(self.outputs_path, "rb") as f:
+            parsed = tomllib.load(f)
+        # tomllib strips surrounding quotes during parse; the parsed key
+        # retains interior content verbatim.
+        self.assertIn(
+            "Microstep MSI G2712F CD6T084401192", parsed.get("output", {})
+        )
+
+    def test_umbriel_disabled_output_round_trip(self):
+        """Disabled output must show as enabled=false in the resulting TOML."""
+        import tomllib
+
+        displays = [
+            {
+                "name": "HDMI-A-1",
+                "active": False,
+                "physical_width": 1920,
+                "physical_height": 1080,
+                "refresh": 60.0,
+                "x": 0,
+                "y": 0,
+                "scale": 1.0,
+                "transform": "normal",
+                "adaptive_sync": False,
+                "description": "",
+            }
+        ]
+        umbriel.save_outputs(displays, use_desc=False, path=self.outputs_path)
+        with open(self.outputs_path, "rb") as f:
+            parsed = tomllib.load(f)
+        self.assertFalse(parsed["output"]["HDMI-A-1"]["enabled"])
+
+    def test_special_chars_in_description_round_trip(self):
+        """Quote escaping must survive a TOML parse round-trip."""
+        import tomllib
+
+        displays = [
+            {
+                "name": "DP-1",
+                "active": True,
+                "physical_width": 1920,
+                "physical_height": 1080,
+                "refresh": 60.0,
+                "x": 0,
+                "y": 0,
+                "scale": 1.0,
+                "transform": "normal",
+                "adaptive_sync": False,
+                "description": 'Brand "ACME" Display 9000 \\ backslash',
+            }
+        ]
+        umbriel.save_outputs(displays, use_desc=True, path=self.outputs_path)
+        with open(self.outputs_path, "rb") as f:
+            parsed = tomllib.load(f)
+        # The key is the escaped description
+        for k in parsed["output"]:
+            if "ACME" in k:
+                self.assertIn("backslash", k)
+                return
+        self.fail("expected config_name with quotes/backslash in output")
+
+    def test_pipeline_full_apply_then_idempotent(self):
+        """A second apply produces the same include+outputs structure."""
+        self._seed_config()
+        displays = [SAMPLE_DISPLAYS[0]]
+        umbriel.save_outputs(displays, use_desc=False, path=self.outputs_path)
+        umbriel.ensure_include(self.config_path, "outputs.toml")
+        cfg1 = open(self.config_path).read()
+        outs1 = open(self.outputs_path).read()
+        # Second apply with same data
+        umbriel.save_outputs(displays, use_desc=False, path=self.outputs_path)
+        umbriel.ensure_include(self.config_path, "outputs.toml")
+        cfg2 = open(self.config_path).read()
+        outs2 = open(self.outputs_path).read()
+        self.assertEqual(cfg1, cfg2)
+        self.assertEqual(outs1, outs2)
+
+
 class TestIsUmbriel(unittest.TestCase):
     def test_socket_env_var(self):
         old = os.environ.get("UMBRIEL_SOCKET")
