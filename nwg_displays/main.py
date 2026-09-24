@@ -1318,7 +1318,7 @@ def main():
             outputs_path = ""
 
     global num_ws
-    num_ws = args.num_ws
+    num_ws = getattr(args, "num_ws", 0)
     if sway:
         print("[Info] Number of workspaces: {}".format(num_ws))
 
