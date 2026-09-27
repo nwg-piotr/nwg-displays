@@ -2,6 +2,7 @@
 import datetime
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -577,7 +578,16 @@ def save_kdl_output(data, file_path):
 def ensure_niri_config_include(config_dir, monitors_file):
     """Ensure that config.kdl includes monitor.kdl"""
     config_kdl = os.path.join(config_dir, "config.kdl")
-    monitors_rel_path = "monitor.kdl"
+    # Derive the file name from monitors_file so custom --monitors_path works,
+    # fall back to the default when not provided.
+    if monitors_file:
+        monitors_filename = os.path.basename(monitors_file)
+    else:
+        monitors_filename = "monitor.kdl"
+    try:
+        monitors_rel_path = os.path.relpath(monitors_file, config_dir) if monitors_file else monitors_filename
+    except Exception:
+        monitors_rel_path = monitors_filename
     
     # Check if config.kdl exists
     if not os.path.isfile(config_kdl):
@@ -595,12 +605,17 @@ def ensure_niri_config_include(config_dir, monitors_file):
     
     lines = content.splitlines()
     
-    # Check if include already exists
-    include_pattern = f'include "{monitors_rel_path}"'
-    include_pattern_single = f"include '{monitors_rel_path}'"
+    # Check if include already exists, regardless of extra properties
+    # e.g. `include "monitor.kdl"`, `include optional=true "monitor.kdl"`,
+    # `include "monitor.kdl" optional=true`, single quotes, absolute paths.
+    # Commented-out lines (`// include ...`) must NOT count.
+    include_re = re.compile(r'^\s*include\b.*' + re.escape(monitors_filename) + r'\b')
     
     for line in lines:
-        if include_pattern in line or include_pattern_single in line:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("//") or stripped.startswith("/-"):
+            continue
+        if include_re.search(line):
             # Already included
             return
     
