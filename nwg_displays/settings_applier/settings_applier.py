@@ -162,6 +162,20 @@ class SettingsApplier:
             WallpaperManager.apply_wallpapers(profile_data["wallpapers"])
 
     @staticmethod
+    def _niri_output_name(name, description):
+        """
+        Return the match key to use for an output section in monitor.kdl.
+
+        niri matches outputs by connector name, or by "make model serial" with
+        missing parts spelled "Unknown" (see niri OutputName::matches). A
+        description with an unknown make/model (e.g. laptop panels) can never
+        match, so keep the connector name in that case.
+        """
+        if description and not description.startswith("Unknown"):
+            return description
+        return name
+
+    @staticmethod
     def _apply_niri_json(displays, use_desc, outputs_path, profile_data):
         """Apply niri configuration by writing monitor.kdl file"""
         print(f"[Profile] Applying {len(displays)} displays for niri...")
@@ -169,6 +183,8 @@ class SettingsApplier:
         kdl_data = []
         for d in displays:
             name = d["name"]
+            if use_desc:
+                name = SettingsApplier._niri_output_name(name, d.get("description"))
             
             display_config = {
                 "name": name,
@@ -402,8 +418,11 @@ class SettingsApplier:
         
         kdl_data = []
         for db in display_buttons:
+            name = db.name
+            if use_desc:
+                name = SettingsApplier._niri_output_name(name, db.description)
             display_config = {
-                "name": db.name,
+                "name": name,
                 "active": db.name not in outputs_activity or outputs_activity.get(db.name, True),
                 "physical_width": db.physical_width,
                 "physical_height": db.physical_height,
