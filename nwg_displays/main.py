@@ -868,9 +868,7 @@ def create_workspaces_window(btn):
 
 def create_workspaces_window_hypr(btn):
     global workspaces
-    workspaces = load_workspaces_hypr(
-        os.path.join(hypr_config_dir, "workspaces.conf"), num_ws=num_ws
-    )
+    workspaces = load_workspaces_hypr(workspaces_path, num_ws=num_ws)
     eprint("WS->Mon:", workspaces)
     old_workspaces = workspaces.copy()
     global dialog_win
