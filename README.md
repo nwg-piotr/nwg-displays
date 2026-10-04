@@ -3,14 +3,13 @@
 
 This application is a part of the [nwg-shell](https://nwg-piotr.github.io/nwg-shell) project.
 
-**Nwg-displays** is an output management utility for [sway](https://github.com/swaywm/sway), [Hyprland](https://github.com/hyprwm/Hyprland) and [Niri](https://github.com/niri-wm/niri)
-Wayland compositor, inspired by wdisplays and wlay. The program is expected to:
+**Nwg-displays** is an output management utility for [sway](https://github.com/swaywm/sway), [Hyprland](https://github.com/hyprwm/Hyprland), [Niri](https://github.com/niri-wm/niri) and [Umbriel](https://github.com/noctalia-dev/umbriel) (noctalia) Wayland compositors, inspired by wdisplays and wlay. The program is expected to:
 
 - provide an intuitive GUI to manage multiple displays;
 - apply settings;
 - save outputs configuration to a text file;
 - save workspace -> output assignments to a text file;
-- support sway, Hyprland and Niri only.
+- support sway, Hyprland, Niri and Umbriel.
 
 <img src="https://user-images.githubusercontent.com/20579136/158013748-5b27f742-0e6a-4d82-a5ac-06368b4df008.png" width=640, alt="screenshot"><br>
 
@@ -129,6 +128,31 @@ The configuration is saved to `~/.config/niri/monitor.kdl` in KDL format:
 Niri will automatically reload the configuration when you apply settings in nwg-displays.
 
 **Note:** Niri uses dynamic workspaces, so the workspace assignment feature is not available for Niri.
+
+### Umbriel
+
+[Outputs](https://docs.noctalia.dev/umbriel/outputs/):
+
+The program automatically adds the included file to your `~/.config/umbriel/config.toml`:
+
+```toml
+[include]
+files = ["outputs.toml"]
+```
+
+The configuration is saved to `~/.config/umbriel/outputs.toml` in TOML format:
+
+```toml
+[output."DP-1"]
+mode = "3840x2160@165"
+position = [0, 0]
+scale = 1.25
+vrr = "fullscreen"
+```
+
+Umbriel watches the active configuration and applies valid changes when you save, so no explicit reload is needed.
+
+**Note:** Umbriel uses per-output `workspaces = N` (or a named list) inside each `[output.*]` table, so the GUI workspace assignment dialog is not currently wired up — edit the table directly or use `--generic_names`.
 
 ## Settings
 

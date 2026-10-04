@@ -21,6 +21,9 @@ def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
+from nwg_displays.umbriel import is_umbriel as _is_umbriel, to_displays_dict as _umbriel_to_dict
+
+
 def get_config_home():
     xdg_config_home = os.getenv('XDG_CONFIG_HOME')
     config_home = xdg_config_home if xdg_config_home else os.path.join(
@@ -340,8 +343,14 @@ def list_outputs():
             outputs_dict[m["name"]]["monitor"] = None
 
     else:
-        eprint("This program only supports sway, Hyprland and niri, and we seem to be elsewhere, terminating.")
-        sys.exit(1)
+        if _is_umbriel():
+            eprint("Running on umbriel")
+            from nwg_displays.umbriel import cli_outputs as _umbriel_cli_outputs
+            heads = _umbriel_cli_outputs() or []
+            outputs_dict = _umbriel_to_dict(heads)
+        else:
+            eprint("This program only supports sway, Hyprland, niri and umbriel, and we seem to be elsewhere, terminating.")
+            sys.exit(1)
 
     # We used to assign Gdk.Monitor to output on the basis of x and y coordinates, but it no longer works,
     # starting from gtk3-1:3.24.42: all monitors have x=0, y=0. This is most likely a bug, but from now on
@@ -404,6 +413,10 @@ def list_outputs():
 def list_outputs_activity():
     result = {}
     if os.getenv("NIRI_SOCKET"):
+        outputs = list_outputs()
+        for name in outputs:
+            result[name] = outputs[name].get("active", True)
+    elif _is_umbriel():
         outputs = list_outputs()
         for name in outputs:
             result[name] = outputs[name].get("active", True)
