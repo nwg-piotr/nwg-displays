@@ -54,8 +54,8 @@
   "profile-bound-wallpapers-tooltip": "Save and load wallpapers together with display profiles",
   "mango-hdr-tooltip": "Enables HDR support. \n'Forced' also enables HDR even when the EDID \ndoes not advertise BT.2020/PQ.",
   "mango-primary-tooltip": "Makes this monitor the X11 (RandR) primary \noutput for XWayland.",
-  "mango-hdr-min-lum-tooltip": "Mastering display minimum luminance, cd/m² \n(0 = unset).",
-  "mango-hdr-max-lum-tooltip": "Mastering display peak luminance (max_cll), \ncd/m² (0 = unset).",
-  "mango-hdr-max-avg-lum-tooltip": "Max frame-average light level (max_fall), \ncd/m² (0 = unset).",
+  "mango-hdr-min-lum-tooltip": "(HDR) Mastering display minimum luminance, cd/m² \n(0 = unset).",
+  "mango-hdr-max-lum-tooltip": "(HDR) Mastering display peak luminance (max_cll), \ncd/m² (0 = unset).",
+  "mango-hdr-max-avg-lum-tooltip": "(HDR) Max frame-average light level (max_fall), \ncd/m² (0 = unset).",
   "mango-custom-mode-tooltip": "Enables a mode not listed in the available modes. \nNot supported on all displays — may cause \na black screen."
 }
