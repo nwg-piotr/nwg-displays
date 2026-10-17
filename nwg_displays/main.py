@@ -77,6 +77,7 @@ if niri and not os.path.isdir(niri_config_dir):
         file=sys.stderr,
     )
     sys.exit(1)
+
 mango_config_dir = os.path.join(get_config_home(), "mango")
 if mango and not os.path.isdir(mango_config_dir):
     print(
@@ -1279,6 +1280,7 @@ def main():
             default=10,
             help="number of Workspaces in use, default: 10",
         )
+
     elif mango:
         parser.add_argument(
             "-m",
@@ -1498,8 +1500,8 @@ def main():
 
     global form_adaptive_sync
     form_adaptive_sync = builder.get_object("adaptive-sync")
-    # sway, Hyprland (vrr), niri (variable-refresh-rate) and mangowm (vrr)
-    # all support per-output adaptive sync, so the toggle is available on all.
+    # sway, Hyprland (vrr), niri (variable-refresh-rate) and mangowm (vrr) all
+    # support per-output adaptive sync, so the toggle is available on all.
     if sway or hypr or niri or mango:
         form_adaptive_sync.set_label(voc["adaptive-sync"])
         form_adaptive_sync.set_tooltip_text(voc["adaptive-sync-tooltip"])

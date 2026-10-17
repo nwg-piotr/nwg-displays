@@ -230,99 +230,7 @@ def is_command(cmd):
 
 
 def list_outputs():
-    if os.getenv("MANGO_INSTANCE_SIGNATURE"):
-        outputs_dict = {}
-        eprint("Running on Mango")
-
-        try:
-            mmsg_output = mmsg("get all-monitors")
-            randr = parse_wlr_randr()
-            monitors_file = os.path.join(
-                get_config_home(), "mango", "monitors.conf"
-            )
-            rules = parse_mango_monitor_rules(monitors_file)
-
-            if not mmsg_output:
-                eprint("[Mango] Could not communicate with the compositor")
-                return {}
-
-            data = json.loads(mmsg_output)
-            monitors = (
-                data.get("monitors", []) if isinstance(data, dict) else data
-            )
-
-            transforms = {
-                0: "normal", 1: "90", 2: "180", 3: "270",
-                4: "flipped", 5: "flipped-90", 6: "flipped-180", 7: "flipped-270",
-            }
-
-            for mon in monitors:
-                name = mon.get("name")
-                randr_mon = randr.get(name, {})
-                rule = rules.get(name, {})
-                scale = float(mon.get("scale", 1.0))
-
-                description = " ".join(
-                    part
-                    for part in [
-                        randr_mon.get("make"),
-                        randr_mon.get("model"),
-                        randr_mon.get("serial"),
-                    ]
-                    if part
-                )
-
-                # mmsg reports logical dimensions; derive the physical ones
-                outputs_dict[name] = {
-                    "active": bool(
-                        randr_mon.get("enabled", not rule.get("disabled", False))
-                    ),
-                    "dpms": True,
-                    "description": description,
-                    "x": int(mon.get("x", 0)),
-                    "y": int(mon.get("y", 0)),
-                    "logical-width": int(mon.get("width", 0)),
-                    "logical-height": int(mon.get("height", 0)),
-                    "physical-width": round(int(mon.get("width", 0)) * scale),
-                    "physical-height": round(int(mon.get("height", 0)) * scale),
-                    "transform": transforms.get(
-                        rule.get("transform", 0), "normal"
-                    ),
-                    "scale": scale,
-                    "scale_filter": "linear",
-                    "refresh": randr_mon.get("current_refresh") or 60.0,
-                    "modes": randr_mon.get("modes", []),
-                    # mmsg's "active" field is the focused/selected monitor
-                    "focused": mon.get("active", False),
-                    "adaptive_sync_status": "enabled" if mon.get("is_vrr", False) else "disabled",
-                    "mirror": "",
-                    "ten_bit": False,
-                    # HDR is a config-level setting; mmsg's is_hdr reflects
-                    # runtime state which may lag behind the applied rule
-                    "color_mode": (
-                        "force"
-                        if rule.get("force")
-                        else "hdr"
-                        if rule.get("hdr", False)
-                        else ""
-                    ),
-                    "primary": rule.get("primary", False),
-                    "custom_mode": rule.get("custom", False),
-                    "hdr_min_lum": rule.get("min_lum", 0.0),
-                    "hdr_max_lum": rule.get("max_lum", 0.0),
-                    "hdr_max_avg_lum": rule.get("max_avg_lum", 0.0),
-                    "sdr_brightness": 1.0,
-                    "sdr_saturation": 1.0,
-                    "monitor": None,
-                }
-        except json.JSONDecodeError as e:
-            eprint(f"[Mango] JSON decode error: {e}")
-            return {}
-        except Exception as e:
-            eprint(f"Error parsing Mango outputs: {e}")
-            return {}
-
-    elif os.getenv("NIRI_SOCKET"):
+    if os.getenv("NIRI_SOCKET"):
         outputs_dict = {}
         eprint("Running on niri")
         
@@ -550,6 +458,100 @@ def list_outputs():
 
             outputs_dict[m["name"]]["monitor"] = None
 
+    elif os.getenv("MANGO_INSTANCE_SIGNATURE"):
+        outputs_dict = {}
+        eprint("Running on Mango")
+
+        try:
+            mmsg_output = mmsg("get all-monitors")
+            randr = parse_wlr_randr()
+            monitors_file = os.path.join(
+                get_config_home(), "mango", "monitors.conf"
+            )
+            rules = parse_mango_monitor_rules(monitors_file)
+
+            if not mmsg_output:
+                eprint("[Mango] Could not communicate with the compositor")
+                return {}
+
+            data = json.loads(mmsg_output)
+            monitors = (
+                data.get("monitors", []) if isinstance(data, dict) else data
+            )
+
+            transforms = {
+                0: "normal", 1: "90", 2: "180", 3: "270",
+                4: "flipped", 5: "flipped-90", 6: "flipped-180", 7: "flipped-270",
+            }
+
+            for mon in monitors:
+                name = mon.get("name")
+                randr_mon = randr.get(name, {})
+                rule = rules.get(name, {})
+                scale = float(mon.get("scale", 1.0))
+
+                description = " ".join(
+                    part
+                    for part in [
+                        randr_mon.get("make"),
+                        randr_mon.get("model"),
+                        randr_mon.get("serial"),
+                    ]
+                    if part
+                )
+
+                # mmsg reports logical dimensions; derive the physical ones
+                outputs_dict[name] = {
+                    "active": bool(
+                        randr_mon.get("enabled", not rule.get("disabled", False))
+                    ),
+                    # DPMS power state is not exposed by mmsg; assume the
+                    # monitor is powered on.
+                    "dpms": True,
+                    "description": description,
+                    "x": int(mon.get("x", 0)),
+                    "y": int(mon.get("y", 0)),
+                    "logical-width": int(mon.get("width", 0)),
+                    "logical-height": int(mon.get("height", 0)),
+                    "physical-width": round(int(mon.get("width", 0)) * scale),
+                    "physical-height": round(int(mon.get("height", 0)) * scale),
+                    "transform": transforms.get(
+                        rule.get("transform", 0), "normal"
+                    ),
+                    "scale": scale,
+                    "scale_filter": "linear",
+                    "refresh": randr_mon.get("current_refresh") or 60.0,
+                    "modes": randr_mon.get("modes", []),
+                    # mmsg's "active" field is the focused/selected monitor
+                    "focused": mon.get("active", False),
+                    "adaptive_sync_status": "enabled" if mon.get("is_vrr", False) else "disabled",
+                    "mirror": "",
+                    "ten_bit": False,
+                    # HDR is a config-level setting; mmsg's is_hdr reflects
+                    # runtime state which may lag behind the applied rule
+                    "color_mode": (
+                        "force"
+                        if rule.get("force")
+                        else "hdr"
+                        if rule.get("hdr", False)
+                        else ""
+                    ),
+                    "primary": rule.get("primary", False),
+                    "custom_mode": rule.get("custom", False),
+                    "hdr_min_lum": rule.get("min_lum", 0.0),
+                    "hdr_max_lum": rule.get("max_lum", 0.0),
+                    "hdr_max_avg_lum": rule.get("max_avg_lum", 0.0),
+                    "sdr_brightness": 1.0,
+                    "sdr_saturation": 1.0,
+                    "monitor": None,
+                }
+        except json.JSONDecodeError as e:
+            eprint(f"[Mango] JSON decode error: {e}")
+            return {}
+        except Exception as e:
+            eprint(f"Error parsing Mango outputs: {e}")
+            return {}
+
     else:
         eprint("This program only supports sway, Hyprland and niri, and we seem to be elsewhere, terminating.")
         sys.exit(1)
@@ -614,11 +616,7 @@ def list_outputs():
 
 def list_outputs_activity():
     result = {}
-    if os.getenv("MANGO_INSTANCE_SIGNATURE"):
-        randr = parse_wlr_randr()
-        for name in randr:
-            result[name] = randr[name].get("enabled", True)
-    elif os.getenv("NIRI_SOCKET"):
+    if os.getenv("NIRI_SOCKET"):
         outputs = list_outputs()
         for name in outputs:
             result[name] = outputs[name].get("active", True)
@@ -637,7 +635,11 @@ def list_outputs_activity():
 
         for mon in monitors_all:
             name = mon["name"]
-            result[name] = True if name in active else False
+            result[name] = name in active
+    elif os.getenv("MANGO_INSTANCE_SIGNATURE"):
+        randr = parse_wlr_randr()
+        for name in randr:
+            result[name] = randr[name].get("enabled", True)
 
     return result
 
