@@ -46,6 +46,7 @@ dir_name = os.path.dirname(__file__)
 sway = os.getenv("SWAYSOCK") is not None
 hypr = os.getenv("HYPRLAND_INSTANCE_SIGNATURE") is not None
 niri = os.getenv("NIRI_SOCKET") is not None
+mango = os.getenv("MANGO_INSTANCE_SIGNATURE") is not None
 
 config_dir = os.path.join(get_config_home(), "nwg-displays")
 # This was done by mistake, and the config file need to be migrated to the proper path
@@ -76,6 +77,13 @@ if niri and not os.path.isdir(niri_config_dir):
         file=sys.stderr,
     )
     sys.exit(1)
+mango_config_dir = os.path.join(get_config_home(), "mango")
+if mango and not os.path.isdir(mango_config_dir):
+    print(
+        "[Warning] Couldn't find Mango config directory '{}'".format(mango_config_dir),
+        file=sys.stderr,
+    )
+    sys.exit(1)
 
 # Create empty files if not found
 if sway:
@@ -87,8 +95,11 @@ elif hypr:
 elif niri:
     for name in ["monitor.kdl"]:
         create_empty_file(os.path.join(niri_config_dir, name))
+elif mango:
+    for name in ["monitors.conf"]:
+        create_empty_file(os.path.join(mango_config_dir, name))
 else:
-    eprint("[Error] Neither sway, Hyprland nor niri detected, terminating")
+    eprint("[Error] Neither sway, Hyprland, niri nor Mango detected, terminating")
     sys.exit(1)
 
 config = {}
@@ -135,6 +146,11 @@ form_version = None
 form_mirror = None
 form_ten_bit = None
 form_color_mode = None
+form_hdr = None
+form_primary = None
+form_hdr_min_lum = None
+form_hdr_max_lum = None
+form_hdr_max_avg_lum = None
 form_sdr_brightness = None
 form_sdr_saturation = None
 form_profile_wallpapers = None
@@ -356,6 +372,19 @@ def update_form_from_widget(widget):
     form_refresh.set_value(widget.refresh)
     if form_ten_bit:
         form_ten_bit.set_active(widget.ten_bit)
+    if form_hdr:
+        hdr_ids = {"": "disabled", "hdr": "enabled", "force": "forced"}
+        form_hdr.set_active_id(hdr_ids.get(widget.color_mode, "disabled"))
+    if form_primary:
+        form_primary.set_active(getattr(widget, "primary", False))
+    if form_hdr_min_lum:
+        form_hdr_min_lum.set_value(getattr(widget, "hdr_min_lum", 0.0))
+    if form_hdr_max_lum:
+        form_hdr_max_lum.set_value(getattr(widget, "hdr_max_lum", 0.0))
+    if form_hdr_max_avg_lum:
+        form_hdr_max_avg_lum.set_value(
+            getattr(widget, "hdr_max_avg_lum", 0.0)
+        )
     if form_color_mode:
         form_color_mode.set_active_id(widget.color_mode if widget.color_mode else "")
         update_color_dependent_widgets(widget.color_mode)
@@ -427,6 +456,10 @@ class DisplayButton(Gtk.Button):
         color_mode="",
         sdr_brightness=1.0,
         sdr_saturation=1.0,
+        primary=False,
+        hdr_min_lum=0.0,
+        hdr_max_lum=0.0,
+        hdr_max_avg_lum=0.0,
     ):
         super().__init__()
         # Output properties
@@ -458,6 +491,11 @@ class DisplayButton(Gtk.Button):
         self.color_mode = color_mode
         self.sdr_brightness = sdr_brightness
         self.sdr_saturation = sdr_saturation
+        # HDR / primary (Mango)
+        self.primary = primary
+        self.hdr_min_lum = hdr_min_lum
+        self.hdr_max_lum = hdr_max_lum
+        self.hdr_max_avg_lum = hdr_max_avg_lum
 
         # Button properties
         self.selected = False
@@ -550,6 +588,32 @@ def on_transform_changed(*args):
 def on_ten_bit_toggled(check_btn):
     if selected_output_button:
         selected_output_button.ten_bit = check_btn.get_active()
+
+
+def on_hdr_selected(combo):
+    if selected_output_button:
+        ids = {"disabled": "", "enabled": "hdr", "forced": "force"}
+        selected_output_button.color_mode = ids.get(combo.get_active_id(), "")
+
+
+def on_primary_toggled(check_btn):
+    if selected_output_button:
+        selected_output_button.primary = check_btn.get_active()
+
+
+def on_hdr_min_lum_changed(spin):
+    if selected_output_button:
+        selected_output_button.hdr_min_lum = spin.get_value()
+
+
+def on_hdr_max_lum_changed(spin):
+    if selected_output_button:
+        selected_output_button.hdr_max_lum = spin.get_value()
+
+
+def on_hdr_max_avg_lum_changed(spin):
+    if selected_output_button:
+        selected_output_button.hdr_max_avg_lum = spin.get_value()
 
 
 def is_hdr_mode(color_mode):
@@ -755,6 +819,10 @@ def create_display_buttons():
             color_mode=item.get("color_mode", ""),
             sdr_brightness=item.get("sdr_brightness", 1.0),
             sdr_saturation=item.get("sdr_saturation", 1.0),
+            primary=item.get("primary", False),
+            hdr_min_lum=item.get("hdr_min_lum", 0.0),
+            hdr_max_lum=item.get("hdr_max_lum", 0.0),
+            hdr_max_avg_lum=item.get("hdr_max_avg_lum", 0.0),
         )
 
         display_buttons.append(b)
@@ -1059,6 +1127,9 @@ def keep_current_settings(btn, config_dir=None, profile_name=None):
     if os.getenv("NIRI_SOCKET"):
         niri_reload_config()
         GLib.timeout_add(2000, create_display_buttons)
+    if os.getenv("MANGO_INSTANCE_SIGNATURE"):
+        mango_reload_config()
+        GLib.timeout_add(2000, create_display_buttons)
 
     if config_dir and profile_name:
         if config.get("profile-bound-wallpapers", True):
@@ -1118,6 +1189,12 @@ def restore_old_settings(btn, backup, path):
             print(f"[niri] Restored from {backup}")
         confirm_win.close()
         niri_reload_config()
+        GLib.timeout_add(2000, create_display_buttons)
+    elif os.getenv("MANGO_INSTANCE_SIGNATURE"):
+        # For Mango: backup is a list of lines, restore and reload
+        save_list_to_text_file(backup, path)
+        confirm_win.close()
+        mango_reload_config()
         GLib.timeout_add(2000, create_display_buttons)
 
 
@@ -1182,6 +1259,24 @@ def main():
             default="{}/monitor.kdl".format(niri_config_dir),
             help="path to save the monitor.kdl file to, default: {}".format(
                 "{}/monitor.kdl".format(niri_config_dir)
+            ),
+        )
+
+        parser.add_argument(
+            "-n",
+            "--num_ws",
+            type=int,
+            default=10,
+            help="number of Workspaces in use, default: 10",
+        )
+    elif mango:
+        parser.add_argument(
+            "-m",
+            "--monitors_path",
+            type=str,
+            default="{}/monitors.conf".format(mango_config_dir),
+            help="path to save the monitors.conf file to, default: {}".format(
+                "{}/monitors.conf".format(mango_config_dir)
             ),
         )
 
@@ -1277,6 +1372,37 @@ def main():
         else:
             eprint("niri config directory not found!")
             outputs_path = ""
+    elif mango:
+        if os.path.isdir(mango_config_dir):
+            outputs_path = args.monitors_path
+            # Check if file is writable
+            if os.path.lexists(outputs_path):
+                is_writable = os.access(outputs_path, os.W_OK)
+                if os.path.islink(outputs_path) and not is_writable:
+                    eprint(f"INFO: '{outputs_path}' is a read-only symlink. Replacing with a writable file.")
+                    tmp_path = f"{outputs_path}.tmp"
+                    try:
+                        with open(outputs_path, 'r') as src_file, open(tmp_path, 'w') as tmp_file:
+                            tmp_file.write(src_file.read())
+                        backup_path = f"{outputs_path}.bkp"
+                        counter = 1
+                        while os.path.lexists(backup_path):
+                            backup_path = f"{outputs_path}.bkp{counter}"
+                            counter += 1
+                        eprint(f"INFO: Backing up '{outputs_path}' to '{backup_path}'")
+                        os.rename(outputs_path, backup_path)
+                        os.rename(tmp_path, outputs_path)
+                    except Exception as e:
+                        eprint(f"ERROR: Failed to replace read-only symlink: {e}")
+                elif not os.path.islink(outputs_path) and not is_writable:
+                    eprint(f"INFO: '{outputs_path}' is a read-only file. Making it writable.")
+                    try:
+                        os.chmod(outputs_path, os.stat(outputs_path).st_mode | stat.S_IWUSR)
+                    except Exception as e:
+                        eprint(f"ERROR: Failed to make file writable: {e}")
+        else:
+            eprint("Mango config directory not found!")
+            outputs_path = ""
 
     global num_ws
     num_ws = args.num_ws
@@ -1362,9 +1488,9 @@ def main():
 
     global form_adaptive_sync
     form_adaptive_sync = builder.get_object("adaptive-sync")
-    # sway, Hyprland (vrr) and niri (variable-refresh-rate) all support per-output
-    # adaptive sync, so the toggle is available on all three.
-    if sway or hypr or niri:
+    # sway, Hyprland (vrr), niri (variable-refresh-rate) and mangowm (vrr)
+    # all support per-output adaptive sync, so the toggle is available on all.
+    if sway or hypr or niri or mango:
         form_adaptive_sync.set_label(voc["adaptive-sync"])
         form_adaptive_sync.set_tooltip_text(voc["adaptive-sync-tooltip"])
         form_adaptive_sync.connect("toggled", on_adaptive_sync_toggled)
@@ -1373,7 +1499,7 @@ def main():
 
     global form_custom_mode
     form_custom_mode = builder.get_object("custom-mode")
-    if sway:
+    if sway or mango:
         form_custom_mode.set_label(voc["custom-mode"])
         form_custom_mode.set_tooltip_text(voc["custom-mode-tooltip"])
         form_custom_mode.connect("toggled", on_custom_mode_toggle)
@@ -1488,7 +1614,7 @@ def main():
     global form_apply
     form_apply = builder.get_object("apply")
     form_apply.set_label(voc["apply"])
-    if (sway and sway_config_dir) or (hypr and hypr_config_dir) or (niri and niri_config_dir):
+    if (sway and sway_config_dir) or (hypr and hypr_config_dir) or (niri and niri_config_dir) or (mango and mango_config_dir):
         form_apply.connect("clicked", on_apply_button, profile_manager)
     else:
         form_apply.set_sensitive(False)
@@ -1544,6 +1670,61 @@ def main():
         form_mirror.set_wrap_width(1)
         form_mirror.connect("changed", on_mirror_selected)
         grid.attach(form_mirror, 7, 4, 1, 1)
+
+    if mango:
+        grid = builder.get_object("grid")
+
+        global form_hdr
+        form_hdr = Gtk.ComboBoxText()
+        form_hdr.append("disabled", "Disabled")
+        form_hdr.append("enabled", "Enabled")
+        form_hdr.append("forced", "Forced")
+        form_hdr.set_active_id("disabled")
+        form_hdr.set_tooltip_text(voc["mango-hdr-tooltip"])
+        form_hdr.connect("changed", on_hdr_selected)
+        # Insert a row below the Size/Refresh/Modes row for the HDR controls.
+        grid.insert_row(4)
+
+        lbl = Gtk.Label.new("HDR:")
+        lbl.set_property("halign", Gtk.Align.END)
+        grid.attach(lbl, 6, 4, 1, 1)
+        grid.attach(form_hdr, 7, 4, 1, 1)
+
+        global form_hdr_min_lum, form_hdr_max_lum, form_hdr_max_avg_lum
+        lbl = Gtk.Label.new("Min lum:")
+        lbl.set_property("halign", Gtk.Align.END)
+        grid.attach(lbl, 0, 4, 1, 1)
+        form_hdr_min_lum = Gtk.SpinButton.new_with_range(0, 10000, 1)
+        form_hdr_min_lum.set_tooltip_text(voc["mango-hdr-min-lum-tooltip"])
+        form_hdr_min_lum.connect("value-changed", on_hdr_min_lum_changed)
+        grid.attach(form_hdr_min_lum, 1, 4, 1, 1)
+
+        lbl = Gtk.Label.new("Max lum:")
+        lbl.set_property("halign", Gtk.Align.END)
+        grid.attach(lbl, 2, 4, 1, 1)
+        form_hdr_max_lum = Gtk.SpinButton.new_with_range(0, 10000, 1)
+        form_hdr_max_lum.set_tooltip_text(voc["mango-hdr-max-lum-tooltip"])
+        form_hdr_max_lum.connect("value-changed", on_hdr_max_lum_changed)
+        grid.attach(form_hdr_max_lum, 3, 4, 1, 1)
+
+        lbl = Gtk.Label.new("Avg lum:")
+        lbl.set_property("halign", Gtk.Align.END)
+        grid.attach(lbl, 4, 4, 1, 1)
+        form_hdr_max_avg_lum = Gtk.SpinButton.new_with_range(0, 10000, 1)
+        form_hdr_max_avg_lum.connect(
+            "value-changed", on_hdr_max_avg_lum_changed
+        )
+        form_hdr_max_avg_lum.set_tooltip_text(voc["mango-hdr-max-avg-lum-tooltip"])
+        grid.attach(form_hdr_max_avg_lum, 5, 4, 1, 1)
+
+        # Appended to the end of the checkbox row
+        global form_primary
+        form_primary = Gtk.CheckButton.new_with_label("Primary")
+        form_primary.set_tooltip_text(voc["mango-primary-tooltip"])
+        form_primary.connect("toggled", on_primary_toggled)
+        grid.attach(form_primary, 5, 5, 2, 1)
+
+        form_custom_mode.set_tooltip_text(voc["mango-custom-mode-tooltip"])
 
     if hypr:
         # Color management / HDR controls (Hyprland only)

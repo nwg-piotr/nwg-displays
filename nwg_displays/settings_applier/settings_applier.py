@@ -1,12 +1,15 @@
 import os
 import shutil
 import datetime
+import re
 import json
 import time
 from nwg_displays.tools import (
     hyprctl,
     niri_msg,
     niri_reload_config,
+    mmsg,
+    mango_reload_config,
     save_list_to_text_file,
     save_kdl_output,
     ensure_niri_config_include,
@@ -30,6 +33,10 @@ class SettingsApplier:
 
         if os.getenv("NIRI_SOCKET"):
             SettingsApplier._apply_niri_json(
+                displays, use_desc, outputs_path, profile_data
+            )
+        elif os.getenv("MANGO_INSTANCE_SIGNATURE"):
+            SettingsApplier._apply_mango_json(
                 displays, use_desc, outputs_path, profile_data
             )
 
@@ -266,6 +273,16 @@ class SettingsApplier:
                 config_dir,
                 profile_name,
             )
+        elif os.getenv("MANGO_INSTANCE_SIGNATURE"):
+            SettingsApplier._apply_mango_gui(
+                display_buttons,
+                outputs_activity,
+                outputs_path,
+                use_desc,
+                create_confirm_win_callback,
+                config_dir,
+                profile_name,
+            )
 
         elif os.getenv("SWAYSOCK"):
             SettingsApplier._apply_sway_gui(
@@ -429,6 +446,136 @@ class SettingsApplier:
         # Pass backup file path and current file path to confirm window
         if create_confirm_win_callback:
             create_confirm_win_callback(backup_path, outputs_path, config_dir, profile_name)
+    @staticmethod
+    def _mango_rule_line(name, d):
+        """Build a monitor_rule line for the Mango monitors.conf file."""
+        transforms = {
+            "normal": 0,
+            "90": 1,
+            "180": 2,
+            "270": 3,
+            "flipped": 4,
+            "flipped-90": 5,
+            "flipped-180": 6,
+            "flipped-270": 7,
+        }
+
+        parts = [f"name:^{re.escape(name)}$"]
+
+        if not d["active"]:
+            parts.append("disable:1")
+        else:
+            parts.extend([
+                f"width:{d['physical_width']}",
+                f"height:{d['physical_height']}",
+                f"refresh:{d['refresh']:g}",
+                f"x:{d['x']}",
+                f"y:{d['y']}",
+                f"scale:{d['scale']:g}",
+            ])
+
+            rr = transforms.get(d["transform"], 0)
+            if rr:
+                parts.append(f"rr:{rr}")
+
+            parts.append("vrr:1" if d.get("adaptive_sync") else "vrr:0")
+            if d.get("custom_mode"):
+                parts.append("custom:1")
+
+            color = (d.get("color_mode") or "")
+            if color in ("hdr", "hdredid", "force"):
+                parts.append("hdr:1")
+            if color == "force":
+                parts.append("hdr_force:1")
+            for key, attr in (
+                ("min", "hdr_min_lum"),
+                ("max", "hdr_max_lum"),
+                ("max_avg", "hdr_max_avg_lum"),
+            ):
+                value = d.get(attr) or 0
+                if value:
+                    parts.append(f"hdr_{key}_lum:{value:g}")
+            if d.get("primary"):
+                parts.append("primary:1")
+
+        return "monitor_rule=" + ",".join(parts)
+
+    @staticmethod
+    def _apply_mango_json(displays, use_desc, outputs_path, profile_data):
+        """Applies configuration by writing the Mango monitors.conf file."""
+        print(f"[Profile] Applying {len(displays)} displays for Mango...")
+
+        header = SettingsApplier._get_header("Profile Loader")
+        lines_conf = []
+
+        for d in displays:
+            name = d["name"]
+            lines_conf.append(SettingsApplier._mango_rule_line(name, d))
+
+        save_list_to_text_file([header] + lines_conf, outputs_path)
+
+        for d in displays:
+            cmd = "wakeup_monitor" if d["dpms"] else "sleep_monitor"
+            mmsg(f"dispatch {cmd},{d['name']}")
+
+        mango_reload_config()
+
+        config, config_file = get_config()
+
+        if "wallpapers" in profile_data and config.get(
+            "profile-bound-wallpapers", True
+        ):
+            print("[Profile] Applying wallpapers...")
+            time.sleep(1)
+            WallpaperManager.apply_wallpapers(profile_data["wallpapers"])
+
+    @staticmethod
+    def _apply_mango_gui(
+        display_buttons,
+        outputs_activity,
+        outputs_path,
+        use_desc,
+        create_confirm_win_callback,
+        config_dir=None,
+        profile_name=None,
+    ):
+        """Applies configuration from the GUI by writing the Mango monitors.conf file."""
+        print(f"[Mango] Applying {len(display_buttons)} displays...")
+
+        backup = []
+        if os.path.isfile(outputs_path):
+            backup = load_text_file(outputs_path).splitlines()
+
+        lines_conf = [SettingsApplier._get_header()]
+        for db in display_buttons:
+            d = {
+                "active": db.name in outputs_activity and outputs_activity[db.name],
+                "physical_width": db.physical_width,
+                "physical_height": db.physical_height,
+                "refresh": db.refresh,
+                "x": db.x,
+                "y": db.y,
+                "scale": db.scale,
+                "transform": db.transform,
+                "adaptive_sync": db.adaptive_sync,
+                "primary": getattr(db, "primary", False),
+                "hdr_min_lum": getattr(db, "hdr_min_lum", 0.0),
+                "hdr_max_lum": getattr(db, "hdr_max_lum", 0.0),
+                "hdr_max_avg_lum": getattr(db, "hdr_max_avg_lum", 0.0),
+                "color_mode": getattr(db, "color_mode", "") or ""
+            }
+            lines_conf.append(SettingsApplier._mango_rule_line(db.name, d))
+
+        save_list_to_text_file(lines_conf, outputs_path)
+
+        for db in display_buttons:
+            cmd = "wakeup_monitor" if db.dpms else "sleep_monitor"
+            mmsg(f"dispatch {cmd},{db.name}")
+
+        mango_reload_config()
+
+        if create_confirm_win_callback:
+            create_confirm_win_callback(backup, outputs_path, config_dir, profile_name)
 
     @staticmethod
     def _apply_hyprland_gui(
