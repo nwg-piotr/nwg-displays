@@ -565,7 +565,7 @@ def list_outputs():
         monitors.append(monitor)
 
     if os.getenv("NIRI_SOCKET") or os.getenv("MANGO_INSTANCE_SIGNATURE"):
-        # Niri: Use position-based matching with Gdk.Monitor geometry
+        # Niri and Mango: Use position-based matching with Gdk.Monitor geometry
         # This ensures correct matching even when multiple monitors have identical properties
         for key in outputs_dict:
             if key in outputs_dict:

@@ -514,13 +514,14 @@ class SettingsApplier:
 
         save_list_to_text_file([header] + lines_conf, outputs_path)
 
+        # Reload first so the new monitor rules are applied before changing DPMS state.
+        mango_reload_config()
+
         for d in displays:
             cmd = "wakeup_monitor" if d["dpms"] else "sleep_monitor"
             mmsg(f"dispatch {cmd},{d['name']}")
 
-        mango_reload_config()
-
-        config, config_file = get_config()
+        config, _ = get_config()
 
         if "wallpapers" in profile_data and config.get(
             "profile-bound-wallpapers", True
@@ -568,11 +569,12 @@ class SettingsApplier:
 
         save_list_to_text_file(lines_conf, outputs_path)
 
+        # Reload first so the new monitor rules are applied before changing DPMS state.
+        mango_reload_config()
+
         for db in display_buttons:
             cmd = "wakeup_monitor" if db.dpms else "sleep_monitor"
             mmsg(f"dispatch {cmd},{db.name}")
-
-        mango_reload_config()
 
         if create_confirm_win_callback:
             create_confirm_win_callback(backup, outputs_path, config_dir, profile_name)
