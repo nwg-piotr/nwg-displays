@@ -375,6 +375,7 @@ def update_form_from_widget(widget):
     if form_hdr:
         hdr_ids = {"": "disabled", "hdr": "enabled", "force": "forced"}
         form_hdr.set_active_id(hdr_ids.get(widget.color_mode, "disabled"))
+        update_hdr_dependent_widgets()
     if form_primary:
         form_primary.set_active(getattr(widget, "primary", False))
     if form_hdr_min_lum:
@@ -594,6 +595,15 @@ def on_hdr_selected(combo):
     if selected_output_button:
         ids = {"disabled": "", "enabled": "hdr", "forced": "force"}
         selected_output_button.color_mode = ids.get(combo.get_active_id(), "")
+    update_hdr_dependent_widgets()
+
+
+def update_hdr_dependent_widgets():
+    """Enable the mastering luminance fields only when HDR is enabled."""
+    enabled = bool(form_hdr and form_hdr.get_active_id() != "disabled")
+    for widget in (form_hdr_min_lum, form_hdr_max_lum, form_hdr_max_avg_lum):
+        if widget:
+            widget.set_sensitive(enabled)
 
 
 def on_primary_toggled(check_btn):
@@ -1716,6 +1726,8 @@ def main():
         )
         form_hdr_max_avg_lum.set_tooltip_text(voc["mango-hdr-max-avg-lum-tooltip"])
         grid.attach(form_hdr_max_avg_lum, 5, 4, 1, 1)
+
+        update_hdr_dependent_widgets()
 
         # Appended to the end of the checkbox row
         global form_primary
