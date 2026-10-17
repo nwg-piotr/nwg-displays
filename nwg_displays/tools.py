@@ -86,10 +86,19 @@ def mmsg(cmd):
 
 def mango_reload_config():
     """Reload Mango configuration via mmsg dispatch"""
-    if mmsg("dispatch reload_config"):
-        print("[Mango] Config reloaded")
-    else:
-        eprint("[Mango] Failed to reload config")
+    try:
+        result = subprocess.run(
+            ["mmsg", "dispatch reload_config"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0:
+            print("[Mango] Config reloaded")
+        else:
+            eprint(f"[Mango] Failed to reload config: {result.stderr.strip()}")
+    except Exception as e:
+        eprint(f"[Mango] Failed to reload config: {e}")
 
 
 def parse_wlr_randr():
@@ -266,7 +275,7 @@ def list_outputs():
                 # mmsg reports logical dimensions; derive the physical ones
                 outputs_dict[name] = {
                     "active": bool(
-                        randr_mon.get("enabled", rule.get("disabled", False))
+                        randr_mon.get("enabled", not rule.get("disabled", False))
                     ),
                     "dpms": True,
                     "description": description,
