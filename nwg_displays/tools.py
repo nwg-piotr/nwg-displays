@@ -101,6 +101,24 @@ def mango_reload_config():
         eprint(f"[Mango] Failed to reload config: {e}")
 
 
+def mango_wakeup_all_monitors():
+    """Wake up all connected monitors.
+
+    DPMS power state is runtime-only and not exposed by mmsg, so the only
+    way to guarantee a known state after restoring settings is to
+    explicitly wake every monitor."""
+    try:
+        data = json.loads(mmsg("get all-monitors"))
+    except json.JSONDecodeError as e:
+        eprint(f"[Mango] Failed to parse monitor list: {e}")
+        return
+    monitors = data.get("monitors", []) if isinstance(data, dict) else data
+    for mon in monitors:
+        name = mon.get("name")
+        if name:
+            mmsg(f"dispatch wakeup_monitor,{name}")
+
+
 def parse_wlr_randr():
     """Parse wlr-randr output into a dict keyed by output name.
     Provides enabled state, make/model/serial and available modes,
@@ -166,14 +184,16 @@ def parse_mango_monitor_rules(path):
         if not line or line.startswith("#") or "monitor_rule=" not in line:
             continue
         value = line.split("=", 1)[1]
-        name_match = re.search(r"name:([^,]*)", value)
+        # The value is a regex. Capture the value after "name:" up to the next
+        # comma-separated key or end of string.
+        name_match = re.search(r"(?:^|,)name:(.*?)(?=,\w+:|$)", value)
         if not name_match:
             continue
-        name = name_match.group(1).strip()
-        # Strip regex anchors and unescape escaped characters
-        if name.startswith("^") and name.endswith("$"):
-            name = name[1:-1]
-        name = name.replace("\\", "")
+        # Inverse of re.escape: drop the backslash from every escaped pair
+        name = re.sub(r"\\(.)", r"\1", name_match.group(1)).strip()
+        # Strip regex anchors
+        name = name.removeprefix("^")
+        name = name.removesuffix("$")
         rr_match = re.search(r"(?<!v)rr:(\d+)", value)
         disable_match = re.search(r"disable:1", value)
         hdr_match = re.search(r"hdr:1", value)

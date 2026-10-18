@@ -374,7 +374,12 @@ def update_form_from_widget(widget):
     if form_ten_bit:
         form_ten_bit.set_active(widget.ten_bit)
     if form_hdr:
-        hdr_ids = {"": "disabled", "hdr": "enabled", "force": "forced"}
+        hdr_ids = {
+            "": "disabled",
+            "hdr": "enabled",
+            "force": "forced",
+            "hdredid": "enabled"
+        }
         form_hdr.set_active_id(hdr_ids.get(widget.color_mode, "disabled"))
         update_hdr_dependent_widgets()
     if form_primary:
@@ -1202,10 +1207,13 @@ def restore_old_settings(btn, backup, path):
         niri_reload_config()
         GLib.timeout_add(2000, create_display_buttons)
     elif os.getenv("MANGO_INSTANCE_SIGNATURE"):
-        # For Mango: backup is a list of lines, restore and reload
+        # For Mango: backup is a list of lines, restore and reload.
+        # DPMS power state is runtime-only (not stored in monitors.conf),
+        # so wake all monitors back on after restoring.
         save_list_to_text_file(backup, path)
         confirm_win.close()
         mango_reload_config()
+        mango_wakeup_all_monitors()
         GLib.timeout_add(2000, create_display_buttons)
 
 
@@ -1394,7 +1402,7 @@ def main():
                     eprint(f"INFO: '{outputs_path}' is a read-only symlink. Replacing with a writable file.")
                     tmp_path = f"{outputs_path}.tmp"
                     try:
-                        with open(outputs_path, 'r') as src_file, open(tmp_path, 'w') as tmp_file:
+                        with open(outputs_path, "r") as src_file, open(tmp_path, "w") as tmp_file:
                             tmp_file.write(src_file.read())
                         backup_path = f"{outputs_path}.bkp"
                         counter = 1
@@ -1723,10 +1731,8 @@ def main():
         lbl.set_property("halign", Gtk.Align.END)
         grid.attach(lbl, 4, 4, 1, 1)
         form_hdr_max_avg_lum = Gtk.SpinButton.new_with_range(0, 10000, 1)
-        form_hdr_max_avg_lum.connect(
-            "value-changed", on_hdr_max_avg_lum_changed
-        )
         form_hdr_max_avg_lum.set_tooltip_text(voc["mango-hdr-max-avg-lum-tooltip"])
+        form_hdr_max_avg_lum.connect("value-changed", on_hdr_max_avg_lum_changed)
         grid.attach(form_hdr_max_avg_lum, 5, 4, 1, 1)
 
         update_hdr_dependent_widgets()

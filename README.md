@@ -132,7 +132,9 @@ Niri will automatically reload the configuration when you apply settings in nwg-
 
 ### mangowm
 
-[Monitors](https://mangowm.github.io/docs/configuration/monitors.html):
+[Monitors](https://mangowm.github.io/docs/configuration/monitors):
+
+**Requires `wlr-randr` to query monitor state.**
 
 The configuration is saved to `~/.config/mango/monitors.conf`. Make sure your config sources this file, e.g. with:
 
@@ -141,7 +143,6 @@ source_optional=./monitors.conf
 ```
 
 **Note:** Mango uses dynamic tags, so the workspace assignment feature is not available for Mango.
-
 
 ## Settings
 
