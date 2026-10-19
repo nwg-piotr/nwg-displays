@@ -520,7 +520,13 @@ def list_outputs():
                     if part
                 )
 
-                # mmsg reports logical dimensions; derive the physical ones
+                # mmsg reports post-transform dimensions; normalize rotated
+                # outputs back to native orientation (odd rotations swap WxH)
+                transform = rule.get("transform", 0)
+                w, h = int(mon.get("width", 0)), int(mon.get("height", 0))
+                if transform % 4 in (1, 3):
+                    w, h = h, w
+
                 outputs_dict[name] = {
                     "active": bool(
                         randr_mon.get("enabled", not rule.get("disabled", False))
@@ -531,13 +537,11 @@ def list_outputs():
                     "description": description,
                     "x": int(mon.get("x", 0)),
                     "y": int(mon.get("y", 0)),
-                    "logical-width": int(mon.get("width", 0)),
-                    "logical-height": int(mon.get("height", 0)),
-                    "physical-width": round(int(mon.get("width", 0)) * scale),
-                    "physical-height": round(int(mon.get("height", 0)) * scale),
-                    "transform": transforms.get(
-                        rule.get("transform", 0), "normal"
-                    ),
+                    "logical-width": w,
+                    "logical-height": h,
+                    "physical-width": round(w * scale),
+                    "physical-height": round(h * scale),
+                    "transform": transforms.get(transform, "normal"),
                     "scale": scale,
                     "scale_filter": "linear",
                     "refresh": randr_mon.get("current_refresh") or 60.0,
