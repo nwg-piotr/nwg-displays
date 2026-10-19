@@ -1624,6 +1624,10 @@ def main():
         # Niri uses dynamic workspaces, no need for workspace assignment
         form_workspaces.set_sensitive(False)
         form_workspaces.set_tooltip_text("Niri uses dynamic workspaces")
+    elif mango:
+        # Mango uses dynamic tags, no need for workspace assignment
+        form_workspaces.set_sensitive(False)
+        form_workspaces.set_tooltip_text("Mango uses dynamic tags")
 
     global form_close
     form_close = builder.get_object("close")
