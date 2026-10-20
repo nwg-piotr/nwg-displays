@@ -129,8 +129,8 @@ def parse_wlr_randr():
             ["wlr-randr"], capture_output=True, text=True, timeout=5
         ).stdout
     except Exception as e:
-        eprint(f"[Mango] Failed to run wlr-randr: {e}")
-        return result
+        eprint(f"[Mango] Failed to run wlr-randr: {e}, terminating")
+        sys.exit(1)
 
     name = None
     for line in output.splitlines():
