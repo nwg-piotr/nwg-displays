@@ -58,5 +58,13 @@
   "delete-error-message": "Nie można usunąć profilu: {e}",
   "load-error-missing-data": "Brak danych do załadowania profilu",
   "load-error-message": "Nie można załadować profilu",
-  "current-profile": "Profil"
+  "current-profile": "Profil",
+  "profile-bound-wallpapers": "Tapety profilu",
+  "profile-bound-wallpapers-tooltip": "Zapisuj i wczytuj tapetę razem z profilami wyświetlaczy",
+  "mango-hdr-tooltip": "Włącza wsparcie HDR. \n'Forced' włącza HDR nawet gdy EDID \ntego nie zaleca BT.2020/PQ.",
+  "mango-primary-tooltip": "Ustawia monitor jako główny dla wyjścia X11 (RandR) \ndla XWayland.",
+"mango-hdr-min-lum-tooltip": "(HDR) Minimalna luminancja wyświetlacza wzorcowego, cd/m² \n(0 = nieustawione).",
+  "mango-hdr-max-lum-tooltip": "(HDR) Szczytowa luminancja wyświetlacza wzorcowego (max_cll), \ncd/m² (0 = nieustawione).",
+  "mango-hdr-max-avg-lum-tooltip": "(HDR) Maksymalny średni poziom jasności klatki (max_fall), \ncd/m² (0 = nieustawione).",
+  "mango-custom-mode-tooltip": "Włącza tryb nie występujący w dostępnych trybach. \nMoże spowodować czarny ekran."
 }
