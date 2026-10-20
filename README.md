@@ -3,14 +3,14 @@
 
 This application is a part of the [nwg-shell](https://nwg-piotr.github.io/nwg-shell) project.
 
-**Nwg-displays** is an output management utility for [sway](https://github.com/swaywm/sway), [Hyprland](https://github.com/hyprwm/Hyprland) and [Niri](https://github.com/niri-wm/niri)
+**Nwg-displays** is an output management utility for [sway](https://github.com/swaywm/sway), [Hyprland](https://github.com/hyprwm/Hyprland), [Niri](https://github.com/niri-wm/niri) and [mangowm](https://github.com/mangowm/mango)
 Wayland compositor, inspired by wdisplays and wlay. The program is expected to:
 
 - provide an intuitive GUI to manage multiple displays;
 - apply settings;
 - save outputs configuration to a text file;
 - save workspace -> output assignments to a text file;
-- support sway, Hyprland and Niri only.
+- support sway, Hyprland, Niri and mangowm only.
 
 <img src="https://user-images.githubusercontent.com/20579136/158013748-5b27f742-0e6a-4d82-a5ac-06368b4df008.png" width=640, alt="screenshot"><br>
 
@@ -129,6 +129,20 @@ The configuration is saved to `~/.config/niri/monitor.kdl` in KDL format:
 Niri will automatically reload the configuration when you apply settings in nwg-displays.
 
 **Note:** Niri uses dynamic workspaces, so the workspace assignment feature is not available for Niri.
+
+### mangowm
+
+[Monitors](https://mangowm.github.io/docs/configuration/monitors):
+
+**Requires `wlr-randr` to query monitor state.**
+
+The configuration is saved to `~/.config/mango/monitors.conf`. Make sure your config sources this file, e.g. with:
+
+```text
+source_optional=./monitors.conf
+```
+
+**Note:** Mango uses dynamic tags, so the workspace assignment feature is not available for Mango.
 
 ## Settings
 

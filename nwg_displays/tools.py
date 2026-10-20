@@ -74,6 +74,145 @@ def niri_reload_config():
         eprint(f"[niri] Failed to reload config: {e}")
 
 
+def mmsg(cmd):
+    """Execute mmsg command and return output"""
+    try:
+        result = subprocess.run(["mmsg", cmd], capture_output=True, text=True, timeout=5)
+        return result.stdout.strip()
+    except Exception as e:
+        eprint(f"Error communicating with Mango: {e}")
+        return ""
+
+
+def mango_reload_config():
+    """Reload Mango configuration via mmsg dispatch"""
+    try:
+        result = subprocess.run(
+            ["mmsg", "dispatch reload_config"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0:
+            print("[Mango] Config reloaded")
+        else:
+            eprint(f"[Mango] Failed to reload config: {result.stderr.strip()}")
+    except Exception as e:
+        eprint(f"[Mango] Failed to reload config: {e}")
+
+
+def mango_wakeup_all_monitors():
+    """Wake up all connected monitors.
+
+    DPMS power state is runtime-only and not exposed by mmsg, so the only
+    way to guarantee a known state after restoring settings is to
+    explicitly wake every monitor."""
+    try:
+        data = json.loads(mmsg("get all-monitors"))
+    except json.JSONDecodeError as e:
+        eprint(f"[Mango] Failed to parse monitor list: {e}")
+        return
+    monitors = data.get("monitors", []) if isinstance(data, dict) else data
+    for mon in monitors:
+        name = mon.get("name")
+        if name:
+            mmsg(f"dispatch wakeup_monitor,{name}")
+
+
+def parse_wlr_randr():
+    """Parse wlr-randr output into a dict keyed by output name.
+    Provides enabled state, make/model/serial and available modes,
+    which mmsg does not expose."""
+    result = {}
+    try:
+        output = subprocess.run(
+            ["wlr-randr"], capture_output=True, text=True, timeout=5
+        ).stdout
+    except Exception as e:
+        eprint(f"[Mango] Failed to run wlr-randr: {e}")
+        return result
+
+    name = None
+    for line in output.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if not line.startswith(" "):
+            # New output header, e.g.: DP-1 "Make Model Serial (DP-1)"
+            match = re.match(r"(\S+) \"([^\"]*)\"", line)
+            if match:
+                name = match.group(1)
+                result[name] = {
+                    "make": "",
+                    "model": "",
+                    "serial": "",
+                    "enabled": False,
+                    "modes": [],
+                    "current_refresh": None,
+                }
+            continue
+        if name is None:
+            continue
+        if stripped.startswith("Make:"):
+            result[name]["make"] = stripped.split(":", 1)[1].strip()
+        elif stripped.startswith("Model:"):
+            result[name]["model"] = stripped.split(":", 1)[1].strip()
+        elif stripped.startswith("Serial:"):
+            result[name]["serial"] = stripped.split(":", 1)[1].strip()
+        elif stripped.startswith("Enabled:"):
+            result[name]["enabled"] = line.strip().endswith("yes")
+        else:
+            mode_match = re.match(r"\s*(\d+)x(\d+) px, ([\d.]+) Hz(.*)", line)
+            if mode_match:
+                w, h, r, rest = mode_match.groups()
+                result[name]["modes"].append(
+                    {"width": int(w), "height": int(h), "refresh": float(r) * 1000}
+                )
+                if "(current)" in rest:
+                    result[name]["current_refresh"] = float(r)
+    return result
+
+
+def parse_mango_monitor_rules(path):
+    """Parse monitor_rule lines from a mango monitors.conf, keyed by output name.
+    Used to restore state (transform, disabled) that mmsg does not expose."""
+    rules = {}
+    if not os.path.isfile(path):
+        return rules
+    for line in load_text_file(path).splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "monitor_rule=" not in line:
+            continue
+        value = line.split("=", 1)[1]
+        # The value is a regex. Capture the value after "name:" up to the next
+        # comma-separated key or end of string.
+        name_match = re.search(r"(?:^|,)name:(.*?)(?=,\w+:|$)", value)
+        if not name_match:
+            continue
+        # Inverse of re.escape: drop the backslash from every escaped pair
+        name = re.sub(r"\\(.)", r"\1", name_match.group(1)).strip()
+        # Strip regex anchors
+        name = name.removeprefix("^")
+        name = name.removesuffix("$")
+        rr_match = re.search(r"(?<!v)rr:(\d+)", value)
+        disable_match = re.search(r"disable:1", value)
+        hdr_match = re.search(r"hdr:1", value)
+        lum = {}
+        for key in ("min", "max", "max_avg"):
+            lum_match = re.search(rf"hdr_{key}_lum:([\d.]+)", value)
+            lum[f"{key}_lum"] = float(lum_match.group(1)) if lum_match else 0.0
+        rules[name] = {
+            "transform": int(rr_match.group(1)) if rr_match else 0,
+            "disabled": bool(disable_match),
+            "hdr": bool(hdr_match),
+            "force": bool(re.search(r"hdr_force:1", value)),
+            "primary": bool(re.search(r"primary:1", value)),
+            "custom": bool(re.search(r"custom:1", value)),
+            **lum,
+        }
+    return rules
+
+
 def get_config():
     config_dir = get_config_dir()
     config_file = os.path.join(config_dir, "config")
@@ -339,6 +478,104 @@ def list_outputs():
 
             outputs_dict[m["name"]]["monitor"] = None
 
+    elif os.getenv("MANGO_INSTANCE_SIGNATURE"):
+        outputs_dict = {}
+        eprint("Running on Mango")
+
+        try:
+            mmsg_output = mmsg("get all-monitors")
+            randr = parse_wlr_randr()
+            monitors_file = os.path.join(
+                get_config_home(), "mango", "monitors.conf"
+            )
+            rules = parse_mango_monitor_rules(monitors_file)
+
+            if not mmsg_output:
+                eprint("[Mango] Could not communicate with the compositor")
+                return {}
+
+            data = json.loads(mmsg_output)
+            monitors = (
+                data.get("monitors", []) if isinstance(data, dict) else data
+            )
+
+            transforms = {
+                0: "normal", 1: "90", 2: "180", 3: "270",
+                4: "flipped", 5: "flipped-90", 6: "flipped-180", 7: "flipped-270",
+            }
+
+            for mon in monitors:
+                name = mon.get("name")
+                randr_mon = randr.get(name, {})
+                rule = rules.get(name, {})
+                scale = float(mon.get("scale", 1.0))
+
+                description = " ".join(
+                    part
+                    for part in [
+                        randr_mon.get("make"),
+                        randr_mon.get("model"),
+                        randr_mon.get("serial"),
+                    ]
+                    if part
+                )
+
+                # mmsg reports post-transform dimensions; normalize rotated
+                # outputs back to native orientation (odd rotations swap WxH)
+                transform = rule.get("transform", 0)
+                w, h = int(mon.get("width", 0)), int(mon.get("height", 0))
+                if transform % 4 in (1, 3):
+                    w, h = h, w
+
+                outputs_dict[name] = {
+                    "active": bool(
+                        randr_mon.get("enabled", not rule.get("disabled", False))
+                    ),
+                    # DPMS power state is not exposed by mmsg; assume the
+                    # monitor is powered on.
+                    "dpms": True,
+                    "description": description,
+                    "x": int(mon.get("x", 0)),
+                    "y": int(mon.get("y", 0)),
+                    "logical-width": w,
+                    "logical-height": h,
+                    "physical-width": round(w * scale),
+                    "physical-height": round(h * scale),
+                    "transform": transforms.get(transform, "normal"),
+                    "scale": scale,
+                    "scale_filter": "linear",
+                    "refresh": randr_mon.get("current_refresh") or 60.0,
+                    "modes": randr_mon.get("modes", []),
+                    # mmsg's "active" field is the focused/selected monitor
+                    "focused": mon.get("active", False),
+                    "adaptive_sync_status": "enabled" if mon.get("is_vrr", False) else "disabled",
+                    "mirror": "",
+                    "ten_bit": False,
+                    # HDR is a config-level setting; mmsg's is_hdr reflects
+                    # runtime state which may lag behind the applied rule
+                    "color_mode": (
+                        "force"
+                        if rule.get("force")
+                        else "hdr"
+                        if rule.get("hdr", False)
+                        else ""
+                    ),
+                    "primary": rule.get("primary", False),
+                    "custom_mode": rule.get("custom", False),
+                    "hdr_min_lum": rule.get("min_lum", 0.0),
+                    "hdr_max_lum": rule.get("max_lum", 0.0),
+                    "hdr_max_avg_lum": rule.get("max_avg_lum", 0.0),
+                    "sdr_brightness": 1.0,
+                    "sdr_saturation": 1.0,
+                    "monitor": None,
+                }
+        except json.JSONDecodeError as e:
+            eprint(f"[Mango] JSON decode error: {e}")
+            return {}
+        except Exception as e:
+            eprint(f"Error parsing Mango outputs: {e}")
+            return {}
+
     else:
         eprint("This program only supports sway, Hyprland and niri, and we seem to be elsewhere, terminating.")
         sys.exit(1)
@@ -353,8 +590,8 @@ def list_outputs():
         monitor = display.get_monitor(i)
         monitors.append(monitor)
 
-    if os.getenv("NIRI_SOCKET"):
-        # Niri: Use position-based matching with Gdk.Monitor geometry
+    if os.getenv("NIRI_SOCKET") or os.getenv("MANGO_INSTANCE_SIGNATURE"):
+        # Niri and Mango: Use position-based matching with Gdk.Monitor geometry
         # This ensures correct matching even when multiple monitors have identical properties
         for key in outputs_dict:
             if key in outputs_dict:
@@ -422,7 +659,11 @@ def list_outputs_activity():
 
         for mon in monitors_all:
             name = mon["name"]
-            result[name] = True if name in active else False
+            result[name] = name in active
+    elif os.getenv("MANGO_INSTANCE_SIGNATURE"):
+        randr = parse_wlr_randr()
+        for name in randr:
+            result[name] = randr[name].get("enabled", True)
 
     return result
 

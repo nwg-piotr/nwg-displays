@@ -316,6 +316,10 @@ class ProfileManager:
                 "color_mode": getattr(db, "color_mode", ""),
                 "sdr_brightness": getattr(db, "sdr_brightness", 1.0),
                 "sdr_saturation": getattr(db, "sdr_saturation", 1.0),
+                "primary": getattr(db, "primary", False),
+                "hdr_min_lum": getattr(db, "hdr_min_lum", 0.0),
+                "hdr_max_lum": getattr(db, "hdr_max_lum", 0.0),
+                "hdr_max_avg_lum": getattr(db, "hdr_max_avg_lum", 0.0),
                 "active": db.active,
             }
             profile_data["displays"].append(display)
@@ -406,6 +410,16 @@ class ProfileManager:
                             display.get("sdr_brightness")
                             if display.get("sdr_brightness") is not None
                             else 1.0
+                        )
+                        db.primary = display.get("primary", False)
+                        db.hdr_min_lum = float(
+                            display.get("hdr_min_lum", 0.0)
+                        )
+                        db.hdr_max_lum = float(
+                            display.get("hdr_max_lum", 0.0)
+                        )
+                        db.hdr_max_avg_lum = float(
+                            display.get("hdr_max_avg_lum", 0.0)
                         )
                         db.sdr_saturation = float(
                             display.get("sdr_saturation")
