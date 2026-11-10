@@ -19,7 +19,10 @@ setup(
     author="Piotr Miller",
     author_email="nwg.piotr@gmail.com",
     python_requires=">=3.6.0",
-    install_requires=[],
+    install_requires=[
+            "PyGObject",
+            "i3ipc",
+        ],
     entry_points={
         "gui_scripts": [
             "nwg-displays = nwg_displays.main:main",
