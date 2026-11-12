@@ -24,6 +24,7 @@ class ProfileManager:
         self.display_buttons = None
         self.fixed = None
         self.update_callback = None
+        self.activity_callback = None
         self.profile_label = None
 
         # Ensure profiles directory exists
@@ -58,6 +59,10 @@ class ProfileManager:
     def set_update_callback(self, callback):
         """Store reference to form update callback"""
         self.update_callback = callback
+
+    def set_activity_callback(self, callback):
+        """Store reference to the callback syncing the "Active" check buttons"""
+        self.activity_callback = callback
 
     def set_profile_label(self, label):
         """Store reference to the profile label"""
@@ -464,6 +469,10 @@ class ProfileManager:
                 )
 
                 current_x += db.logical_width + 10
+
+        # Reflect the loaded "active" states in the GUI
+        if self.activity_callback:
+            self.activity_callback()
 
         # Update the form if a display is selected
         selected_button = next((db for db in self.display_buttons if db.selected), None)

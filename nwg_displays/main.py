@@ -123,6 +123,7 @@ outputs = (
     {}
 )  # Active outputs, listed from the sway tree; stores name and all attributes.
 outputs_activity = {}  # Just a dictionary "name": is_active - from get_outputs()
+output_check_buttons = {}  # "name": Gtk.CheckButton of the "Active" section
 workspaces = {}  # "workspace_num": "display_name"
 
 display_buttons = []
@@ -791,6 +792,17 @@ def on_apply_button(widget, p_manager=None):
 
 def on_output_toggled(check_btn, name):
     outputs_activity[name] = check_btn.get_active()
+    # Keep the display button in sync, profiles save and load its `active` state
+    for db in display_buttons:
+        if db.name == name:
+            db.on_active_check_button_toggled(check_btn)
+
+
+def sync_output_check_buttons():
+    """Update the "Active" check buttons, e.g. after loading a profile"""
+    for db in display_buttons:
+        if db.name in output_check_buttons:
+            output_check_buttons[db.name].set_active(db.active)
 
 
 def on_toggle_button(btn):
@@ -1673,6 +1685,7 @@ def main():
         cb.set_label(key)
         cb.set_active(outputs_activity[key])
         cb.connect("toggled", on_output_toggled, key)
+        output_check_buttons[key] = cb
         form_wrapper_box.pack_start(cb, False, False, 3)
 
     btn = Gtk.Button.new_with_label(voc["toggle"])
@@ -1873,6 +1886,7 @@ def main():
     profile_manager.set_display_buttons(display_buttons)
     profile_manager.set_fixed(fixed)
     profile_manager.set_update_callback(update_form_from_widget)
+    profile_manager.set_activity_callback(sync_output_check_buttons)
 
     if display_buttons:
         update_form_from_widget(display_buttons[0])
