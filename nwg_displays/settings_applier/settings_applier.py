@@ -17,6 +17,7 @@ from nwg_displays.tools import (
     inactive_output_description,
     load_json,
     save_json,
+    get_hyprland_lua_config_path,
 )
 from nwg_displays.wallpaper_manager import WallpaperManager
 from nwg_displays.tools import get_config
@@ -146,11 +147,7 @@ class SettingsApplier:
             lua_table = ",\n".join(lua_props)
             lines_lua.append(f"hl.monitor({{\n{lua_table}\n}})")
 
-        outputs_path_lua = (
-            outputs_path.removesuffix(".conf") + ".lua"
-            if outputs_path.endswith(".conf")
-            else "~/.config/hypr/monitors.lua"
-        )
+        outputs_path_lua = get_hyprland_lua_config_path(outputs_path)
 
         lines_conf = [header] + [ln.replace("#", "##") for ln in lines_conf]
 
@@ -672,11 +669,7 @@ class SettingsApplier:
         if os.path.isfile(outputs_path):
             backup_conf = load_text_file(outputs_path).splitlines()
 
-        outputs_path_lua = (
-            outputs_path.removesuffix(".conf") + ".lua"
-            if outputs_path.endswith(".conf")
-            else "~/.config/hypr/monitors.lua"
-        )
+        outputs_path_lua = get_hyprland_lua_config_path(outputs_path)
 
         backup_lua = []
         if os.path.isfile(outputs_path_lua):

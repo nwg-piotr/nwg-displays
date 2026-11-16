@@ -29,6 +29,25 @@ def get_config_home():
     return config_home
 
 
+def get_hyprland_lua_config_path(outputs_path):
+    """Return the Lua monitor config path corresponding to outputs_path.
+
+    Hyprland's Lua module layout commonly keeps required modules under
+    ~/.config/hypr/config. If that monitors.lua already exists, preserve that
+    setup by writing the generated Lua configuration there.
+    """
+    config_monitors_path = os.path.join(
+        get_config_home(), "hypr", "config", "monitors.lua"
+    )
+    if os.path.isfile(config_monitors_path):
+        return config_monitors_path
+
+    if outputs_path.endswith(".conf"):
+        return outputs_path.removesuffix(".conf") + ".lua"
+
+    return os.path.join(get_config_home(), "hypr", "monitors.lua")
+
+
 def get_config_dir():
     xdg_config_home = os.getenv("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
     return os.path.join(xdg_config_home, "nwg-displays")
