@@ -98,6 +98,8 @@ For version 0.55 and greater (using Lua), insert this line:
 ```lua
 require("monitors")
 ```
+If `~/.config/hypr/config/monitors.lua` already exists, nwg-displays writes its
+generated Lua monitor settings to that file.
 
 [Default workspace](http://wiki.hyprland.org/0.54.0/Configuring/Monitors/#default-workspace) and [Binding workspaces to a monitor](https://wiki.hyprland.org/0.54.0/Configuring/Monitors/#binding-workspaces-to-a-monitor):
 

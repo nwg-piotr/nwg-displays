@@ -1194,7 +1194,7 @@ def restore_old_settings(btn, backup, path):
     elif os.getenv("HYPRLAND_INSTANCE_SIGNATURE"):
         # For Hyprland: backup is a tuple (lines_conf, lines_lua), restore both
         if isinstance(backup, tuple):
-            lua_path = path.removesuffix(".conf") + ".lua" if path.endswith(".conf") else "~/.config/hypr/monitors.lua"
+            lua_path = get_hyprland_lua_config_path(path)
             save_list_to_text_file(backup[0], path)
             if backup[1]:
                 save_list_to_text_file(backup[1], lua_path)
